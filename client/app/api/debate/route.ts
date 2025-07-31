@@ -134,6 +134,34 @@ export async function POST(req: NextRequest) {
           };
           controller.enqueue(encoder.encode(`data: ${JSON.stringify(roundUpdate)}\n\n`));
           
+          // If interactive mode, wait for human input after first round
+          if (config.isInteractive && i === 1 && userId) {
+            // Add user as participant
+            await prisma.participant.create({
+              data: {
+                debateId: dbDebate.id,
+                userId,
+                role: 'participant'
+              }
+            });
+            
+            // Signal that we're waiting for human input
+            controller.enqueue(encoder.encode(`data: ${JSON.stringify({
+              type: 'waiting-for-human',
+              data: {}
+            })}\n\n`));
+            
+            // Close this stream - human input will continue via separate endpoint
+            debate.status = 'waiting-for-human' as any;
+            await prisma.debate.update({
+              where: { id: dbDebate.id },
+              data: { status: 'waiting-for-human' }
+            });
+            
+            controller.close();
+            return;
+          }
+          
           // Check for convergence
           if (round.consensus && config.convergenceThreshold) {
             const agreementRate = round.responses.filter(r => 
