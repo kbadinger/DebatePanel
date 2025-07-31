@@ -15,10 +15,14 @@ interface DebateInterfaceProps {
 }
 
 export function DebateInterface({ config, onComplete }: DebateInterfaceProps) {
+  const { data: session } = useSession();
   const [debate, setDebate] = useState<Debate | null>(null);
   const [isRunning, setIsRunning] = useState(false);
   const [currentRound, setCurrentRound] = useState(0);
   const [streamingResponses, setStreamingResponses] = useState<ModelResponse[]>([]);
+  const [waitingForHuman, setWaitingForHuman] = useState(false);
+  const [isSubmittingHuman, setIsSubmittingHuman] = useState(false);
+  const [participants, setParticipants] = useState<Array<{ userId: string; userName: string }>>([]);
   
   // Auto-start debate when component mounts
   useEffect(() => {
