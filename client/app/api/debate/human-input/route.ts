@@ -202,11 +202,24 @@ async function generateModelResponse(
   previousResponses: any[],
   round: number
 ): Promise<{ content: string; position: string; confidence: number }> {
-  // This is a simplified version - you'd integrate with your actual model orchestrator
-  // For now, return a mock response
-  return {
-    content: `[${model.displayName}] Responding to the human participant's points about ${topic}...`,
-    position: 'neutral',
-    confidence: 75
-  };
+  const orchestrator = new ModelOrchestrator();
+  
+  // Build the context from previous responses
+  const context = previousResponses.map(r => ({
+    modelId: r.modelId,
+    content: r.content,
+    position: r.position,
+    isHuman: r.isHuman || false
+  }));
+  
+  // Generate the AI response
+  const response = await orchestrator.generateSingleModelResponse(
+    model,
+    topic,
+    description,
+    context,
+    round
+  );
+  
+  return response;
 }
