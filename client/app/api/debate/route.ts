@@ -4,6 +4,8 @@ import { Debate, DebateStreamUpdate } from '@/types/debate';
 import { PrismaClient } from '@prisma/client';
 import { DebateLogger } from '@/lib/logger';
 import { UsageTracker } from '@/lib/usage-tracking';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/auth';
 
 const prisma = new PrismaClient();
 
