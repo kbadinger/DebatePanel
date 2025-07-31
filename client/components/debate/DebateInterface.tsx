@@ -132,6 +132,70 @@ export function DebateInterface({ config, onComplete }: DebateInterfaceProps) {
     }
   };
   
+  const submitHumanInput = async (content: string, stance?: string, confidence?: number) => {
+    if (!session?.user || !debate?.id) return;
+    
+    setIsSubmittingHuman(true);
+    setWaitingForHuman(false);
+    
+    try {
+      const response = await fetch('/api/debate/human-input', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          debateId: debate.id,
+          content,
+          stance,
+          confidence: confidence || 75,
+          position: 'neutral' // This could be made dynamic based on UI
+        }),
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to submit human input');
+      }
+      
+      // The response will continue the debate stream
+      const reader = response.body?.getReader();
+      if (!reader) throw new Error('No response body');
+      
+      const decoder = new TextDecoder();
+      
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        
+        const chunk = decoder.decode(value);
+        const lines = chunk.split('\n');
+        
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            const data = JSON.parse(line.slice(6));
+            
+            if (data.type === 'response') {
+              setStreamingResponses(prev => [...prev, data.data]);
+            } else if (data.type === 'round-complete') {
+              setCurrentRound(data.data.roundNumber);
+              setStreamingResponses([]);
+            } else if (data.type === 'waiting-for-human') {
+              setWaitingForHuman(true);
+              setStreamingResponses([]);
+            } else if (data.type === 'debate-complete') {
+              setDebate(data.data);
+              onComplete?.(data.data);
+            }
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error submitting human input:', error);
+      alert('Failed to submit your response. Please try again.');
+      setWaitingForHuman(true);
+    } finally {
+      setIsSubmittingHuman(false);
+    }
+  };
+  
   const allResponses = [
     ...(debate?.rounds.flatMap(r => r.responses) || []),
     ...streamingResponses
