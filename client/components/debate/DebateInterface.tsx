@@ -212,6 +212,24 @@ export function DebateInterface({ config, onComplete }: DebateInterfaceProps) {
         )}
       </div>
       
+      {/* Interactive Mode Banner */}
+      {config.isInteractive && (
+        <div className="mb-6 bg-gradient-to-r from-purple-100 to-blue-100 rounded-xl p-4 border border-purple-300">
+          <div className="flex items-center gap-3">
+            <Users className="text-purple-600" size={24} />
+            <div>
+              <h3 className="font-semibold text-purple-900">Interactive Debate Mode</h3>
+              <p className="text-sm text-purple-700">You'll be prompted to share your perspective after the AI models respond</p>
+            </div>
+          </div>
+          {participants.length > 0 && (
+            <div className="mt-3 text-sm text-purple-700">
+              Participants: {participants.map(p => p.userName).join(', ')}
+            </div>
+          )}
+        </div>
+      )}
+      
       {/* Ratings Key - Horizontal at top */}
       <div className="mb-6">
         <RatingsKey />
