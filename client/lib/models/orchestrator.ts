@@ -261,10 +261,13 @@ Confidence: [0-100]% confident in this stance`;
     // Round 2+ - now we track consensus
     const previousDebate = `\n\nPrevious debate points:\n${previousResponses
       .filter(r => r.round === roundNumber - 1)
-      .map(r => `${r.modelId}: ${r.stance || 'No clear stance'} - ${r.content.substring(0, 200)}...`)
+      .map(r => {
+        const speaker = r.isHuman ? 'Human Participant' : r.modelId;
+        return `${speaker}: ${r.stance || 'No clear stance'} - ${r.content.substring(0, 200)}...`;
+      })
       .join('\n\n')}`;
     
-    return `You are participating in round ${roundNumber} of a critical analysis debate panel.
+    return `You are participating in round ${roundNumber} of a critical analysis debate panel.${hasHumanParticipant ? ' A human participant has joined this debate.' : ''}
 
 ${previousDebate}
 
