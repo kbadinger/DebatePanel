@@ -3,6 +3,7 @@
 import { ModelResponse } from '@/types/debate';
 import { AVAILABLE_MODELS } from '@/lib/models/config';
 import { clsx } from 'clsx';
+import { User, Sparkles } from 'lucide-react';
 
 interface ModelResponseCardProps {
   response: ModelResponse;
