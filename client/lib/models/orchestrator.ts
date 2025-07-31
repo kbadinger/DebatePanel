@@ -237,6 +237,8 @@ Format your response as a clear argument with supporting points.`;
       ? Math.max(...previousResponses.map(r => r.round)) + 1 
       : 1;
     
+    const hasHumanParticipant = previousResponses.some(r => r.isHuman);
+    
     if (roundNumber === 1) {
       return `You are participating in a critical analysis debate panel. Your primary goal is to provide the most accurate and insightful analysis.
 
