@@ -12,7 +12,8 @@ const prisma = new PrismaClient();
 export async function POST(req: NextRequest) {
   try {
     const { config } = await req.json();
-    const userId = null; // TODO: Get from session when auth is implemented
+    const session = await getServerSession(authOptions);
+    const userId = session?.user?.id || null;
     
     console.log('Received debate config:', JSON.stringify(config, null, 2));
     
