@@ -272,11 +272,12 @@ Confidence: [0-100]% confident in this stance`;
 ${previousDebate}
 
 IMPORTANT INSTRUCTIONS:
-1. Review the previous arguments and positions
+1. Review the previous arguments and positions${hasHumanParticipant ? ', especially the human participant\'s perspective' : ''}
 2. You may maintain your position, modify it, or adopt a different stance
 3. Explain WHY you're maintaining or changing your position
 4. Point out strong arguments from others if they've convinced you
 5. Continue to think critically - consensus is not the goal, optimal solution is
+${hasHumanParticipant ? '6. Directly address any points raised by the human participant' : ''}
 
 Your response should:
 - Clearly state if you're maintaining, modifying, or changing your stance
