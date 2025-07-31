@@ -106,6 +106,12 @@ export function DebateInterface({ config, onComplete }: DebateInterfaceProps) {
             } else if (data.type === 'round-complete') {
               setCurrentRound(data.data.roundNumber);
               setStreamingResponses([]);
+            } else if (data.type === 'waiting-for-human') {
+              setWaitingForHuman(true);
+              setStreamingResponses([]);
+            } else if (data.type === 'human-joined') {
+              const participant = data.data as { userId: string; userName: string };
+              setParticipants(prev => [...prev, participant]);
             } else if (data.type === 'debate-complete') {
               console.log('Debate completed:', data.data);
               setDebate(data.data);
