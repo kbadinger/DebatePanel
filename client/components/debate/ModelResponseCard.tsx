@@ -12,6 +12,7 @@ interface ModelResponseCardProps {
 
 export function ModelResponseCard({ response, isStreaming }: ModelResponseCardProps) {
   const model = AVAILABLE_MODELS.find(m => m.id === response.modelId);
+  const isHuman = response.isHuman || response.modelId.startsWith('human-');
   
   // For round 1, show stance. For round 2+, show consensus alignment
   const showConsensus = response.round > 1 && response.consensusAlignment;
