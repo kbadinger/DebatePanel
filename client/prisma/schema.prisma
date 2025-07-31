@@ -1,0 +1,201 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  emailVerified DateTime?
+  name          String?
+  image         String?
+  password      String?   // For credentials auth
+  isAdmin       Boolean   @default(false) // Admin flag for unlimited access
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  // Authentication
+  accounts      Account[]
+  sessions      Session[]
+  
+  // Subscription
+  subscription  Subscription?
+  apiKeys       ApiKey[]
+  
+  // Usage tracking
+  debates       Debate[]
+  usageRecords  UsageRecord[]
+  participations Participant[]
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+  
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+  
+  @@unique([identifier, token])
+}
+
+model Subscription {
+  id                    String   @id @default(cuid())
+  userId                String   @unique
+  plan                  String   // 'free', 'starter', 'pro', 'teams'
+  status                String   // 'active', 'canceled', 'past_due'
+  monthlyAllowance      Float    // Dollar amount included in plan
+  currentBalance        Float    // Current available balance
+  rolloverBalance       Float    @default(0) // Amount rolled from previous month
+  rolloverExpiry        DateTime? // When rollover expires
+  currentPeriodStart    DateTime
+  currentPeriodEnd      DateTime
+  stripeCustomerId      String?  @unique
+  stripePriceId         String?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+  
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model ApiKey {
+  id          String   @id @default(cuid())
+  userId      String
+  provider    String   // 'openai', 'anthropic', etc.
+  encryptedKey String  @db.Text
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId, provider])
+}
+
+model UsageRecord {
+  id              String   @id @default(cuid())
+  userId          String
+  debateId        String
+  roundNumber     Int
+  modelId         String
+  modelProvider   String
+  inputTokens     Int
+  outputTokens    Int
+  apiCost         Float    // What we paid the provider
+  platformFee     Float    // Our markup
+  totalCost       Float    // What user pays
+  createdAt       DateTime @default(now())
+  
+  user   User   @relation(fields: [userId], references: [id])
+  debate Debate @relation(fields: [debateId], references: [id])
+  
+  @@index([userId, createdAt])
+  @@index([debateId, roundNumber])
+}
+
+model Debate {
+  id                   String           @id @default(cuid())
+  topic                String
+  description          String?
+  format               String           @default("structured")
+  rounds               Int
+  convergenceThreshold Float?
+  status               String           @default("active")
+  isInteractive        Boolean          @default(false)
+  createdAt            DateTime         @default(now())
+  completedAt          DateTime?
+  finalSynthesis       String?
+  judgeAnalysis        String?
+  userId               String?
+  user                 User?            @relation(fields: [userId], references: [id])
+  debateRounds         DebateRound[]
+  modelSelections      ModelSelection[]
+  usageRecords         UsageRecord[]
+  participants         Participant[]
+}
+
+model DebateRound {
+  id               String          @id @default(cuid())
+  debateId         String
+  roundNumber      Int
+  consensus        String?
+  keyDisagreements String[]
+  createdAt        DateTime        @default(now())
+  debate           Debate          @relation(fields: [debateId], references: [id])
+  responses        ModelResponse[]
+
+  @@unique([debateId, roundNumber])
+}
+
+model ModelResponse {
+  id            String      @id @default(cuid())
+  roundId       String
+  modelId       String
+  modelProvider String
+  content       String      @db.Text
+  position      String
+  confidence    Int
+  isHuman       Boolean     @default(false)
+  userId        String?
+  createdAt     DateTime    @default(now())
+  round         DebateRound @relation(fields: [roundId], references: [id])
+
+  @@index([roundId, modelId])
+}
+
+model ModelSelection {
+  id       String @id @default(cuid())
+  debateId String
+  modelId  String
+  provider String
+  name     String
+  debate   Debate @relation(fields: [debateId], references: [id])
+
+  @@unique([debateId, modelId])
+}
+
+model Participant {
+  id            String   @id @default(cuid())
+  debateId      String
+  userId        String
+  joinedAt      DateTime @default(now())
+  role          String   @default("participant") // 'participant', 'observer'
+  status        String   @default("active") // 'active', 'left', 'kicked'
+  debate        Debate   @relation(fields: [debateId], references: [id])
+  user          User     @relation(fields: [userId], references: [id])
+
+  @@unique([debateId, userId])
+}

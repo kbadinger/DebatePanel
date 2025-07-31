@@ -1,0 +1,406 @@
+import { NextRequest } from 'next/server';
+import { ModelOrchestrator } from '@/lib/models/orchestrator';
+import { Debate, DebateStreamUpdate } from '@/types/debate';
+import { PrismaClient } from '@prisma/client';
+import { DebateLogger } from '@/lib/logger';
+import { UsageTracker } from '@/lib/usage-tracking';
+
+const prisma = new PrismaClient();
+
+export async function POST(req: NextRequest) {
+  try {
+    const { config } = await req.json();
+    const userId = null; // TODO: Get from session when auth is implemented
+    
+    console.log('Received debate config:', JSON.stringify(config, null, 2));
+    
+    const encoder = new TextEncoder();
+    let logger: DebateLogger | null = null;
+    
+    const stream = new ReadableStream({
+      async start(controller) {
+        try {
+          logger = new DebateLogger();
+          const orchestrator = new ModelOrchestrator(logger);
+          
+          console.log('Creating debate in database...');
+          
+          // Check user's balance if authenticated
+          if (userId) {
+            const user = await prisma.user.findUnique({
+              where: { id: userId },
+              include: { subscription: true }
+            });
+            
+            if (!user) {
+              controller.enqueue(encoder.encode(`data: ${JSON.stringify({
+                type: 'error',
+                error: 'User not found.'
+              })}\n\n`));
+              controller.close();
+              return;
+            }
+            
+            // Skip balance check for admin users
+            if (!user.isAdmin) {
+              if (!user.subscription) {
+                controller.enqueue(encoder.encode(`data: ${JSON.stringify({
+                  type: 'error',
+                  error: 'No subscription found. Please sign up for a plan.'
+                })}\n\n`));
+                controller.close();
+                return;
+              }
+              
+              // Calculate estimated cost
+              const { models, rounds = 3 } = config;
+              const estimatedCost = models.reduce((total: number, model: any) => {
+                const costPerResponse = model.costInfo?.estimatedCostPerResponse || 0.50;
+                return total + (costPerResponse * rounds);
+              }, 0) * 1.3; // Add 30% platform fee
+              
+              if (user.subscription.currentBalance < estimatedCost) {
+                controller.enqueue(encoder.encode(`data: ${JSON.stringify({
+                  type: 'error',
+                  error: `Insufficient credits. Estimated cost: $${estimatedCost.toFixed(2)}, Available: $${user.subscription.currentBalance.toFixed(2)}`
+                })}\n\n`));
+                controller.close();
+                return;
+              }
+            }
+          }
+          
+          // Create debate in database
+          const dbDebate = await prisma.debate.create({
+            data: {
+              topic: config.topic,
+              description: config.description,
+              format: config.format,
+              rounds: config.rounds,
+              convergenceThreshold: config.convergenceThreshold,
+              userId,
+              modelSelections: {
+                create: config.models.map((model: any) => ({
+                  modelId: model.id,
+                  provider: model.provider,
+                  name: model.name,
+                }))
+              }
+            }
+          });
+          
+          console.log('Created debate with ID:', dbDebate.id);
+          
+          // Set up usage tracking if user is authenticated
+          if (userId) {
+            const usageTracker = new UsageTracker(dbDebate.id, userId);
+            orchestrator.setUsageTracker(usageTracker);
+          }
+      
+      const debate: Debate = {
+        id: dbDebate.id,
+        config,
+        rounds: [],
+        status: 'active',
+        createdAt: dbDebate.createdAt,
+      };
+      
+      // Start logging
+      logger.startDebate(
+        dbDebate.id,
+        config.topic,
+        config.models.map((m: any) => m.displayName || m.id)
+      );
+      
+      try {
+        for (let i = 1; i <= config.rounds; i++) {
+          const round = await orchestrator.runDebateRound(config, i, debate.rounds, dbDebate.id);
+          debate.rounds.push(round);
+          
+          // Stream each response
+          for (const response of round.responses) {
+            const update: DebateStreamUpdate = {
+              type: 'response',
+              data: response,
+            };
+            controller.enqueue(encoder.encode(`data: ${JSON.stringify(update)}\n\n`));
+          }
+          
+          // Stream round completion
+          const roundUpdate: DebateStreamUpdate = {
+            type: 'round-complete',
+            data: round,
+          };
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify(roundUpdate)}\n\n`));
+          
+          // Check for convergence
+          if (round.consensus && config.convergenceThreshold) {
+            const agreementRate = round.responses.filter(r => 
+              r.position === 'agree' || r.position === 'strongly-agree'
+            ).length / round.responses.length;
+            
+            if (agreementRate >= config.convergenceThreshold) {
+              debate.status = 'converged';
+              break;
+            }
+          }
+        }
+        
+        // Generate final synthesis
+        debate.status = 'completed';
+        debate.completedAt = new Date();
+        
+        console.log('Generating synthesis for debate:', {
+          id: debate.id,
+          rounds: debate.rounds.length,
+          totalResponses: debate.rounds.flatMap(r => r.responses).length
+        });
+        
+        // Generate judge analysis FIRST if enabled
+        if (debate.config.judge?.enabled) {
+          const judgeModel = debate.config.judge.model || {
+            id: 'claude-3-5-sonnet',
+            provider: 'anthropic' as const,
+            name: 'claude-3-5-sonnet-20241022',
+            displayName: 'Claude 3.5 Sonnet'
+          };
+          
+          console.log('Generating judge analysis with:', judgeModel.displayName);
+          
+          try {
+            debate.judgeAnalysis = await orchestrator.generateJudgeAnalysis(
+              debate.rounds,
+              debate.config.topic,
+              judgeModel
+            );
+            console.log('Generated judge analysis');
+          } catch (error) {
+            console.error('Failed to generate judge analysis:', error);
+            debate.judgeAnalysis = 'Failed to generate judge analysis';
+          }
+        }
+        
+        // Then generate the statistical synthesis
+        debate.finalSynthesis = generateSynthesis(debate);
+        
+        console.log('Generated synthesis:', debate.finalSynthesis);
+        
+        // Log final synthesis
+        logger.logFinalSynthesis(debate.finalSynthesis, debate.status);
+        
+        // Update database
+        await prisma.debate.update({
+          where: { id: dbDebate.id },
+          data: {
+            status: debate.status,
+            completedAt: debate.completedAt,
+            finalSynthesis: debate.finalSynthesis,
+            judgeAnalysis: debate.judgeAnalysis,
+          }
+        });
+        
+        // Deduct credits if user is authenticated and not admin
+        if (userId) {
+          const user = await prisma.user.findUnique({
+            where: { id: userId },
+          });
+          
+          // Skip credit deduction for admin users
+          if (user && !user.isAdmin) {
+            const totalCost = await prisma.usageRecord.aggregate({
+              where: { debateId: dbDebate.id },
+              _sum: { totalCost: true },
+            });
+            
+            const costToDeduct = totalCost._sum.totalCost || 0;
+            
+            if (costToDeduct > 0) {
+              await prisma.subscription.update({
+                where: { userId },
+                data: {
+                  currentBalance: {
+                    decrement: costToDeduct,
+                  },
+                },
+              });
+              
+              console.log(`Deducted ${costToDeduct} credits from user ${userId}`);
+            }
+          } else if (user?.isAdmin) {
+            console.log(`Admin user ${userId} - skipping credit deduction`);
+          }
+        }
+        
+        // Stream final debate
+        const finalUpdate: DebateStreamUpdate = {
+          type: 'debate-complete',
+          data: debate,
+        };
+        controller.enqueue(encoder.encode(`data: ${JSON.stringify(finalUpdate)}\n\n`));
+        
+        } catch (error) {
+          console.error('Debate stream error:', error);
+          logger?.logError(error);
+          
+          // Send error message to client
+          const errorUpdate = {
+            type: 'error',
+            data: {
+              message: error instanceof Error ? error.message : 'An error occurred during the debate',
+              code: error instanceof Error && 'code' in error ? (error as any).code : 'UNKNOWN_ERROR'
+            }
+          };
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify(errorUpdate)}\n\n`));
+        } finally {
+          logger?.endDebate();
+          controller.close();
+        }
+      } catch (error) {
+        console.error('Stream initialization error:', error);
+        // Controller might not be properly initialized, so we don't try to use it
+      }
+    },
+  });
+    
+    return new Response(stream, {
+      headers: {
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+        'Connection': 'keep-alive',
+      },
+    });
+  } catch (error) {
+    console.error('Debate API error:', error);
+    return new Response(
+      JSON.stringify({ 
+        error: 'Failed to start debate', 
+        details: error instanceof Error ? error.message : 'Unknown error' 
+      }), 
+      { 
+        status: 500,
+        headers: { 'Content-Type': 'application/json' }
+      }
+    );
+  }
+}
+
+export async function GET(req: NextRequest) {
+  const { searchParams } = new URL(req.url);
+  const userId = searchParams.get('userId');
+  const debateId = searchParams.get('debateId');
+  
+  if (debateId) {
+    const debate = await prisma.debate.findUnique({
+      where: { id: debateId },
+      include: {
+        modelSelections: true,
+        debateRounds: {
+          include: {
+            responses: true
+          },
+          orderBy: {
+            roundNumber: 'asc'
+          }
+        }
+      }
+    });
+    
+    return Response.json(debate);
+  }
+  
+  const debates = await prisma.debate.findMany({
+    where: userId ? { userId } : {},
+    orderBy: { createdAt: 'desc' },
+    take: 20,
+    select: {
+      id: true,
+      topic: true,
+      status: true,
+      createdAt: true,
+      rounds: true,
+      modelSelections: {
+        select: {
+          modelId: true
+        }
+      }
+    }
+  });
+  
+  return Response.json(debates);
+}
+
+function generateSynthesis(debate: Debate): string {
+  // Focus on FINAL ROUND for position determination
+  const finalRound = debate.rounds[debate.rounds.length - 1];
+  const finalResponses = finalRound.responses;
+  
+  const positionCounts: Record<string, number> = {};
+  const modelPositions: Record<string, string[]> = {};
+  
+  // Analyze only the final round positions
+  finalResponses.forEach(response => {
+    // Count positions
+    positionCounts[response.position] = (positionCounts[response.position] || 0) + 1;
+    
+    // Track which models took which positions
+    if (!modelPositions[response.position]) {
+      modelPositions[response.position] = [];
+    }
+    modelPositions[response.position].push(response.modelId);
+  });
+  
+  // Calculate percentages for final round
+  const totalFinalResponses = finalResponses.length;
+  const positionPercentages = Object.entries(positionCounts)
+    .map(([position, count]) => ({
+      position,
+      count,
+      percentage: Math.round((count / totalFinalResponses) * 100),
+      models: modelPositions[position]
+    }))
+    .sort((a, b) => b.count - a.count);
+  
+  // Determine final consensus
+  const topPosition = positionPercentages[0];
+  const hasConsensus = topPosition && topPosition.percentage >= 60;
+  
+  // Journey context (for reference only)
+  const allResponses = debate.rounds.flatMap(r => r.responses);
+  const initialRound = debate.rounds[0];
+  const initialPositions = new Set(initialRound.responses.map(r => r.position));
+  const keyPoints = debate.rounds
+    .filter(r => r.consensus)
+    .map(r => r.consensus)
+    .filter(Boolean);
+  
+  return `## Debate Analysis: "${debate.config.topic}"
+
+### Final Verdict (Round ${finalRound.roundNumber}):
+${positionPercentages.map(p => 
+  `• **${p.position.replace('-', ' ').toUpperCase()}**: ${p.percentage}% (${p.count}/${totalFinalResponses} models)`
+).join('\n')}
+
+### Final Consensus:
+${hasConsensus 
+  ? `The models reached a ${topPosition.percentage}% consensus on **"${topPosition.position.replace('-', ' ')}"** in the final round`
+  : 'No clear consensus emerged - the models remain divided on this topic'}
+
+### Final Model Positions:
+${positionPercentages.map(p => 
+  `• **${p.position.replace('-', ' ')}**: ${p.models.join(', ')}`
+).join('\n')}
+
+### Journey Summary:
+• Started with ${initialPositions.size} different positions in Round 1
+• Converged to ${Object.keys(positionCounts).length} positions by Round ${finalRound.roundNumber}
+• ${debate.status === 'converged' ? `Debate converged early at ${Math.round((finalResponses.filter(r => r.position === topPosition.position).length / totalFinalResponses) * 100)}% agreement` : `Completed all ${debate.config.rounds} rounds`}
+
+### Confidence Evolution:
+• Initial confidence: ${Math.round(initialRound.responses.reduce((sum, r) => sum + r.confidence, 0) / initialRound.responses.length)}%
+• Final confidence: ${Math.round(finalResponses.reduce((sum, r) => sum + r.confidence, 0) / totalFinalResponses)}%
+
+### Key Turning Points:
+${keyPoints.length > 0 
+  ? keyPoints.slice(-3).map((point, i) => `${i + 1}. ${point}`).join('\n')
+  : 'The debate evolved gradually without dramatic shifts in consensus.'}`;
+}
