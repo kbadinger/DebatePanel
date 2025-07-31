@@ -422,6 +422,7 @@ Your task:
 3. Determine if there's practical consensus despite statistical disagreement
 4. Provide a clear final recommendation based on the debate quality, not just vote counts
 5. Address edge cases like when most are neutral but one has strong conviction
+${finalPositions.some(p => p.isHuman) ? '6. Give special consideration to the human participant\'s perspective and how the AI models responded to it' : ''}
 
 Provide:
 - A clear verdict on what the panel actually recommends
