@@ -443,6 +443,43 @@ Option 3 - Hybrid Model:
           </div>
           
           <div className="mb-4">
+            <label className="block text-sm font-semibold text-slate-700 mb-2">
+              Debate Mode
+            </label>
+            <div className="space-y-3">
+              <label className="flex items-center p-3 border border-slate-300 rounded-lg hover:bg-slate-50 cursor-pointer transition-colors">
+                <input
+                  type="radio"
+                  name="debate-mode"
+                  checked={!config.isInteractive}
+                  onChange={() => setConfig({ ...config, isInteractive: false })}
+                  className="mr-3 h-4 w-4 text-blue-600 focus:ring-blue-500"
+                />
+                <div>
+                  <span className="text-slate-700 font-medium">Watch AI Models Debate</span>
+                  <p className="text-xs text-slate-500 mt-1">Observe multiple AI models discuss and reach consensus</p>
+                </div>
+              </label>
+              <label className="flex items-center p-3 border border-slate-300 rounded-lg hover:bg-slate-50 cursor-pointer transition-colors bg-gradient-to-r from-purple-50 to-blue-50 border-purple-300">
+                <input
+                  type="radio"
+                  name="debate-mode"
+                  checked={config.isInteractive || false}
+                  onChange={() => setConfig({ ...config, isInteractive: true })}
+                  className="mr-3 h-4 w-4 text-purple-600 focus:ring-purple-500"
+                />
+                <div className="flex-1">
+                  <span className="text-slate-700 font-medium flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-purple-600" />
+                    Join the Debate (Interactive)
+                  </span>
+                  <p className="text-xs text-slate-500 mt-1">Participate alongside AI models and influence the discussion</p>
+                </div>
+              </label>
+            </div>
+          </div>
+          
+          <div className="mb-4">
             <label htmlFor="rounds" className="block text-sm font-semibold text-slate-700 mb-2">
               Number of Rounds
             </label>
