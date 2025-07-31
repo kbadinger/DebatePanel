@@ -395,11 +395,12 @@ Confidence: [0-100]% confident in this stance`;
     
     // Build a comprehensive summary of the final positions
     const finalPositions = finalRound.responses.map(r => ({
-      model: r.modelId,
+      model: r.isHuman ? 'Human Participant' : r.modelId,
       position: r.position,
       stance: r.stance || 'Not specified',
       confidence: r.confidence,
-      keyPoint: r.content.substring(0, 200)
+      keyPoint: r.content.substring(0, 200),
+      isHuman: r.isHuman || false
     }));
 
     const prompt = `As the judge, provide a nuanced final judgment on this debate.
