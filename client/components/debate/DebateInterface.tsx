@@ -4,8 +4,10 @@ import { useState, useEffect } from 'react';
 import { Debate, DebateConfig, ModelResponse } from '@/types/debate';
 import { ModelResponseCard } from './ModelResponseCard';
 import { RatingsKey } from './RatingsKey';
+import { HumanInputPanel } from './HumanInputPanel';
 import { Button } from '@/components/ui/button';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Users } from 'lucide-react';
+import { useSession } from 'next-auth/react';
 
 interface DebateInterfaceProps {
   config: DebateConfig;
