@@ -244,13 +244,23 @@ export function DebateInterface({ config, onComplete }: DebateInterfaceProps) {
           />
         ))}
         
-        {isRunning && allResponses.length > 0 && streamingResponses.length === 0 && (
+        {isRunning && allResponses.length > 0 && streamingResponses.length === 0 && !waitingForHuman && (
           <div className="bg-white rounded-xl shadow-md border border-slate-200 p-4 flex items-center gap-3">
             <Loader2 className="animate-spin text-blue-600" size={20} />
             <span className="text-sm font-medium text-slate-700">
               Waiting for next response...
             </span>
           </div>
+        )}
+        
+        {/* Human Input Panel */}
+        {waitingForHuman && config.isInteractive && (
+          <HumanInputPanel
+            onSubmit={submitHumanInput}
+            isSubmitting={isSubmittingHuman}
+            currentRound={currentRound}
+            totalRounds={config.rounds}
+          />
         )}
       </div>
       
