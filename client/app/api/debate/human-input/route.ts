@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/auth';
 import { prisma } from '@/lib/prisma';
-import { orchestrateDebate } from '@/lib/models/orchestrator';
+import { ModelOrchestrator } from '@/lib/models/orchestrator';
 import { ModelResponse } from '@/types/debate';
 
 export async function POST(request: NextRequest) {
