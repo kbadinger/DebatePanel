@@ -79,6 +79,7 @@ export async function POST(req: NextRequest) {
               rounds: config.rounds,
               convergenceThreshold: config.convergenceThreshold,
               userId,
+              isInteractive: config.isInteractive || false,
               modelSelections: {
                 create: config.models.map((model: any) => ({
                   modelId: model.id,
