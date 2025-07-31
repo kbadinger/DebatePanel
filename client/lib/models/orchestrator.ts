@@ -19,6 +19,39 @@ export class ModelOrchestrator {
     this.usageTracker = tracker;
   }
 
+  async generateSingleModelResponse(
+    model: Model,
+    topic: string,
+    description: string,
+    previousResponses: any[],
+    round: number
+  ): Promise<{ content: string; position: string; confidence: number }> {
+    // Build context from previous responses
+    const context = previousResponses.map(r => {
+      const speaker = r.isHuman ? 'Human Participant' : r.modelId;
+      return `${speaker}: ${r.content}`;
+    }).join('\n\n');
+
+    const prompt = `Topic: ${topic}
+
+Context: ${description}
+
+Previous responses in this debate:
+${context}
+
+Please provide your perspective on this topic, taking into account what has been said so far. ${previousResponses.some(r => r.isHuman) ? 'Be sure to directly address the human participant\'s arguments.' : ''}
+
+Format your response as a clear argument with supporting points.`;
+
+    const response = await this.getModelResponse(model, prompt, previousResponses.filter(r => !r.isHuman));
+    
+    return {
+      content: response.content,
+      position: response.position,
+      confidence: response.confidence
+    };
+  }
+
   async getModelResponse(
     model: Model,
     prompt: string,
