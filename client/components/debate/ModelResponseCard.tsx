@@ -55,12 +55,23 @@ export function ModelResponseCard({ response, isStreaming }: ModelResponseCardPr
   return (
     <div className={clsx(
       'rounded-xl border-2 p-6 mb-4 transition-all shadow-lg',
-      colorScheme || 'border-slate-400 bg-slate-50',
+      isHuman ? 'border-purple-400 bg-gradient-to-br from-purple-50 to-blue-50' : (colorScheme || 'border-slate-400 bg-slate-50'),
       isStreaming && 'animate-pulse'
     )}>
       <div className="flex justify-between items-start mb-4">
         <div>
-          <h3 className="font-bold text-xl text-slate-800">{model?.displayName || response.modelId}</h3>
+          <h3 className="font-bold text-xl text-slate-800 flex items-center gap-2">
+            {isHuman ? (
+              <>
+                <User className="w-5 h-5 text-purple-600" />
+                {response.userName || 'Human Participant'}
+              </>
+            ) : (
+              <>
+                {model?.displayName || response.modelId}
+              </>
+            )}
+          </h3>
           <div className="flex items-center gap-2 mt-1">
             {showConsensus && (
               <>
