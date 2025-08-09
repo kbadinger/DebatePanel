@@ -14,24 +14,34 @@ export interface ModelPricing {
 // Actual costs from providers (as of Jan 2025)
 export const MODEL_PRICING: Record<string, ModelPricing> = {
   // OpenAI Models
-  'gpt-4-turbo-preview': {
-    modelId: 'gpt-4-turbo-preview',
+  'o1-preview': {
+    modelId: 'o1-preview',
     costPer1kTokens: {
-      input: 0.01,
-      output: 0.03
+      input: 0.015,
+      output: 0.06
+    },
+    costCategory: 'luxury',
+    providerBaseCost: 0.075,
+    platformMarkup: 0.3
+  },
+  'o1-mini': {
+    modelId: 'o1-mini',
+    costPer1kTokens: {
+      input: 0.003,
+      output: 0.012
     },
     costCategory: 'premium',
-    providerBaseCost: 0.04,
+    providerBaseCost: 0.015,
     platformMarkup: 0.3
   },
   'gpt-4o': {
     modelId: 'gpt-4o',
     costPer1kTokens: {
-      input: 0.005,
-      output: 0.015
+      input: 0.0025,
+      output: 0.01
     },
     costCategory: 'standard',
-    providerBaseCost: 0.02,
+    providerBaseCost: 0.0125,
     platformMarkup: 0.3
   },
   'gpt-4o-mini': {
@@ -42,6 +52,16 @@ export const MODEL_PRICING: Record<string, ModelPricing> = {
     },
     costCategory: 'budget',
     providerBaseCost: 0.00075,
+    platformMarkup: 0.3
+  },
+  'gpt-4-turbo': {
+    modelId: 'gpt-4-turbo',
+    costPer1kTokens: {
+      input: 0.01,
+      output: 0.03
+    },
+    costCategory: 'premium',
+    providerBaseCost: 0.04,
     platformMarkup: 0.3
   },
   'gpt-3.5-turbo': {
