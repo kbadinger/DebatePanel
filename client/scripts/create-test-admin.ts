@@ -36,16 +36,9 @@ async function createTestAdmin() {
             currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
           }
         },
-        tokenBalance: {
-          create: {
-            balance: 999999999, // Unlimited tokens for admin
-            lastRefreshed: new Date()
-          }
-        }
       },
       include: {
-        subscription: true,
-        tokenBalance: true
+        subscription: true
       }
     });
 
@@ -60,7 +53,7 @@ async function createTestAdmin() {
     console.log('Name:', testAdmin.name);
     console.log('Is Admin:', testAdmin.isAdmin);
     console.log('Subscription Plan:', testAdmin.subscription?.plan);
-    console.log('Token Balance:', testAdmin.tokenBalance?.balance);
+    console.log('Subscription Balance: $', testAdmin.subscription?.currentBalance);
     console.log('================================');
     console.log('Admin Panel URL: http://localhost:3000/admin');
     console.log('================================');
