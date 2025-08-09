@@ -36,16 +36,9 @@ async function createTestUser() {
             currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
           }
         },
-        tokenBalance: {
-          create: {
-            balance: 1000000, // Give test user 1M tokens for testing
-            lastRefreshed: new Date()
-          }
-        }
       },
       include: {
-        subscription: true,
-        tokenBalance: true
+        subscription: true
       }
     });
 
@@ -60,7 +53,7 @@ async function createTestUser() {
     console.log('Name:', testUser.name);
     console.log('Is Admin:', testUser.isAdmin);
     console.log('Subscription Plan:', testUser.subscription?.plan);
-    console.log('Token Balance:', testUser.tokenBalance?.balance);
+    console.log('Subscription Balance: $', testUser.subscription?.currentBalance);
     console.log('================================');
 
   } catch (error) {
