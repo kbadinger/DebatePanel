@@ -77,12 +77,24 @@ export const AVAILABLE_MODELS: Model[] = [
     displayName: 'GPT-4o Mini'
   }),
   
-  // Anthropic Models
+  // Anthropic Models - Claude 4.1 Series (Latest)
   withCostInfo({
-    id: 'claude-3-opus-20240229',
+    id: 'claude-opus-4.1',
     provider: 'anthropic',
-    name: 'claude-3-opus-20240229',
-    displayName: 'Claude 3 Opus'
+    name: 'claude-opus-4.1',
+    displayName: 'Claude Opus 4.1'
+  }),
+  withCostInfo({
+    id: 'claude-sonnet-4.1',
+    provider: 'anthropic',
+    name: 'claude-sonnet-4.1',
+    displayName: 'Claude Sonnet 4.1'
+  }),
+  withCostInfo({
+    id: 'claude-haiku-4.1',
+    provider: 'anthropic',
+    name: 'claude-haiku-4.1',
+    displayName: 'Claude Haiku 4.1'
   }),
   withCostInfo({
     id: 'claude-3-5-sonnet-20241022',
@@ -90,14 +102,14 @@ export const AVAILABLE_MODELS: Model[] = [
     name: 'claude-3-5-sonnet-20241022',
     displayName: 'Claude 3.5 Sonnet'
   }),
-  withCostInfo({
-    id: 'claude-3-haiku-20240307',
-    provider: 'anthropic',
-    name: 'claude-3-haiku-20240307',
-    displayName: 'Claude 3 Haiku'
-  }),
   
   // Google Models
+  withCostInfo({
+    id: 'gemini-2.0-flash-exp',
+    provider: 'google',
+    name: 'gemini-2.0-flash-exp',
+    displayName: 'Gemini 2.0 Flash'
+  }),
   withCostInfo({
     id: 'gemini-1.5-pro',
     provider: 'google',
@@ -155,15 +167,21 @@ export const AVAILABLE_MODELS: Model[] = [
   
   // Mistral Models
   withCostInfo({
-    id: 'mistral-medium-3',
+    id: 'mistral-saba-latest',
     provider: 'mistral',
-    name: 'mistral-medium-2505',
-    displayName: 'Mistral Medium 3'
+    name: 'mistral-saba-latest',
+    displayName: 'Mistral Saba'
   }),
   withCostInfo({
-    id: 'magistral-medium',
+    id: 'mistral-large-latest',
     provider: 'mistral',
-    name: 'magistral-medium-2506',
+    name: 'mistral-large-latest',
+    displayName: 'Mistral Large'
+  }),
+  withCostInfo({
+    id: 'magistral-medium-latest',
+    provider: 'mistral',
+    name: 'magistral-medium-latest',
     displayName: 'Magistral Medium'
   }),
   
