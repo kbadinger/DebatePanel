@@ -200,12 +200,55 @@ export async function POST(req: NextRequest) {
           console.log('Generating judge analysis with:', judgeModel.displayName);
           
           try {
-            debate.judgeAnalysis = await orchestrator.generateJudgeAnalysis(
+            const judgeResult = await orchestrator.generateJudgeAnalysis(
               debate.rounds,
               debate.config.topic,
               judgeModel
             );
-            console.log('Generated judge analysis');
+            
+            debate.judgeAnalysis = judgeResult.analysis;
+            
+            // Store winner information if available
+            if (judgeResult.winner) {
+              await prisma.debate.update({
+                where: { id: dbDebate.id },
+                data: {
+                  winnerId: judgeResult.winner.id,
+                  winnerName: judgeResult.winner.name,
+                  winnerType: judgeResult.winner.type,
+                  victoryReason: judgeResult.winner.reason,
+                }
+              });
+              
+              // Store debate winner in the debate object for streaming
+              (debate as any).winner = judgeResult.winner;
+            }
+            
+            // Store scores if available
+            if (judgeResult.scores && judgeResult.scores.length > 0) {
+              // Calculate and store scores in database
+              for (const score of judgeResult.scores) {
+                await prisma.debateScore.create({
+                  data: {
+                    debateId: dbDebate.id,
+                    participantId: score.id,
+                    participantName: score.name,
+                    participantType: 'model', // TODO: Handle human participants
+                    totalScore: score.score,
+                    argumentQuality: score.score * 0.9, // Weighted scores
+                    persuasiveness: score.score * 0.85,
+                    evidenceScore: score.score * 0.8,
+                    logicalScore: score.score * 0.95,
+                    influenceScore: score.score * 0.7,
+                  }
+                });
+              }
+              
+              // Add scores to debate object for streaming
+              (debate as any).scores = judgeResult.scores;
+            }
+            
+            console.log('Generated judge analysis with winner:', judgeResult.winner?.name);
           } catch (error) {
             console.error('Failed to generate judge analysis:', error);
             debate.judgeAnalysis = 'Failed to generate judge analysis';

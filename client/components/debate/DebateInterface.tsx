@@ -5,6 +5,7 @@ import { Debate, DebateConfig, ModelResponse } from '@/types/debate';
 import { ModelResponseCard } from './ModelResponseCard';
 import { RatingsKey } from './RatingsKey';
 import { HumanInputPanel } from './HumanInputPanel';
+import { WinnerDisplay } from './WinnerDisplay';
 import { Button } from '@/components/ui/button';
 import { Loader2, Users } from 'lucide-react';
 import { useSession } from 'next-auth/react';
@@ -286,7 +287,10 @@ export function DebateInterface({ config, onComplete }: DebateInterfaceProps) {
       
       {debate?.status === 'completed' && (
         <div className="space-y-8">
-          {/* Judge's Verdict - Always First */}
+          {/* Winner Display */}
+          <WinnerDisplay debate={debate} />
+          
+          {/* Judge's Verdict */}
           {debate.judgeAnalysis && (
             <div className="mt-8 p-8 bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl border-2 border-purple-200 shadow-xl">
               <h2 className="text-2xl font-bold mb-4 text-purple-900">⚖️ Judge's Verdict</h2>

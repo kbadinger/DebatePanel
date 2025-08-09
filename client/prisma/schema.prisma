@@ -139,12 +139,17 @@ model Debate {
   completedAt          DateTime?
   finalSynthesis       String?
   judgeAnalysis        String?
+  winnerId             String?          // ID of winning model or participant
+  winnerName           String?          // Display name of winner
+  winnerType           String?          // 'model' or 'human'
+  victoryReason        String?          // Why they won
   userId               String?
   user                 User?            @relation(fields: [userId], references: [id])
   debateRounds         DebateRound[]
   modelSelections      ModelSelection[]
   usageRecords         UsageRecord[]
   participants         Participant[]
+  scores               DebateScore[]
 }
 
 model DebateRound {
@@ -170,6 +175,7 @@ model ModelResponse {
   confidence    Int
   isHuman       Boolean     @default(false)
   userId        String?
+  argumentScore Float?      // Score for argument quality (0-100)
   createdAt     DateTime    @default(now())
   round         DebateRound @relation(fields: [roundId], references: [id])
 
@@ -198,4 +204,23 @@ model Participant {
   user          User     @relation(fields: [userId], references: [id])
 
   @@unique([debateId, userId])
+}
+
+model DebateScore {
+  id              String   @id @default(cuid())
+  debateId        String
+  participantId   String   // Model ID or User ID
+  participantType String   // 'model' or 'human'
+  participantName String
+  totalScore      Float    @default(0)
+  argumentQuality Float    @default(0) // Average quality of arguments
+  persuasiveness  Float    @default(0) // How convincing the arguments were
+  evidenceScore   Float    @default(0) // Quality of evidence provided
+  logicalScore    Float    @default(0) // Logical consistency
+  influenceScore  Float    @default(0) // How much they influenced others
+  createdAt       DateTime @default(now())
+  debate          Debate   @relation(fields: [debateId], references: [id])
+
+  @@unique([debateId, participantId])
+  @@index([debateId, totalScore])
 }

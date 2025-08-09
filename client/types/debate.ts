@@ -58,6 +58,17 @@ export interface Debate {
   finalSynthesis?: string;
   judgeAnalysis?: string;
   participants?: Participant[];
+  winner?: {
+    id: string;
+    name: string;
+    type: 'model' | 'human';
+    reason: string;
+  };
+  scores?: Array<{
+    id: string;
+    name: string;
+    score: number;
+  }>;
 }
 
 export interface DebateStreamUpdate {

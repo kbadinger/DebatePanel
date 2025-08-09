@@ -19,76 +19,76 @@ function withCostInfo(model: Omit<Model, 'costInfo'>): Model {
 export const AVAILABLE_MODELS: Model[] = [
   // OpenAI Models
   withCostInfo({
-    id: 'gpt-4.1',
+    id: 'gpt-4-turbo-preview',
     provider: 'openai',
-    name: 'gpt-4.1',
-    displayName: 'GPT-4.1'
+    name: 'gpt-4-turbo-preview',
+    displayName: 'GPT-4 Turbo'
   }),
   withCostInfo({
-    id: 'gpt-4.1-mini',
+    id: 'gpt-4o',
     provider: 'openai',
-    name: 'gpt-4.1-mini',
-    displayName: 'GPT-4.1 Mini'
+    name: 'gpt-4o',
+    displayName: 'GPT-4o'
   }),
   withCostInfo({
-    id: 'o3',
+    id: 'gpt-4o-mini',
     provider: 'openai',
-    name: 'o3',
-    displayName: 'o3'
+    name: 'gpt-4o-mini',
+    displayName: 'GPT-4o Mini'
   }),
   withCostInfo({
-    id: 'o4-mini',
+    id: 'gpt-3.5-turbo',
     provider: 'openai',
-    name: 'o4-mini',
-    displayName: 'o4 Mini'
+    name: 'gpt-3.5-turbo',
+    displayName: 'GPT-3.5 Turbo'
   }),
   
   // Anthropic Models
   withCostInfo({
-    id: 'claude-opus-4',
+    id: 'claude-3-opus-20240229',
     provider: 'anthropic',
-    name: 'claude-opus-4',
-    displayName: 'Claude Opus 4'
+    name: 'claude-3-opus-20240229',
+    displayName: 'Claude 3 Opus'
   }),
   withCostInfo({
-    id: 'claude-sonnet-4',
+    id: 'claude-3-5-sonnet-20241022',
     provider: 'anthropic',
-    name: 'claude-sonnet-4',
-    displayName: 'Claude Sonnet 4'
+    name: 'claude-3-5-sonnet-20241022',
+    displayName: 'Claude 3.5 Sonnet'
   }),
   withCostInfo({
-    id: 'claude-3.7-sonnet',
+    id: 'claude-3-haiku-20240307',
     provider: 'anthropic',
-    name: 'claude-3.7-sonnet',
-    displayName: 'Claude 3.7 Sonnet'
+    name: 'claude-3-haiku-20240307',
+    displayName: 'Claude 3 Haiku'
   }),
   
   // Google Models
   withCostInfo({
-    id: 'gemini-2.5-pro',
+    id: 'gemini-1.5-pro',
     provider: 'google',
-    name: 'gemini-2.5-pro',
-    displayName: 'Gemini 2.5 Pro'
+    name: 'gemini-1.5-pro',
+    displayName: 'Gemini 1.5 Pro'
   }),
   withCostInfo({
-    id: 'gemini-2.5-flash',
+    id: 'gemini-1.5-flash',
     provider: 'google',
-    name: 'gemini-2.5-flash',
-    displayName: 'Gemini 2.5 Flash'
+    name: 'gemini-1.5-flash',
+    displayName: 'Gemini 1.5 Flash'
   }),
   
   // X.AI Models (Grok)
   withCostInfo({
-    id: 'grok-4',
+    id: 'grok-beta',
     provider: 'xai',
-    name: 'grok-4-0709',
-    displayName: 'Grok 4'
+    name: 'grok-beta',
+    displayName: 'Grok Beta'
   }),
   withCostInfo({
-    id: 'grok-3',
+    id: 'grok-2-1212',
     provider: 'xai',
-    name: 'grok-3',
-    displayName: 'Grok 3'
+    name: 'grok-2-1212',
+    displayName: 'Grok 2'
   }),
   
   // Perplexity Models

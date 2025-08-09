@@ -390,7 +390,7 @@ Confidence: [0-100]% confident in this stance`;
     debate: DebateRound[],
     topic: string,
     judgeModel: Model
-  ): Promise<string> {
+  ): Promise<{ analysis: string; winner?: { id: string; name: string; type: 'model' | 'human'; reason: string }; scores?: Array<{ id: string; name: string; score: number }> }> {
     const finalRound = debate[debate.length - 1];
     
     // Build a comprehensive summary of the final positions
@@ -424,9 +424,18 @@ Your task:
 5. Address edge cases like when most are neutral but one has strong conviction
 ${finalPositions.some(p => p.isHuman) ? '6. Give special consideration to the human participant\'s perspective and how the AI models responded to it' : ''}
 
+7. DECLARE A WINNER: Choose which participant presented the BEST ARGUMENTS based on:
+   - Logical consistency and reasoning
+   - Quality of evidence and examples
+   - Persuasiveness and clarity
+   - How well they addressed counterarguments
+   - Overall contribution to reaching the best solution
+
 Provide:
 - A clear verdict on what the panel actually recommends
 - Analysis of why certain positions may be more valid than others
+- WINNER DECLARATION: State clearly which model/participant won and why
+- Score each participant's performance (0-100)
 - A confidence assessment of the panel's collective wisdom
 - Any important caveats or conditions
 
@@ -438,7 +447,128 @@ Keep your analysis concise but insightful.`;
       temperature: 0.3, // Lower temperature for more consistent analysis
     });
 
-    return result.text;
+    // Parse the judge's analysis to extract winner and scores
+    const analysisText = result.text;
+    const winner = this.extractWinner(analysisText, finalPositions);
+    const scores = this.extractScores(analysisText, finalPositions);
+    
+    return { 
+      analysis: analysisText,
+      winner,
+      scores
+    };
+  }
+
+  private extractWinner(analysisText: string, participants: any[]): { id: string; name: string; type: 'model' | 'human'; reason: string } | undefined {
+    // Look for winner declaration patterns in the judge's analysis
+    const winnerPatterns = [
+      /WINNER:\s*([^\n]+)/i,
+      /Winner:\s*([^\n]+)/i,
+      /The winner is:\s*([^\n]+)/i,
+      /declares?\s+([^\s]+)\s+(?:as\s+)?the winner/i,
+      /([^\s]+)\s+wins?\s+this debate/i,
+      /best arguments?.*presented by\s+([^\n,]+)/i
+    ];
+    
+    for (const pattern of winnerPatterns) {
+      const match = analysisText.match(pattern);
+      if (match) {
+        const winnerName = match[1].trim();
+        
+        // Find the participant that matches
+        const participant = participants.find(p => 
+          p.model.toLowerCase().includes(winnerName.toLowerCase()) ||
+          winnerName.toLowerCase().includes(p.model.toLowerCase())
+        );
+        
+        if (participant) {
+          // Extract reason if available
+          const reasonMatch = analysisText.match(new RegExp(`${winnerName}[^.]*because([^.]+)`, 'i'));
+          const reason = reasonMatch ? reasonMatch[1].trim() : 'Best overall arguments and reasoning';
+          
+          return {
+            id: participant.model,
+            name: participant.model,
+            type: participant.isHuman ? 'human' : 'model',
+            reason
+          };
+        }
+      }
+    }
+    
+    // Fallback: Choose based on highest confidence if no explicit winner
+    const highestConfidence = participants.reduce((max, p) => 
+      p.confidence > max.confidence ? p : max
+    );
+    
+    if (highestConfidence.confidence > 80) {
+      return {
+        id: highestConfidence.model,
+        name: highestConfidence.model,
+        type: highestConfidence.isHuman ? 'human' : 'model',
+        reason: 'Highest conviction and confidence in their position'
+      };
+    }
+    
+    return undefined;
+  }
+
+  private extractScores(analysisText: string, participants: any[]): Array<{ id: string; name: string; score: number }> {
+    const scores: Array<{ id: string; name: string; score: number }> = [];
+    
+    // Look for score patterns in the text
+    const scorePatterns = [
+      /([^\n:]+):\s*(\d+)(?:\/100|\s*points?)?/g,
+      /Score.*?([^\n:]+):\s*(\d+)/gi,
+      /([^\n]+)\s*-\s*(\d+)%/g
+    ];
+    
+    for (const pattern of scorePatterns) {
+      const matches = analysisText.matchAll(pattern);
+      for (const match of matches) {
+        const name = match[1].trim();
+        const score = parseInt(match[2]);
+        
+        // Find matching participant
+        const participant = participants.find(p => 
+          p.model.toLowerCase().includes(name.toLowerCase()) ||
+          name.toLowerCase().includes(p.model.toLowerCase())
+        );
+        
+        if (participant && score >= 0 && score <= 100) {
+          scores.push({
+            id: participant.model,
+            name: participant.model,
+            score
+          });
+        }
+      }
+    }
+    
+    // If no scores found, generate based on positions and confidence
+    if (scores.length === 0) {
+      participants.forEach(p => {
+        let baseScore = 50;
+        
+        // Adjust based on confidence
+        baseScore += (p.confidence - 50) * 0.5;
+        
+        // Adjust based on position strength
+        if (p.position === 'strongly-agree' || p.position === 'strongly-disagree') {
+          baseScore += 10;
+        } else if (p.position === 'neutral') {
+          baseScore -= 5;
+        }
+        
+        scores.push({
+          id: p.model,
+          name: p.model,
+          score: Math.min(100, Math.max(0, Math.round(baseScore)))
+        });
+      });
+    }
+    
+    return scores;
   }
 
   private getModelProvider(model: Model) {
