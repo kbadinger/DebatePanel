@@ -282,16 +282,6 @@ export const MODEL_PRICING: Record<string, ModelPricing> = {
     providerBaseCost: 0.00261,
     platformMarkup: 0.3
   },
-  'magistral-medium': {
-    modelId: 'magistral-medium',
-    costPer1kTokens: {
-      input: 0.002,
-      output: 0.006
-    },
-    costCategory: 'premium',
-    providerBaseCost: 0.008,
-    platformMarkup: 0.3
-  },
   
   // Meta Models
   'llama-3.3-70b': {
