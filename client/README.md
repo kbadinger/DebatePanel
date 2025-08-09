@@ -1,14 +1,15 @@
-# DebatePanel
+# DebatePanel 2.0
 
-Get multiple AI perspectives on your ideas through structured debate.
+Get multiple AI perspectives on your ideas through structured debate with winner determination and scoring.
 
-## Features
+## 🏆 Key Features
 
-- Multi-model debates with GPT-4, Claude, and Gemini
-- Real-time streaming responses
-- Structured debate formats
-- Convergence detection
-- Consensus and disagreement analysis
+- **Game Winner System** - AI judge declares debate winners with detailed scoring
+- **25+ AI Models** - GPT-5, Claude 4.1, Gemini 2.0, and more
+- **Real-time Streaming** - Watch debates unfold in real-time
+- **Interactive Mode** - Humans can participate in debates
+- **Multiple Formats** - Structured, free-form, and devils advocate
+- **Comprehensive Analytics** - Track performance, costs, and history
 
 ## Setup
 
