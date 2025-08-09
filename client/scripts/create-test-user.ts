@@ -30,6 +30,9 @@ async function createTestUser() {
           create: {
             plan: 'free',
             status: 'active',
+            monthlyAllowance: 5,  // $5 for free plan
+            currentBalance: 5,    // Start with full balance
+            currentPeriodStart: new Date(),
             currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
           }
         },
