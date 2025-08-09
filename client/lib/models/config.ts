@@ -19,10 +19,16 @@ function withCostInfo(model: Omit<Model, 'costInfo'>): Model {
 export const AVAILABLE_MODELS: Model[] = [
   // OpenAI Models
   withCostInfo({
-    id: 'gpt-4-turbo-preview',
+    id: 'o1-preview',
     provider: 'openai',
-    name: 'gpt-4-turbo-preview',
-    displayName: 'GPT-4 Turbo'
+    name: 'o1-preview',
+    displayName: 'o1 Preview'
+  }),
+  withCostInfo({
+    id: 'o1-mini',
+    provider: 'openai',
+    name: 'o1-mini',
+    displayName: 'o1 Mini'
   }),
   withCostInfo({
     id: 'gpt-4o',
@@ -35,6 +41,12 @@ export const AVAILABLE_MODELS: Model[] = [
     provider: 'openai',
     name: 'gpt-4o-mini',
     displayName: 'GPT-4o Mini'
+  }),
+  withCostInfo({
+    id: 'gpt-4-turbo',
+    provider: 'openai',
+    name: 'gpt-4-turbo',
+    displayName: 'GPT-4 Turbo'
   }),
   withCostInfo({
     id: 'gpt-3.5-turbo',
