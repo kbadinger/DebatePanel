@@ -111,15 +111,35 @@ export const MODEL_PRICING: Record<string, ModelPricing> = {
     platformMarkup: 0.3
   },
   
-  // Anthropic Models
-  'claude-3-opus-20240229': {
-    modelId: 'claude-3-opus-20240229',
+  // Anthropic Models - Claude 4.1 Series
+  'claude-opus-4.1': {
+    modelId: 'claude-opus-4.1',
     costPer1kTokens: {
-      input: 0.015,
-      output: 0.075
+      input: 0.02,
+      output: 0.1
     },
     costCategory: 'luxury',
-    providerBaseCost: 0.09,
+    providerBaseCost: 0.12,
+    platformMarkup: 0.3
+  },
+  'claude-sonnet-4.1': {
+    modelId: 'claude-sonnet-4.1',
+    costPer1kTokens: {
+      input: 0.004,
+      output: 0.02
+    },
+    costCategory: 'premium',
+    providerBaseCost: 0.024,
+    platformMarkup: 0.3
+  },
+  'claude-haiku-4.1': {
+    modelId: 'claude-haiku-4.1',
+    costPer1kTokens: {
+      input: 0.0003,
+      output: 0.0015
+    },
+    costCategory: 'budget',
+    providerBaseCost: 0.0018,
     platformMarkup: 0.3
   },
   'claude-3-5-sonnet-20241022': {
@@ -132,18 +152,18 @@ export const MODEL_PRICING: Record<string, ModelPricing> = {
     providerBaseCost: 0.018,
     platformMarkup: 0.3
   },
-  'claude-3-haiku-20240307': {
-    modelId: 'claude-3-haiku-20240307',
-    costPer1kTokens: {
-      input: 0.00025,
-      output: 0.00125
-    },
-    costCategory: 'budget',
-    providerBaseCost: 0.0015,
-    platformMarkup: 0.3
-  },
   
   // Google Models
+  'gemini-2.0-flash-exp': {
+    modelId: 'gemini-2.0-flash-exp',
+    costPer1kTokens: {
+      input: 0.0001,
+      output: 0.0004
+    },
+    costCategory: 'budget',
+    providerBaseCost: 0.0005,
+    platformMarkup: 0.3
+  },
   'gemini-1.5-pro': {
     modelId: 'gemini-1.5-pro',
     costPer1kTokens: {
@@ -232,8 +252,28 @@ export const MODEL_PRICING: Record<string, ModelPricing> = {
   },
   
   // Mistral Models
-  'mistral-medium-3': {
-    modelId: 'mistral-medium-3',
+  'mistral-saba-latest': {
+    modelId: 'mistral-saba-latest',
+    costPer1kTokens: {
+      input: 0.008,
+      output: 0.024
+    },
+    costCategory: 'premium',
+    providerBaseCost: 0.032,
+    platformMarkup: 0.3
+  },
+  'mistral-large-latest': {
+    modelId: 'mistral-large-latest',
+    costPer1kTokens: {
+      input: 0.003,
+      output: 0.009
+    },
+    costCategory: 'standard',
+    providerBaseCost: 0.012,
+    platformMarkup: 0.3
+  },
+  'magistral-medium-latest': {
+    modelId: 'magistral-medium-latest',
     costPer1kTokens: {
       input: 0.00065,
       output: 0.00196
