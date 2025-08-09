@@ -14,18 +14,28 @@ export interface ModelPricing {
 // Actual costs from providers (as of Jan 2025)
 export const MODEL_PRICING: Record<string, ModelPricing> = {
   // OpenAI Models
-  'gpt-4.1': {
-    modelId: 'gpt-4.1',
+  'gpt-4-turbo-preview': {
+    modelId: 'gpt-4-turbo-preview',
     costPer1kTokens: {
-      input: 0.0015,
-      output: 0.006
+      input: 0.01,
+      output: 0.03
     },
-    costCategory: 'standard',
-    providerBaseCost: 0.0075,
+    costCategory: 'premium',
+    providerBaseCost: 0.04,
     platformMarkup: 0.3
   },
-  'gpt-4.1-mini': {
-    modelId: 'gpt-4.1-mini',
+  'gpt-4o': {
+    modelId: 'gpt-4o',
+    costPer1kTokens: {
+      input: 0.005,
+      output: 0.015
+    },
+    costCategory: 'standard',
+    providerBaseCost: 0.02,
+    platformMarkup: 0.3
+  },
+  'gpt-4o-mini': {
+    modelId: 'gpt-4o-mini',
     costPer1kTokens: {
       input: 0.00015,
       output: 0.0006
@@ -34,30 +44,20 @@ export const MODEL_PRICING: Record<string, ModelPricing> = {
     providerBaseCost: 0.00075,
     platformMarkup: 0.3
   },
-  'o3': {
-    modelId: 'o3',
+  'gpt-3.5-turbo': {
+    modelId: 'gpt-3.5-turbo',
     costPer1kTokens: {
-      input: 0.015,
-      output: 0.06
+      input: 0.0005,
+      output: 0.0015
     },
-    costCategory: 'luxury',
-    providerBaseCost: 0.075,
-    platformMarkup: 0.3
-  },
-  'o4-mini': {
-    modelId: 'o4-mini',
-    costPer1kTokens: {
-      input: 0.003,
-      output: 0.012
-    },
-    costCategory: 'premium',
-    providerBaseCost: 0.015,
+    costCategory: 'budget',
+    providerBaseCost: 0.002,
     platformMarkup: 0.3
   },
   
   // Anthropic Models
-  'claude-opus-4': {
-    modelId: 'claude-opus-4',
+  'claude-3-opus-20240229': {
+    modelId: 'claude-3-opus-20240229',
     costPer1kTokens: {
       input: 0.015,
       output: 0.075
@@ -66,8 +66,8 @@ export const MODEL_PRICING: Record<string, ModelPricing> = {
     providerBaseCost: 0.09,
     platformMarkup: 0.3
   },
-  'claude-sonnet-4': {
-    modelId: 'claude-sonnet-4',
+  'claude-3-5-sonnet-20241022': {
+    modelId: 'claude-3-5-sonnet-20241022',
     costPer1kTokens: {
       input: 0.003,
       output: 0.015
@@ -76,20 +76,20 @@ export const MODEL_PRICING: Record<string, ModelPricing> = {
     providerBaseCost: 0.018,
     platformMarkup: 0.3
   },
-  'claude-3.7-sonnet': {
-    modelId: 'claude-3.7-sonnet',
+  'claude-3-haiku-20240307': {
+    modelId: 'claude-3-haiku-20240307',
     costPer1kTokens: {
-      input: 0.003,
-      output: 0.015
+      input: 0.00025,
+      output: 0.00125
     },
-    costCategory: 'standard',
-    providerBaseCost: 0.018,
+    costCategory: 'budget',
+    providerBaseCost: 0.0015,
     platformMarkup: 0.3
   },
   
   // Google Models
-  'gemini-2.5-pro': {
-    modelId: 'gemini-2.5-pro',
+  'gemini-1.5-pro': {
+    modelId: 'gemini-1.5-pro',
     costPer1kTokens: {
       input: 0.00125,
       output: 0.005
