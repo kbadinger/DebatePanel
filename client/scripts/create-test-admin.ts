@@ -30,7 +30,10 @@ async function createTestAdmin() {
           create: {
             plan: 'pro',
             status: 'active',
-            currentPeriodEnd: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000), // 1 year from now
+            monthlyAllowance: 50,  // $50 for pro plan
+            currentBalance: 50,    // Start with full balance
+            currentPeriodStart: new Date(),
+            currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
           }
         },
         tokenBalance: {
