@@ -98,8 +98,8 @@ export const MODEL_PRICING: Record<string, ModelPricing> = {
     providerBaseCost: 0.00625,
     platformMarkup: 0.3
   },
-  'gemini-2.5-flash': {
-    modelId: 'gemini-2.5-flash',
+  'gemini-1.5-flash': {
+    modelId: 'gemini-1.5-flash',
     costPer1kTokens: {
       input: 0.000075,
       output: 0.0003
@@ -110,8 +110,8 @@ export const MODEL_PRICING: Record<string, ModelPricing> = {
   },
   
   // X.AI Models
-  'grok-4': {
-    modelId: 'grok-4',
+  'grok-beta': {
+    modelId: 'grok-beta',
     costPer1kTokens: {
       input: 0.005,
       output: 0.015
@@ -120,8 +120,8 @@ export const MODEL_PRICING: Record<string, ModelPricing> = {
     providerBaseCost: 0.020,
     platformMarkup: 0.3
   },
-  'grok-3': {
-    modelId: 'grok-3',
+  'grok-2-1212': {
+    modelId: 'grok-2-1212',
     costPer1kTokens: {
       input: 0.002,
       output: 0.01
