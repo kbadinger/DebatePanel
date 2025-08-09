@@ -93,17 +93,51 @@ Admin users have access to a comprehensive admin panel at `/admin` with:
 
 Admin users are identified by a purple shield badge in the header and have unlimited debate access.
 
+## Latest Updates (v2.0 - August 2025)
+
+### 🎮 New Game Features
+- **Winner Declaration** - Judge determines the best debater
+- **Performance Scoring** - 0-100 point system
+- **Victory Display** - Trophy announcements and leaderboards
+- **Clear Criteria** - Transparent judging standards
+
+### 🤖 Latest AI Models
+- **OpenAI**: GPT-5 (Regular/Mini/Nano), o3/o1 reasoning models
+- **Anthropic**: Claude 4.1 (Opus/Sonnet/Haiku)
+- **Google**: Gemini 2.0 Flash, 1.5 Pro/Flash
+- **Plus**: Mistral Saba, Grok 2, and 15+ more providers
+
+## Documentation
+
+- 📚 **[FEATURES.md](FEATURES.md)** - Complete feature documentation
+- 🚀 **[SETUP_GUIDE.md](SETUP_GUIDE.md)** - Detailed setup instructions
+- 📝 **[CHANGELOG.md](CHANGELOG.md)** - Version history and updates
+
+## Quick Commands
+
+```bash
+# Development
+npm run dev                          # Start development server
+npm run build                        # Build for production
+
+# Model Management
+node scripts/fetch-all-models.js    # Check latest models from all providers
+node scripts/fetch-models.js        # Check OpenAI models
+
+# Database
+npx prisma migrate dev              # Run migrations
+npx prisma studio                   # Open database GUI
+
+# Admin
+npm run make-admin user@email.com  # Grant admin access
+```
+
 ## Architecture
 
-- **Frontend**: Next.js 14 with TypeScript
+- **Frontend**: Next.js 15 with TypeScript
+- **Database**: PostgreSQL with Prisma ORM
 - **UI**: Tailwind CSS with custom components
-- **AI Integration**: Vercel AI SDK with multiple providers
+- **AI Integration**: Vercel AI SDK with 13+ providers
 - **Streaming**: Server-Sent Events for real-time updates
-
-## Future Enhancements
-
-- Database persistence for debate history
-- User authentication
-- Export debates as PDF/Markdown
-- Custom debate protocols
-- Model fine-tuning based on debate outcomes
+- **Auth**: NextAuth.js with multiple providers
+- **Payments**: Stripe integration for subscriptions
