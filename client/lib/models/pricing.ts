@@ -13,9 +13,63 @@ export interface ModelPricing {
 
 // Actual costs from providers (as of Jan 2025)
 export const MODEL_PRICING: Record<string, ModelPricing> = {
-  // OpenAI Models
-  'o1-preview': {
-    modelId: 'o1-preview',
+  // OpenAI Models - GPT-5 Series
+  'gpt-5': {
+    modelId: 'gpt-5',
+    costPer1kTokens: {
+      input: 0.02,
+      output: 0.08
+    },
+    costCategory: 'luxury',
+    providerBaseCost: 0.1,
+    platformMarkup: 0.3
+  },
+  'gpt-5-mini': {
+    modelId: 'gpt-5-mini',
+    costPer1kTokens: {
+      input: 0.005,
+      output: 0.02
+    },
+    costCategory: 'premium',
+    providerBaseCost: 0.025,
+    platformMarkup: 0.3
+  },
+  'gpt-5-nano': {
+    modelId: 'gpt-5-nano',
+    costPer1kTokens: {
+      input: 0.001,
+      output: 0.004
+    },
+    costCategory: 'standard',
+    providerBaseCost: 0.005,
+    platformMarkup: 0.3
+  },
+  
+  // OpenAI Reasoning Models - o3 Series
+  'o3-pro': {
+    modelId: 'o3-pro',
+    costPer1kTokens: {
+      input: 0.03,
+      output: 0.12
+    },
+    costCategory: 'luxury',
+    providerBaseCost: 0.15,
+    platformMarkup: 0.3
+  },
+  'o3-mini': {
+    modelId: 'o3-mini',
+    costPer1kTokens: {
+      input: 0.006,
+      output: 0.024
+    },
+    costCategory: 'premium',
+    providerBaseCost: 0.03,
+    platformMarkup: 0.3
+  },
+  
+  // OpenAI Reasoning Models - o1 Series
+  'o1-pro': {
+    modelId: 'o1-pro',
     costPer1kTokens: {
       input: 0.015,
       output: 0.06
@@ -34,6 +88,8 @@ export const MODEL_PRICING: Record<string, ModelPricing> = {
     providerBaseCost: 0.015,
     platformMarkup: 0.3
   },
+  
+  // GPT-4 Series
   'gpt-4o': {
     modelId: 'gpt-4o',
     costPer1kTokens: {
@@ -52,26 +108,6 @@ export const MODEL_PRICING: Record<string, ModelPricing> = {
     },
     costCategory: 'budget',
     providerBaseCost: 0.00075,
-    platformMarkup: 0.3
-  },
-  'gpt-4-turbo': {
-    modelId: 'gpt-4-turbo',
-    costPer1kTokens: {
-      input: 0.01,
-      output: 0.03
-    },
-    costCategory: 'premium',
-    providerBaseCost: 0.04,
-    platformMarkup: 0.3
-  },
-  'gpt-3.5-turbo': {
-    modelId: 'gpt-3.5-turbo',
-    costPer1kTokens: {
-      input: 0.0005,
-      output: 0.0015
-    },
-    costCategory: 'budget',
-    providerBaseCost: 0.002,
     platformMarkup: 0.3
   },
   
