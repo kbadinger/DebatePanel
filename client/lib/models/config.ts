@@ -17,12 +17,44 @@ function withCostInfo(model: Omit<Model, 'costInfo'>): Model {
 }
 
 export const AVAILABLE_MODELS: Model[] = [
-  // OpenAI Models
+  // OpenAI Models - GPT-5 Series (Latest)
   withCostInfo({
-    id: 'o1-preview',
+    id: 'gpt-5',
     provider: 'openai',
-    name: 'o1-preview',
-    displayName: 'o1 Preview'
+    name: 'gpt-5',
+    displayName: 'GPT-5'
+  }),
+  withCostInfo({
+    id: 'gpt-5-mini',
+    provider: 'openai',
+    name: 'gpt-5-mini',
+    displayName: 'GPT-5 Mini'
+  }),
+  withCostInfo({
+    id: 'gpt-5-nano',
+    provider: 'openai',
+    name: 'gpt-5-nano',
+    displayName: 'GPT-5 Nano'
+  }),
+  
+  // OpenAI Reasoning Models
+  withCostInfo({
+    id: 'o3-pro',
+    provider: 'openai',
+    name: 'o3-pro',
+    displayName: 'o3 Pro'
+  }),
+  withCostInfo({
+    id: 'o3-mini',
+    provider: 'openai',
+    name: 'o3-mini',
+    displayName: 'o3 Mini'
+  }),
+  withCostInfo({
+    id: 'o1-pro',
+    provider: 'openai',
+    name: 'o1-pro',
+    displayName: 'o1 Pro'
   }),
   withCostInfo({
     id: 'o1-mini',
@@ -30,6 +62,8 @@ export const AVAILABLE_MODELS: Model[] = [
     name: 'o1-mini',
     displayName: 'o1 Mini'
   }),
+  
+  // GPT-4 Series
   withCostInfo({
     id: 'gpt-4o',
     provider: 'openai',
@@ -41,18 +75,6 @@ export const AVAILABLE_MODELS: Model[] = [
     provider: 'openai',
     name: 'gpt-4o-mini',
     displayName: 'GPT-4o Mini'
-  }),
-  withCostInfo({
-    id: 'gpt-4-turbo',
-    provider: 'openai',
-    name: 'gpt-4-turbo',
-    displayName: 'GPT-4 Turbo'
-  }),
-  withCostInfo({
-    id: 'gpt-3.5-turbo',
-    provider: 'openai',
-    name: 'gpt-3.5-turbo',
-    displayName: 'GPT-3.5 Turbo'
   }),
   
   // Anthropic Models
