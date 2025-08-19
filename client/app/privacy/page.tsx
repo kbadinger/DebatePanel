@@ -123,7 +123,7 @@ export default function PrivacyPage() {
             <p>
               If you have questions about this Privacy Policy or our data practices, please contact us at:
               <br />
-              Email: privacy@debatepanel.com
+              Email: privacy@decisionforge.io
               <br />
               Address: [Your Business Address]
             </p>
