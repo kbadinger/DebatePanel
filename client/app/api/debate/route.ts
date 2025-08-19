@@ -11,6 +11,17 @@ import { authOptions } from '@/auth';
 const prisma = new PrismaClient();
 
 export async function POST(req: NextRequest) {
+  // Apply rate limiting for debates
+  const rateLimitResult = RATE_LIMITS.debate(req);
+  if (!rateLimitResult.success) {
+    return createRateLimitResponse(
+      rateLimitResult.limit,
+      rateLimitResult.remaining,
+      rateLimitResult.reset,
+      'Too many debates requested. Please wait before starting another debate.'
+    );
+  }
+
   try {
     const { config } = await req.json();
     const session = await getServerSession(authOptions);
