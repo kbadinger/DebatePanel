@@ -128,7 +128,8 @@ export async function sendWelcomeEmail(email: string, name?: string) {
           </head>
           <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
             <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; text-align: center; border-radius: 8px 8px 0 0;">
-              <h1 style="color: white; margin: 0; font-size: 28px;">Welcome to DecisionForge!</h1>
+              <img src="${EMAIL_CONFIG.baseUrl}/logos/png/White logo - no background.png" alt="DecisionForge" style="height: 50px; margin-bottom: 15px;" />
+              <h1 style="color: white; margin: 0; font-size: 24px;">Welcome to DecisionForge!</h1>
               <p style="color: #e2e8f0; margin: 10px 0 0 0;">AI Decision Platform</p>
             </div>
             
