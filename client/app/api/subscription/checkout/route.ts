@@ -7,6 +7,17 @@ import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
 
 export async function POST(req: NextRequest) {
+  // Apply rate limiting for payment operations
+  const rateLimitResult = RATE_LIMITS.payment(req);
+  if (!rateLimitResult.success) {
+    return createRateLimitResponse(
+      rateLimitResult.limit,
+      rateLimitResult.remaining,
+      rateLimitResult.reset,
+      'Too many payment attempts. Please wait before trying again.'
+    );
+  }
+
   try {
     const session = await auth();
     
