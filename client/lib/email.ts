@@ -36,8 +36,8 @@ export async function sendPasswordResetEmail(email: string, token: string, name?
           </head>
           <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
             <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; text-align: center; border-radius: 8px 8px 0 0;">
-              <h1 style="color: white; margin: 0; font-size: 28px;">DebatePanel</h1>
-              <p style="color: #e2e8f0; margin: 10px 0 0 0;">AI Consensus Engine</p>
+              <h1 style="color: white; margin: 0; font-size: 28px;">DecisionForge</h1>
+              <p style="color: #e2e8f0; margin: 10px 0 0 0;">AI Decision Platform</p>
             </div>
             
             <div style="background: white; padding: 30px; border-radius: 0 0 8px 8px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
