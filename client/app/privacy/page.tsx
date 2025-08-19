@@ -36,7 +36,7 @@ export default function PrivacyPage() {
             <h2>2. How We Use Your Information</h2>
             <p>We use your information to:</p>
             <ul>
-              <li>Provide and maintain the DebatePanel service</li>
+              <li>Provide and maintain the DecisionForge service</li>
               <li>Process subscription payments and manage accounts</li>
               <li>Send important service announcements and updates</li>
               <li>Improve our service through usage analytics</li>
