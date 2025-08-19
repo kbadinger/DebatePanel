@@ -25,7 +25,7 @@ export async function sendPasswordResetEmail(email: string, token: string, name?
       from: EMAIL_CONFIG.from,
       to: [email],
       replyTo: EMAIL_CONFIG.replyTo,
-      subject: 'Reset your DebatePanel password',
+      subject: 'Reset your DecisionForge password',
       html: `
         <!DOCTYPE html>
         <html>
