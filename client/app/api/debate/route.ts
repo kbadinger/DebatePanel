@@ -4,6 +4,7 @@ import { Debate, DebateStreamUpdate } from '@/types/debate';
 import { PrismaClient } from '@prisma/client';
 import { DebateLogger } from '@/lib/logger';
 import { UsageTracker } from '@/lib/usage-tracking';
+import { RATE_LIMITS, createRateLimitResponse } from '@/lib/rate-limit';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/auth';
 
