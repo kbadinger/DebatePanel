@@ -89,7 +89,7 @@ If you didn't request this reset, you can safely ignore this email.
 
 Need help? Contact us at ${EMAIL_CONFIG.replyTo}
 
-- The DebatePanel Team
+- The DecisionForge Team
       `
     });
 
@@ -193,7 +193,7 @@ Quick Tips:
 
 Questions? We're here to help: ${EMAIL_CONFIG.replyTo}
 
-- The DebatePanel Team
+- The DecisionForge Team
       `
     });
 
