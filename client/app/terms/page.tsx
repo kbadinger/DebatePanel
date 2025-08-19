@@ -83,7 +83,7 @@ export default function TermsPage() {
 
             <h2>13. Contact Information</h2>
             <p>
-              For questions about these Terms of Service, please contact us at support@debatepanel.com.
+              For questions about these Terms of Service, please contact us at support@decisionforge.io.
             </p>
 
             <h2>14. Governing Law</h2>
