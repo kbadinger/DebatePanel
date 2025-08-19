@@ -16,8 +16,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "DebatePanel - AI Consensus Engine",
-  description: "Orchestrate structured debates between GPT, Claude, Gemini, Grok, and other leading AI models to explore multiple perspectives and reach consensus on complex topics",
+  title: "DecisionForge - AI Decision Platform",
+  description: "Professional decision-making platform using AI council of GPT, Claude, Gemini, Grok, and other leading models to analyze complex business decisions and reach optimal solutions",
 };
 
 export default function RootLayout({
