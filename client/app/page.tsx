@@ -174,7 +174,7 @@ Option 3 - Hybrid Model:
           </p>
         </div>
         <p className="text-center text-slate-600 text-base mb-8 max-w-2xl mx-auto">
-          Orchestrate structured debates between GPT, Claude, Gemini, Grok, and other leading AI models to explore multiple perspectives and reach consensus
+          Harness an AI council of GPT, Claude, Gemini, Grok, and other leading models to analyze complex decisions and forge optimal solutions for your business
         </p>
         
         {loading && (
