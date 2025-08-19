@@ -84,7 +84,7 @@ export default function SignupPage() {
         <div className="bg-white rounded-xl shadow-xl p-8 border border-slate-100">
           <div className="text-center mb-8">
             <h1 className="text-3xl font-bold text-slate-900 mb-2">Create Account</h1>
-            <p className="text-slate-600">Join DebatePanel to start AI debates</p>
+            <p className="text-slate-600">Join DecisionForge to start making better decisions</p>
           </div>
 
           {error && (
