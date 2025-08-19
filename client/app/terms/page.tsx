@@ -9,7 +9,7 @@ export default function TermsPage() {
           <div className="prose prose-slate max-w-none">
             <h2>1. Acceptance of Terms</h2>
             <p>
-              By accessing and using DebatePanel ("the Service"), you accept and agree to be bound by the terms and provision of this agreement.
+              By accessing and using DecisionForge ("the Service"), you accept and agree to be bound by the terms and provision of this agreement.
             </p>
 
             <h2>2. Description of Service</h2>
