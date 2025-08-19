@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
 import { sendWelcomeEmail } from '@/lib/email';
+import { RATE_LIMITS, createRateLimitResponse } from '@/lib/rate-limit';
 import bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
