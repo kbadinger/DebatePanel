@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { stripe, SUBSCRIPTION_PLANS } from '@/lib/stripe';
+import { RATE_LIMITS, createRateLimitResponse } from '@/lib/rate-limit';
 import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
