@@ -7,6 +7,17 @@ import bcrypt from 'bcryptjs';
 const prisma = new PrismaClient();
 
 export async function POST(req: NextRequest) {
+  // Apply rate limiting for signup
+  const rateLimitResult = RATE_LIMITS.auth(req);
+  if (!rateLimitResult.success) {
+    return createRateLimitResponse(
+      rateLimitResult.limit,
+      rateLimitResult.remaining,
+      rateLimitResult.reset,
+      'Too many signup attempts. Please wait before trying again.'
+    );
+  }
+
   try {
     const { name, email, password } = await req.json();
 
