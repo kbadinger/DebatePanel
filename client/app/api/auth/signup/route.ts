@@ -55,6 +55,12 @@ export async function POST(req: NextRequest) {
       },
     });
 
+    // Send welcome email (non-blocking)
+    sendWelcomeEmail(email, name).catch(err => {
+      console.error('Failed to send welcome email:', err);
+      // Don't fail signup if email fails
+    });
+
     return NextResponse.json({
       message: 'User created successfully',
       userId: user.id,
