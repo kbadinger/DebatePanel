@@ -168,9 +168,9 @@ Option 3 - Hybrid Model:
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
       <div className={`${status === 'unauthenticated' ? 'max-w-5xl' : 'max-w-2xl'} mx-auto pt-12 px-4`}>
         <div className="mb-8">
-          <h1 className="text-6xl font-bold text-center mb-3 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">DebatePanel</h1>
+          <h1 className="text-6xl font-bold text-center mb-3 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">DecisionForge</h1>
           <p className="text-center text-slate-700 text-lg mb-2">
-            AI Consensus Engine
+            AI Decision Platform
           </p>
         </div>
         <p className="text-center text-slate-600 text-base mb-8 max-w-2xl mx-auto">
