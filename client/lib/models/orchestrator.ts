@@ -350,9 +350,12 @@ Format your response as a clear argument with supporting points.`;
       })
       .join('\n\n')}`;
     
-    const basePrompt = isAdversarial 
+    let basePrompt = isAdversarial 
       ? this.buildAdversarialLaterRoundPrompt(roundNumber, hasHumanParticipant, previousDebate)
       : this.buildConsensusLaterRoundPrompt(roundNumber, hasHumanParticipant, previousDebate);
+      
+    // Add complexity guidance
+    basePrompt = this.addComplexityGuidance(basePrompt, topicComplexity);
       
     return isSensitiveTopic 
       ? this.addSensitiveTopicGuidance(basePrompt, config)
