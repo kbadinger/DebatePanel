@@ -372,6 +372,54 @@ Format your response as a clear argument with supporting points.`;
     return sensitiveKeywords.some(keyword => topicText.includes(keyword));
   }
 
+  private getTopicComplexity(topicText: string): 'simple' | 'moderate' | 'complex' {
+    // High complexity indicators - require deep analysis
+    const complexKeywords = [
+      // Financial/trading
+      'trading', 'forex', 'investment', 'portfolio', 'algorithm', 'strategy', 'market', 'risk management',
+      'financial model', 'hedge fund', 'derivatives', 'options', 'futures', 'cryptocurrency',
+      
+      // Technical architecture  
+      'architecture', 'system design', 'database', 'scalability', 'microservices', 'infrastructure',
+      'security architecture', 'api design', 'performance optimization', 'cloud migration',
+      
+      // Business strategy
+      'go-to-market', 'business model', 'competitive analysis', 'market entry', 'pricing strategy',
+      'product roadmap', 'strategic planning', 'merger', 'acquisition', 'expansion',
+      
+      // Legal/compliance
+      'compliance', 'regulatory', 'legal framework', 'gdpr', 'hipaa', 'sox', 'contract',
+      'intellectual property', 'patent', 'licensing', 'liability',
+      
+      // Operations
+      'supply chain', 'logistics', 'manufacturing', 'quality control', 'process optimization',
+      'automation', 'workflow', 'resource allocation'
+    ];
+    
+    // Moderate complexity
+    const moderateKeywords = [
+      'marketing', 'hiring', 'team', 'budget', 'timeline', 'feature', 'design',
+      'technology', 'tool', 'platform', 'framework', 'approach', 'methodology'
+    ];
+    
+    // Simple topics (quick decisions)
+    const simpleKeywords = [
+      'color', 'font', 'button', 'text', 'name', 'title', 'logo', 'icon',
+      'lunch', 'meeting time', 'office location', 'simple choice'
+    ];
+    
+    if (complexKeywords.some(keyword => topicText.includes(keyword))) {
+      return 'complex';
+    } else if (moderateKeywords.some(keyword => topicText.includes(keyword))) {
+      return 'moderate';
+    } else if (simpleKeywords.some(keyword => topicText.includes(keyword))) {
+      return 'simple';
+    }
+    
+    // Default to moderate for unknown topics
+    return 'moderate';
+  }
+
   private addSensitiveTopicGuidance(basePrompt: string, config: DebateConfig): string {
     const guidance = `
 
