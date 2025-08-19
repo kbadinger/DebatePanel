@@ -117,7 +117,7 @@ export async function sendWelcomeEmail(email: string, name?: string) {
       from: EMAIL_CONFIG.from,
       to: [email],
       replyTo: EMAIL_CONFIG.replyTo,
-      subject: 'Welcome to DebatePanel! Your $5 credits are ready',
+      subject: 'Welcome to DecisionForge! Your $5 credits are ready',
       html: `
         <!DOCTYPE html>
         <html>
