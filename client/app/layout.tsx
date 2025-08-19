@@ -18,6 +18,18 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "DecisionForge - AI Decision Platform",
   description: "Professional decision-making platform using AI council of GPT, Claude, Gemini, Grok, and other leading models to analyze complex business decisions and reach optimal solutions",
+  icons: {
+    icon: '/favicon.ico',
+    apple: '/apple-touch-icon.png',
+    other: [
+      {
+        rel: 'icon',
+        type: 'image/png',
+        sizes: '192x192',
+        url: '/android-chrome-192x192.png',
+      },
+    ],
+  },
 };
 
 export default function RootLayout({
