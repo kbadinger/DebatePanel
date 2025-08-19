@@ -428,6 +428,70 @@ Format your response as a clear argument with supporting points.`;
     return 'moderate';
   }
 
+  private addComplexityGuidance(basePrompt: string, complexity: 'simple' | 'moderate' | 'complex'): string {
+    let guidance = '';
+    
+    switch (complexity) {
+      case 'simple':
+        guidance = `
+
+TOPIC COMPLEXITY: SIMPLE DECISION
+This appears to be a straightforward decision that doesn't require extensive analysis.
+
+DEPTH GUIDANCE:
+✅ Focus on key factors and clear recommendations
+✅ Avoid over-analyzing simple choices
+✅ Provide practical, actionable insights
+✅ Keep responses concise but thorough enough
+❌ Don't create artificial complexity where none exists
+❌ Don't dig into unnecessary technical details
+
+GOAL: Efficient analysis that reaches a clear recommendation quickly.`;
+        break;
+        
+      case 'complex':
+        guidance = `
+
+TOPIC COMPLEXITY: COMPLEX DECISION REQUIRING DEEP ANALYSIS
+This topic involves significant complexity with multiple variables, risks, and considerations.
+
+DEPTH GUIDANCE:
+✅ GO DEEP - this topic warrants comprehensive analysis
+✅ Consider multiple scenarios, edge cases, and risk factors
+✅ Examine both short-term and long-term implications  
+✅ Analyze market conditions, competitive factors, and implementation challenges
+✅ Provide specific examples, data points, and concrete evidence
+✅ Consider regulatory, financial, and operational constraints
+❌ Don't oversimplify complex decisions
+❌ Don't skip important considerations for the sake of brevity
+
+GOAL: Thorough, expert-level analysis worthy of the topic's complexity.`;
+        break;
+        
+      default: // moderate
+        guidance = `
+
+TOPIC COMPLEXITY: MODERATE DECISION
+This topic requires balanced analysis - neither superficial nor overly complex.
+
+DEPTH GUIDANCE:
+✅ Provide solid analysis with key considerations covered
+✅ Balance thoroughness with practical decision-making needs
+✅ Include relevant examples and supporting reasoning
+✅ Consider main risks and trade-offs
+❌ Don't oversimplify if genuine complexity exists
+❌ Don't over-analyze straightforward aspects
+
+GOAL: Professional analysis appropriate to the decision's importance.`;
+    }
+    
+    // Insert guidance before the final formatting requirements
+    return basePrompt.replace(
+      /At the end of your response, explicitly state:/,
+      guidance + '\n\nAt the end of your response, explicitly state:'
+    );
+  }
+
   private addSensitiveTopicGuidance(basePrompt: string, config: DebateConfig): string {
     const guidance = `
 
