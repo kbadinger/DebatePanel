@@ -167,8 +167,12 @@ Option 3 - Hybrid Model:
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
       <div className={`${status === 'unauthenticated' ? 'max-w-5xl' : 'max-w-2xl'} mx-auto pt-12 px-4`}>
-        <div className="mb-8">
-          <h1 className="text-6xl font-bold text-center mb-3 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">DecisionForge</h1>
+        <div className="mb-8 text-center">
+          <img 
+            src="/logos/svg/Color logo - no background.svg" 
+            alt="DecisionForge" 
+            className="h-20 w-auto mx-auto mb-4"
+          />
           <p className="text-center text-slate-700 text-lg mb-2">
             AI Decision Platform
           </p>
