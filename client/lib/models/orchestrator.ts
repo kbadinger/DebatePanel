@@ -322,15 +322,20 @@ Format your response as a clear argument with supporting points.`;
     const hasHumanParticipant = previousResponses.some(r => r.isHuman);
     const isAdversarial = config.style === 'adversarial';
     
-    // Check if topic appears controversial/sensitive
+    // Check if topic appears controversial/sensitive and determine complexity
     const topicText = `${config.topic} ${config.description || ''}`.toLowerCase();
     const isSensitiveTopic = this.isTopicSensitive(topicText);
+    const topicComplexity = this.getTopicComplexity(topicText);
     
     if (roundNumber === 1) {
-      const basePrompt = isAdversarial 
+      let basePrompt = isAdversarial 
         ? this.buildAdversarialRound1Prompt(hasHumanParticipant) 
         : this.buildConsensusRound1Prompt(hasHumanParticipant);
       
+      // Add complexity guidance
+      basePrompt = this.addComplexityGuidance(basePrompt, topicComplexity);
+      
+      // Add sensitive topic guidance if needed
       return isSensitiveTopic 
         ? this.addSensitiveTopicGuidance(basePrompt, config)
         : basePrompt;
