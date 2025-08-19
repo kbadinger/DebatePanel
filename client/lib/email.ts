@@ -75,11 +75,11 @@ export async function sendPasswordResetEmail(email: string, token: string, name?
         </html>
       `,
       text: `
-Reset Your DebatePanel Password
+Reset Your DecisionForge Password
 
 Hi${name ? ` ${name}` : ''},
 
-You requested to reset your password for your DebatePanel account.
+You requested to reset your password for your DecisionForge account.
 
 Click this link to reset your password: ${resetUrl}
 
