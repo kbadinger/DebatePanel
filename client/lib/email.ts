@@ -7,8 +7,8 @@ if (!process.env.RESEND_API_KEY) {
 export const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 
 export const EMAIL_CONFIG = {
-  from: process.env.EMAIL_FROM || 'DebatePanel <noreply@debatepanel.com>',
-  replyTo: process.env.EMAIL_REPLY_TO || 'support@debatepanel.com',
+  from: process.env.EMAIL_FROM || 'DecisionForge <noreply@decisionforge.io>',
+  replyTo: process.env.EMAIL_REPLY_TO || 'support@decisionforge.io',
   baseUrl: process.env.NEXTAUTH_URL || 'http://localhost:3000'
 };
 
