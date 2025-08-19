@@ -14,7 +14,7 @@ export default function TermsPage() {
 
             <h2>2. Description of Service</h2>
             <p>
-              DebatePanel is an AI-powered platform that facilitates structured debates between multiple artificial intelligence models to help users explore different perspectives and reach informed conclusions on various topics.
+              DecisionForge is an AI-powered platform that facilitates structured analysis between multiple artificial intelligence models to help users explore different perspectives and reach informed decisions on complex topics.
             </p>
 
             <h2>3. User Accounts</h2>
