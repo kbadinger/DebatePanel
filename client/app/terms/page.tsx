@@ -34,7 +34,7 @@ export default function TermsPage() {
 
             <h2>5. Content Policy</h2>
             <p>
-              While DebatePanel encourages thoughtful discussion of complex and sometimes controversial topics for educational purposes, we prohibit content that:
+              While DecisionForge encourages thoughtful discussion of complex and sometimes controversial topics for educational purposes, we prohibit content that:
             </p>
             <ul>
               <li>Promotes illegal activities or direct harm to individuals</li>
