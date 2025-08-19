@@ -36,6 +36,10 @@ model User {
   debates       Debate[]
   usageRecords  UsageRecord[]
   participations Participant[]
+  
+  // Model requests and voting
+  modelRequests ModelRequest[]
+  modelRequestVotes ModelRequestVote[]
 }
 
 model Account {
@@ -223,4 +227,40 @@ model DebateScore {
 
   @@unique([debateId, participantId])
   @@index([debateId, totalScore])
+}
+
+model ModelRequest {
+  id           String   @id @default(cuid())
+  userId       String
+  provider     String   // e.g., "openai", "anthropic", "google"
+  modelName    String   // e.g., "gpt-5-thinking", "claude-4-pro"
+  displayName  String?  // Optional display name
+  description  String   // Why they want this model
+  useCase      String   // "reasoning", "coding", "creative", etc.
+  status       String   @default("pending") // "pending", "approved", "rejected", "added"
+  adminNotes   String?  // Admin comments
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  
+  user  User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  votes ModelRequestVote[]
+  
+  @@unique([provider, modelName]) // Prevent duplicate requests
+  @@index([status, createdAt])
+  @@index([userId])
+}
+
+model ModelRequestVote {
+  id        String   @id @default(cuid())
+  requestId String
+  userId    String
+  voteType  String   // "up" or "down"
+  createdAt DateTime @default(now())
+  
+  request ModelRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  user    User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@unique([requestId, userId]) // One vote per user per request
+  @@index([requestId])
+  @@index([userId])
 }

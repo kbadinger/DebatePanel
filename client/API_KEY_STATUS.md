@@ -36,8 +36,9 @@ This document tracks all required API keys for the debate panel application and 
 - **Gemini 2.5 Flash** - Best price-performance with thinking capabilities
 
 ### X.AI (Grok)
-- **Grok 4** - Most intelligent with real-time search integration
-- **Grok 3** - Advanced reasoning with web search
+- **Grok Beta** - Current API model with standard access
+- **Grok 2** - December 2024 release
+- Note: Grok 3/4 require special subscription tiers ($300/month Heavy Plan)
 
 ### Perplexity
 - **Sonar Pro** - Advanced search with citations

@@ -37,6 +37,9 @@ export function Header() {
             <Link href="/usage" className="text-slate-700 hover:text-blue-600 font-medium transition-colors">
               Usage
             </Link>
+            <Link href="/models/vote" className="text-slate-700 hover:text-blue-600 font-medium transition-colors">
+              Vote Models
+            </Link>
             {session?.user?.isAdmin && (
               <Link href="/admin" className="text-purple-600 hover:text-purple-700 font-medium transition-colors flex items-center gap-1">
                 <Shield size={16} />

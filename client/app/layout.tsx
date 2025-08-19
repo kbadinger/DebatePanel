@@ -16,7 +16,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "DebatePanel - AI Consensus Engine",
-  description: "Orchestrate structured debates between leading AI models to explore multiple perspectives and reach consensus on complex topics",
+  description: "Orchestrate structured debates between GPT, Claude, Gemini, Grok, and other leading AI models to explore multiple perspectives and reach consensus on complex topics",
 };
 
 export default function RootLayout({

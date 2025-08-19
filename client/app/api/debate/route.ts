@@ -178,9 +178,21 @@ export async function POST(req: NextRequest) {
           }
         }
         
-        // Generate final synthesis
+        // Generate final synthesis (even if some models failed)
         debate.status = 'completed';
         debate.completedAt = new Date();
+        
+        // Check if any models failed due to context limits
+        const allResponses = debate.rounds.flatMap(r => r.responses);
+        const contextFailures = allResponses.filter(r => 
+          r.content.includes('⚠️ Context limit exceeded') || 
+          r.content.includes('❌ Error:') ||
+          r.content.includes('❌ Complete failure')
+        );
+        
+        if (contextFailures.length > 0) {
+          console.log(`Debate completed with ${contextFailures.length} model failures across all rounds`);
+        }
         
         console.log('Generating synthesis for debate:', {
           id: debate.id,
@@ -409,11 +421,24 @@ function generateSynthesis(debate: Debate): string {
   const finalRound = debate.rounds[debate.rounds.length - 1];
   const finalResponses = finalRound.responses;
   
+  // Separate valid responses from failed ones
+  const validResponses = finalResponses.filter(r => 
+    !r.content.includes('⚠️ Context limit exceeded') && 
+    !r.content.includes('❌ Error:') &&
+    !r.content.includes('❌ Complete failure')
+  );
+  
+  const failedResponses = finalResponses.filter(r => 
+    r.content.includes('⚠️ Context limit exceeded') || 
+    r.content.includes('❌ Error:') ||
+    r.content.includes('❌ Complete failure')
+  );
+  
   const positionCounts: Record<string, number> = {};
   const modelPositions: Record<string, string[]> = {};
   
-  // Analyze only the final round positions
-  finalResponses.forEach(response => {
+  // Analyze only valid final round positions
+  validResponses.forEach(response => {
     // Count positions
     positionCounts[response.position] = (positionCounts[response.position] || 0) + 1;
     
@@ -424,20 +449,21 @@ function generateSynthesis(debate: Debate): string {
     modelPositions[response.position].push(response.modelId);
   });
   
-  // Calculate percentages for final round
+  // Calculate percentages for final round (based on valid responses only)
+  const totalValidResponses = validResponses.length;
   const totalFinalResponses = finalResponses.length;
   const positionPercentages = Object.entries(positionCounts)
     .map(([position, count]) => ({
       position,
       count,
-      percentage: Math.round((count / totalFinalResponses) * 100),
+      percentage: totalValidResponses > 0 ? Math.round((count / totalValidResponses) * 100) : 0,
       models: modelPositions[position]
     }))
     .sort((a, b) => b.count - a.count);
   
-  // Determine final consensus
+  // Determine final consensus (based on valid responses)
   const topPosition = positionPercentages[0];
-  const hasConsensus = topPosition && topPosition.percentage >= 60;
+  const hasConsensus = topPosition && totalValidResponses > 0 && topPosition.percentage >= 60;
   
   // Journey context (for reference only)
   const allResponses = debate.rounds.flatMap(r => r.responses);
@@ -452,18 +478,26 @@ function generateSynthesis(debate: Debate): string {
 
 ### Final Verdict (Round ${finalRound.roundNumber}):
 ${positionPercentages.map(p => 
-  `• **${p.position.replace('-', ' ').toUpperCase()}**: ${p.percentage}% (${p.count}/${totalFinalResponses} models)`
+  `• **${p.position.replace('-', ' ').toUpperCase()}**: ${p.percentage}% (${p.count}/${totalValidResponses} participating models)`
 ).join('\n')}
+${failedResponses.length > 0 ? `\n⚠️ **${failedResponses.length} model${failedResponses.length > 1 ? 's' : ''} could not participate** due to context limits or errors` : ''}
 
 ### Final Consensus:
-${hasConsensus 
-  ? `The models reached a ${topPosition.percentage}% consensus on **"${topPosition.position.replace('-', ' ')}"** in the final round`
-  : 'No clear consensus emerged - the models remain divided on this topic'}
+${hasConsensus && totalValidResponses > 0
+  ? `The participating models reached a ${topPosition.percentage}% consensus on **"${topPosition.position.replace('-', ' ')}"** in the final round`
+  : totalValidResponses === 0
+    ? '❌ No models could complete the debate due to technical issues'
+    : 'No clear consensus emerged - the participating models remain divided on this topic'}
 
 ### Final Model Positions:
-${positionPercentages.map(p => 
-  `• **${p.position.replace('-', ' ')}**: ${p.models.join(', ')}`
-).join('\n')}
+${totalValidResponses > 0 
+  ? positionPercentages.map(p => 
+      `• **${p.position.replace('-', ' ')}**: ${p.models.join(', ')}`
+    ).join('\n')
+  : '• No valid positions due to technical failures'}
+${failedResponses.length > 0 
+  ? `\n• **Unable to participate**: ${failedResponses.map(r => r.modelId).join(', ')} (context/error limits)`
+  : ''}
 
 ### Journey Summary:
 • Started with ${initialPositions.size} different positions in Round 1

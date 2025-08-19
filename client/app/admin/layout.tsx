@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Users, Activity, CreditCard, LayoutDashboard, Shield } from 'lucide-react';
+import { Users, Activity, CreditCard, LayoutDashboard, Shield, Vote } from 'lucide-react';
 
 export default function AdminLayout({
   children,
@@ -38,6 +38,7 @@ export default function AdminLayout({
   const navItems = [
     { href: '/admin', icon: LayoutDashboard, label: 'Dashboard' },
     { href: '/admin/users', icon: Users, label: 'Users' },
+    { href: '/admin/model-requests', icon: Vote, label: 'Model Requests' },
     { href: '/admin/usage', icon: Activity, label: 'Usage Analytics' },
     { href: '/admin/subscriptions', icon: CreditCard, label: 'Subscriptions' },
   ];

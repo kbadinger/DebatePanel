@@ -22,5 +22,9 @@ export const deepseek = createOpenAI({
 // Standard providers
 export { openai } from '@ai-sdk/openai';
 export { anthropic } from '@ai-sdk/anthropic';
-export { google } from '@ai-sdk/google';
 export { mistral } from '@ai-sdk/mistral';
+
+// Configure Google provider with custom API key
+export const google = createGoogleGenerativeAI({
+  apiKey: process.env.GOOGLE_AI_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY,
+});

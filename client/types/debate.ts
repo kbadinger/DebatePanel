@@ -1,5 +1,7 @@
 export type ModelProvider = 'openai' | 'anthropic' | 'google' | 'xai' | 'perplexity' | 'deepseek' | 'mistral' | 'meta' | 'cohere' | 'ai21' | 'kimi' | 'qwen' | 'flux';
 
+export type ModelStrength = 'analytical' | 'creative' | 'ethical' | 'technical' | 'business' | 'research' | 'general';
+
 export interface Model {
   id: string;
   provider: ModelProvider;
@@ -10,7 +12,14 @@ export interface Model {
     category: 'budget' | 'standard' | 'premium' | 'luxury';
     emoji: string;
   };
+  contextInfo?: {
+    maxTokens: number; // Maximum context window in tokens
+    strengths: ModelStrength[]; // What this model is best at
+    suggestedRole?: string; // Suggested role in debates
+  };
 }
+
+export type DebateStyle = 'adversarial' | 'consensus-seeking';
 
 export interface DebateConfig {
   topic: string;
@@ -18,6 +27,7 @@ export interface DebateConfig {
   models: Model[];
   rounds: number;
   format: 'free-form' | 'structured' | 'devils-advocate';
+  style: DebateStyle; // NEW: Determines if models should seek consensus or argue different sides
   convergenceThreshold?: number;
   judge?: {
     enabled: boolean;

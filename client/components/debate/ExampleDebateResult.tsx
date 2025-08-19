@@ -19,8 +19,8 @@ export function ExampleDebateResult() {
     responses: [
       {
         id: '1',
-        modelId: 'gpt-4.1',
-        modelName: 'GPT-4.1',
+        modelId: 'gpt-5',
+        modelName: 'GPT-5',
         modelProvider: 'openai',
         content: "DebatePanel offers a unique value proposition for decision-making. By aggregating multiple AI perspectives, it reduces the risk of single-model biases and provides a more robust analysis. For important decisions, having diverse AI viewpoints is like having a panel of expert consultants, each bringing different analytical frameworks. The cost is minimal compared to the potential value of better-informed decisions.",
         position: 'Strongly Recommend',
@@ -59,8 +59,8 @@ export function ExampleDebateResult() {
       },
       {
         id: '5',
-        modelId: 'grok-3',
-        modelName: 'Grok 3',
+        modelId: 'grok-4',
+        modelName: 'Grok 4',
         modelProvider: 'xai',
         content: "Think of DebatePanel as intellectual arbitrage - you're getting insights from models that cost billions to develop for the price of a coffee. The platform's real genius is in the orchestration: it doesn't just run parallel queries but creates genuine debate dynamics where models respond to each other. For complex decisions involving trade-offs, uncertainty, or multiple stakeholders, this approach consistently surfaces insights that single-model queries miss.",
         position: 'Strongly Recommend',

@@ -14,8 +14,19 @@ export function ModelResponseCard({ response, isStreaming }: ModelResponseCardPr
   const model = AVAILABLE_MODELS.find(m => m.id === response.modelId);
   const isHuman = response.isHuman || response.modelId.startsWith('human-');
   
+  // Check if this is an error or context limit exceeded response
+  const isContextError = response.content.includes('⚠️ Context limit exceeded');
+  const isError = response.content.includes('❌ Error:') || response.content.includes('❌ Complete failure');
+  const hasError = isContextError || isError;
+  
   // For round 1, show stance. For round 2+, show consensus alignment
-  const showConsensus = response.round > 1 && response.consensusAlignment;
+  const showConsensus = response.round > 1 && response.consensusAlignment && !hasError;
+  
+  // Error color schemes
+  const errorColors = {
+    context: 'border-amber-500 bg-amber-50',
+    error: 'border-red-500 bg-red-50'
+  };
   
   // Consensus color scheme (for round 2+)
   const consensusColors = {
@@ -44,13 +55,22 @@ export function ModelResponseCard({ response, isStreaming }: ModelResponseCardPr
     'strong-dissent': { color: 'bg-red-500', label: 'Strong Dissent' },
   };
   
-  const colorScheme = showConsensus 
-    ? consensusColors[response.consensusAlignment!] 
-    : positionColors[response.position];
-    
-  const indicator = showConsensus
-    ? consensusIndicators[response.consensusAlignment!]
-    : { color: 'bg-gray-400', label: response.stance || 'Initial Position' };
+  let colorScheme: string;
+  let indicator: { color: string; label: string };
+  
+  if (hasError) {
+    colorScheme = isContextError ? errorColors.context : errorColors.error;
+    indicator = { 
+      color: isContextError ? 'bg-amber-500' : 'bg-red-500', 
+      label: isContextError ? 'Context Limit Reached' : 'Error' 
+    };
+  } else if (showConsensus) {
+    colorScheme = consensusColors[response.consensusAlignment!];
+    indicator = consensusIndicators[response.consensusAlignment!];
+  } else {
+    colorScheme = positionColors[response.position];
+    indicator = { color: 'bg-gray-400', label: response.stance || 'Initial Position' };
+  }
   
   return (
     <div className={clsx(
@@ -79,13 +99,18 @@ export function ModelResponseCard({ response, isStreaming }: ModelResponseCardPr
                 <span className="text-sm font-medium text-slate-700">{indicator.label}</span>
               </>
             )}
-            {response.stance && (
+            {response.stance && !hasError && (
               <span className="text-sm font-semibold text-slate-800">
                 {response.round === 1 ? 'Recommends: ' : 'Position: '}
                 {response.stance}
               </span>
             )}
-            <span className="text-sm text-slate-500">• {response.confidence}% confident</span>
+            {!hasError && (
+              <span className="text-sm text-slate-500">• {response.confidence}% confident</span>
+            )}
+            {hasError && (
+              <span className="text-sm text-slate-500">• Unable to participate</span>
+            )}
           </div>
         </div>
         <div className="text-xs text-slate-500">

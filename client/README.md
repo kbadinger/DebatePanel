@@ -5,7 +5,7 @@ Get multiple AI perspectives on your ideas through structured debate with winner
 ## 🏆 Key Features
 
 - **Game Winner System** - AI judge declares debate winners with detailed scoring
-- **25+ AI Models** - GPT-5, Claude 4.1, Gemini 2.0, and more
+- **25+ AI Models** - GPT-5, Claude 4, Gemini 2.5, Grok 4, and more
 - **Real-time Streaming** - Watch debates unfold in real-time
 - **Interactive Mode** - Humans can participate in debates
 - **Multiple Formats** - Structured, free-form, and devils advocate
@@ -103,9 +103,10 @@ Admin users are identified by a purple shield badge in the header and have unlim
 
 ### 🤖 Latest AI Models
 - **OpenAI**: GPT-5 (Regular/Mini/Nano), o3/o1 reasoning models
-- **Anthropic**: Claude 4.1 (Opus/Sonnet/Haiku)
-- **Google**: Gemini 2.0 Flash, 1.5 Pro/Flash
-- **Plus**: Mistral Saba, Grok 2, and 15+ more providers
+- **Anthropic**: Claude 4 (Opus/Sonnet), Claude 3.5/3 series
+- **Google**: Gemini 2.5 Pro/Flash, 2.0 Flash, 1.5 Pro/Flash
+- **X.AI**: Grok 4 (Heavy), Grok 2 with real-time search
+- **Plus**: Mistral, DeepSeek, and 15+ more providers
 
 ## Documentation
 

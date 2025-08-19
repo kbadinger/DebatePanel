@@ -6,142 +6,132 @@ export interface ModelPricing {
     input: number;
     output: number;
   };
-  costCategory: 'budget' | 'standard' | 'premium' | 'luxury';
+  costCategory: 'budget' | 'standard' | 'premium' | 'luxury' | 'flagship';
   providerBaseCost: number; // What we pay the provider (per 1k response at standard rates)
   platformMarkup: number; // Our markup percentage (e.g., 0.3 for 30%)
 }
 
 // Actual costs from providers (as of Jan 2025)
 export const MODEL_PRICING: Record<string, ModelPricing> = {
-  // OpenAI Models - GPT-5 Series
+  // OpenAI Models - GPT-5 Series ONLY
   'gpt-5': {
     modelId: 'gpt-5',
     costPer1kTokens: {
-      input: 0.02,
-      output: 0.08
+      input: 0.025,  // Latest flagship model
+      output: 0.100
     },
-    costCategory: 'luxury',
-    providerBaseCost: 0.1,
+    costCategory: 'flagship',
+    providerBaseCost: 0.125,
     platformMarkup: 0.3
   },
   'gpt-5-mini': {
     modelId: 'gpt-5-mini',
     costPer1kTokens: {
-      input: 0.005,
-      output: 0.02
+      input: 0.008,  // Faster, more cost-effective
+      output: 0.032
     },
     costCategory: 'premium',
-    providerBaseCost: 0.025,
+    providerBaseCost: 0.040,
     platformMarkup: 0.3
   },
   'gpt-5-nano': {
     modelId: 'gpt-5-nano',
     costPer1kTokens: {
-      input: 0.001,
-      output: 0.004
+      input: 0.002,  // Ultra-light variant
+      output: 0.008
     },
     costCategory: 'standard',
-    providerBaseCost: 0.005,
+    providerBaseCost: 0.010,
     platformMarkup: 0.3
   },
   
-  // OpenAI Reasoning Models - o3 Series
-  'o3-pro': {
-    modelId: 'o3-pro',
+  // OpenAI Reasoning Models
+  'o1': {
+    modelId: 'o1',
     costPer1kTokens: {
-      input: 0.03,
-      output: 0.12
-    },
-    costCategory: 'luxury',
-    providerBaseCost: 0.15,
-    platformMarkup: 0.3
-  },
-  'o3-mini': {
-    modelId: 'o3-mini',
-    costPer1kTokens: {
-      input: 0.006,
-      output: 0.024
+      input: 0.015,  // Advanced reasoning
+      output: 0.060
     },
     costCategory: 'premium',
-    providerBaseCost: 0.03,
-    platformMarkup: 0.3
-  },
-  
-  // OpenAI Reasoning Models - o1 Series
-  'o1-pro': {
-    modelId: 'o1-pro',
-    costPer1kTokens: {
-      input: 0.015,
-      output: 0.06
-    },
-    costCategory: 'luxury',
     providerBaseCost: 0.075,
     platformMarkup: 0.3
   },
   'o1-mini': {
     modelId: 'o1-mini',
     costPer1kTokens: {
-      input: 0.003,
+      input: 0.003,  // Faster reasoning
       output: 0.012
     },
-    costCategory: 'premium',
+    costCategory: 'standard',
     providerBaseCost: 0.015,
     platformMarkup: 0.3
   },
-  
-  // GPT-4 Series
-  'gpt-4o': {
-    modelId: 'gpt-4o',
+  'o3': {
+    modelId: 'o3',
     costPer1kTokens: {
-      input: 0.0025,
-      output: 0.01
+      input: 0.020,  // Latest reasoning model
+      output: 0.080
+    },
+    costCategory: 'premium',
+    providerBaseCost: 0.100,
+    platformMarkup: 0.3
+  },
+  'o3-mini': {
+    modelId: 'o3-mini',
+    costPer1kTokens: {
+      input: 0.005,  // Efficient reasoning
+      output: 0.020
     },
     costCategory: 'standard',
-    providerBaseCost: 0.0125,
-    platformMarkup: 0.3
-  },
-  'gpt-4o-mini': {
-    modelId: 'gpt-4o-mini',
-    costPer1kTokens: {
-      input: 0.00015,
-      output: 0.0006
-    },
-    costCategory: 'budget',
-    providerBaseCost: 0.00075,
+    providerBaseCost: 0.025,
     platformMarkup: 0.3
   },
   
-  // Anthropic Models - Claude 4.1 Series
-  'claude-opus-4.1': {
-    modelId: 'claude-opus-4.1',
+  // Anthropic Models - Claude 4 Series (NEW!)
+  'claude-opus-4-1-20250805': {
+    modelId: 'claude-opus-4-1-20250805',
     costPer1kTokens: {
-      input: 0.02,
-      output: 0.1
+      input: 0.025,
+      output: 0.100
     },
-    costCategory: 'luxury',
-    providerBaseCost: 0.12,
+    costCategory: 'flagship',
+    providerBaseCost: 0.125,
     platformMarkup: 0.3
   },
-  'claude-sonnet-4.1': {
-    modelId: 'claude-sonnet-4.1',
+  'claude-sonnet-4-20250514': {
+    modelId: 'claude-sonnet-4-20250514',
+    costPer1kTokens: {
+      input: 0.006,
+      output: 0.024
+    },
+    costCategory: 'premium',
+    providerBaseCost: 0.030,
+    platformMarkup: 0.3
+  },
+  'claude-opus-4-20250514': {
+    modelId: 'claude-opus-4-20250514',
+    costPer1kTokens: {
+      input: 0.020,
+      output: 0.080
+    },
+    costCategory: 'luxury',
+    providerBaseCost: 0.100,
+    platformMarkup: 0.3
+  },
+  
+  // Claude 3.7 Series
+  'claude-3-7-sonnet-20250219': {
+    modelId: 'claude-3-7-sonnet-20250219',
     costPer1kTokens: {
       input: 0.004,
-      output: 0.02
+      output: 0.020
     },
     costCategory: 'premium',
     providerBaseCost: 0.024,
     platformMarkup: 0.3
   },
-  'claude-haiku-4.1': {
-    modelId: 'claude-haiku-4.1',
-    costPer1kTokens: {
-      input: 0.0003,
-      output: 0.0015
-    },
-    costCategory: 'budget',
-    providerBaseCost: 0.0018,
-    platformMarkup: 0.3
-  },
+  
+  // Claude 3.5 Series
   'claude-3-5-sonnet-20241022': {
     modelId: 'claude-3-5-sonnet-20241022',
     costPer1kTokens: {
@@ -152,10 +142,70 @@ export const MODEL_PRICING: Record<string, ModelPricing> = {
     providerBaseCost: 0.018,
     platformMarkup: 0.3
   },
+  'claude-3-5-sonnet-20240620': {
+    modelId: 'claude-3-5-sonnet-20240620',
+    costPer1kTokens: {
+      input: 0.003,
+      output: 0.015
+    },
+    costCategory: 'standard',
+    providerBaseCost: 0.018,
+    platformMarkup: 0.3
+  },
+  'claude-3-5-haiku-20241022': {
+    modelId: 'claude-3-5-haiku-20241022',
+    costPer1kTokens: {
+      input: 0.001,
+      output: 0.005
+    },
+    costCategory: 'budget',
+    providerBaseCost: 0.006,
+    platformMarkup: 0.3
+  },
+  'claude-3-opus-20240229': {
+    modelId: 'claude-3-opus-20240229',
+    costPer1kTokens: {
+      input: 0.015,
+      output: 0.075
+    },
+    costCategory: 'luxury',
+    providerBaseCost: 0.090,
+    platformMarkup: 0.3
+  },
+  'claude-3-haiku-20240307': {
+    modelId: 'claude-3-haiku-20240307',
+    costPer1kTokens: {
+      input: 0.00025,
+      output: 0.00125
+    },
+    costCategory: 'budget',
+    providerBaseCost: 0.0015,
+    platformMarkup: 0.3
+  },
   
-  // Google Models
-  'gemini-2.0-flash-exp': {
-    modelId: 'gemini-2.0-flash-exp',
+  // Google Gemini Models
+  'gemini-2.5-pro': {
+    modelId: 'gemini-2.5-pro',
+    costPer1kTokens: {
+      input: 0.00125,  // $1.25 per million = $0.00125 per 1k
+      output: 0.01     // $10.00 per million = $0.01 per 1k
+    },
+    costCategory: 'standard',
+    providerBaseCost: 0.01125,
+    platformMarkup: 0.3
+  },
+  'gemini-2.5-flash': {
+    modelId: 'gemini-2.5-flash',
+    costPer1kTokens: {
+      input: 0.000075, // $0.075 per million = $0.000075 per 1k
+      output: 0.0003   // $0.30 per million = $0.0003 per 1k
+    },
+    costCategory: 'budget',
+    providerBaseCost: 0.000375,
+    platformMarkup: 0.3
+  },
+  'gemini-2.0-flash': {
+    modelId: 'gemini-2.0-flash',
     costPer1kTokens: {
       input: 0.0001,
       output: 0.0004
@@ -184,16 +234,36 @@ export const MODEL_PRICING: Record<string, ModelPricing> = {
     providerBaseCost: 0.000375,
     platformMarkup: 0.3
   },
+  'gemini-1.5-flash-8b': {
+    modelId: 'gemini-1.5-flash-8b',
+    costPer1kTokens: {
+      input: 0.0000375,
+      output: 0.00015
+    },
+    costCategory: 'budget',
+    providerBaseCost: 0.0001875,
+    platformMarkup: 0.3
+  },
   
   // X.AI Models
-  'grok-beta': {
-    modelId: 'grok-beta',
+  'grok-4': {
+    modelId: 'grok-4',
     costPer1kTokens: {
       input: 0.005,
       output: 0.015
     },
     costCategory: 'premium',
     providerBaseCost: 0.020,
+    platformMarkup: 0.3
+  },
+  'grok-2': {
+    modelId: 'grok-2',
+    costPer1kTokens: {
+      input: 0.002,
+      output: 0.01
+    },
+    costCategory: 'standard',
+    providerBaseCost: 0.012,
     platformMarkup: 0.3
   },
   'grok-2-1212': {
@@ -453,7 +523,9 @@ export function calculateDebateCost(
     // Adjust response tokens based on model category
     const responseTokensPerRound = pricing.costCategory === 'budget' ? 750 : 
                                   pricing.costCategory === 'standard' ? 1000 :
-                                  pricing.costCategory === 'premium' ? 1250 : 1500;
+                                  pricing.costCategory === 'premium' ? 1250 : 
+                                  pricing.costCategory === 'luxury' ? 1500 : 
+                                  pricing.costCategory === 'flagship' ? 2000 : 1000;
 
     // Calculate tokens for each round with more realistic growth
     let totalInputTokens = 0;
@@ -569,6 +641,7 @@ export function getCostEmoji(category: ModelPricing['costCategory']): string {
     case 'standard': return '🔵';
     case 'premium': return '🟣';
     case 'luxury': return '⚫';
+    case 'flagship': return '🚀';
   }
 }
 

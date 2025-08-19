@@ -3,7 +3,7 @@ import { ModelProvider } from '@/types/debate';
 export const PROVIDER_API_KEYS: Record<ModelProvider, string> = {
   openai: 'OPENAI_API_KEY',
   anthropic: 'ANTHROPIC_API_KEY',
-  google: 'GEMINI_API_KEY',
+  google: 'GOOGLE_AI_API_KEY',
   xai: 'XAI_API_KEY',
   perplexity: 'PERPLEXITY_API_KEY',
   deepseek: 'DEEPSEEK_API_KEY',

@@ -7,8 +7,10 @@ import { DebateInterface } from '@/components/debate/DebateInterface';
 import { ExampleDebateResult } from '@/components/debate/ExampleDebateResult';
 import { AVAILABLE_MODELS } from '@/lib/models/config';
 import { calculateDebateCost, formatCost } from '@/lib/models/pricing';
+import { calculateContextRequirements, analyzePanelDiversity, getSmartRecommendations } from '@/lib/context-analysis';
+import { analyzeTopicSafety, getTopicSuggestions } from '@/lib/topic-filter';
 import { Button } from '@/components/ui/button';
-import { ChevronDown, ChevronRight, Sparkles } from 'lucide-react';
+import { ChevronDown, ChevronRight, Sparkles, AlertTriangle, CheckCircle, Info, Lightbulb, Shield, ShieldAlert } from 'lucide-react';
 import Link from 'next/link';
 
 export default function Home() {
@@ -40,14 +42,20 @@ export default function Home() {
   
   // Define recommended models (filtered by available)
   const recommendedModelIds = [
-    'gpt-4.1',
-    'claude-sonnet-4',
+    'gpt-5',
+    'o3',
+    'gpt-5-mini',
+    'claude-opus-4-1-20250805',
     'gemini-2.5-pro',
-    'kimi-k2-instruct',
-    'gpt-4.1-mini',
-    'grok-3',
-    'mistral-medium-3',
-    'qwen-3-235b'
+    'o1',
+    'claude-sonnet-4-20250514',
+    'o3-mini',
+    'gemini-2.5-flash',
+    'grok-4',
+    'o1-mini',
+    'gpt-5-nano',
+    'gemini-1.5-pro',
+    'deepseek-chat'
   ];
   
   const recommendedModels = recommendedModelIds
@@ -58,16 +66,17 @@ export default function Home() {
     topic: '',
     description: '',
     models: [
-      availableModels.find(m => m.id === 'gpt-4.1'),
-      availableModels.find(m => m.id === 'claude-sonnet-4'),
+      availableModels.find(m => m.id === 'o3'),
+      availableModels.find(m => m.id === 'claude-opus-4-1-20250805'),
       availableModels.find(m => m.id === 'gemini-2.5-pro')
     ].filter(Boolean) as Model[], // Default to top model from each major provider
-    rounds: 3,
+    rounds: 3, // Ensure this is always a valid number
     format: 'structured',
+    style: 'consensus-seeking', // Default to consensus-seeking
     convergenceThreshold: 0.75,
     judge: {
       enabled: true,
-      model: availableModels.find(m => m.id === 'claude-sonnet-4') || availableModels[0]
+      model: availableModels.find(m => m.id === 'claude-sonnet-4-20250514') || availableModels[0]
     }
   });
 
@@ -125,6 +134,14 @@ Option 3 - Hybrid Model:
   
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Check topic safety before proceeding
+    const topicAnalysis = analyzeTopicSafety(config.topic, config.description, config.style);
+    if (topicAnalysis.severity === 'blocked') {
+      alert('This topic cannot be debated due to safety concerns. Please see the suggestions above for academic alternatives.');
+      return;
+    }
+    
     if (config.topic.trim() && config.description?.trim()) {
       setShowDebate(true);
     }
@@ -157,7 +174,7 @@ Option 3 - Hybrid Model:
           </p>
         </div>
         <p className="text-center text-slate-600 text-base mb-8 max-w-2xl mx-auto">
-          Orchestrate structured debates between GPT-4, Claude, Gemini, and other leading AI models to explore multiple perspectives and reach consensus
+          Orchestrate structured debates between GPT, Claude, Gemini, Grok, and other leading AI models to explore multiple perspectives and reach consensus
         </p>
         
         {loading && (
@@ -197,7 +214,7 @@ Option 3 - Hybrid Model:
               </div>
               <h2 className="text-2xl font-semibold text-slate-900 mb-4">See AI Models Debate & Reach Consensus</h2>
               <p className="text-slate-600 mb-6">
-                Watch GPT-4, Claude, Gemini and other leading AI models debate topics from multiple perspectives, 
+                Watch GPT, Claude, Gemini, Grok and other leading AI models debate topics from multiple perspectives, 
                 then see our AI Judge synthesize their insights into actionable conclusions.
               </p>
               <div className="space-y-3">
@@ -268,6 +285,96 @@ Option 3 - Hybrid Model:
               required
             />
             <p className="mt-1 text-xs text-slate-500">Frame as a question or decision that needs multiple perspectives</p>
+            
+            {/* Topic Safety Analysis */}
+            {config.topic && (
+              (() => {
+                const topicAnalysis = analyzeTopicSafety(config.topic, config.description, config.style);
+                
+                if (topicAnalysis.severity === 'safe') return null;
+                
+                return (
+                  <div className={`mt-3 p-3 rounded-lg border ${
+                    topicAnalysis.severity === 'blocked' 
+                      ? 'border-red-300 bg-red-50' 
+                      : 'border-amber-300 bg-amber-50'
+                  }`}>
+                    <div className="flex items-start gap-2 mb-2">
+                      {topicAnalysis.severity === 'blocked' ? (
+                        <ShieldAlert className="w-5 h-5 text-red-600 mt-0.5" />
+                      ) : (
+                        <Shield className="w-5 h-5 text-amber-600 mt-0.5" />
+                      )}
+                      <div className="flex-1">
+                        <h4 className={`font-semibold text-sm ${
+                          topicAnalysis.severity === 'blocked' ? 'text-red-800' : 'text-amber-800'
+                        }`}>
+                          {topicAnalysis.severity === 'blocked' ? 'Topic Not Allowed' : 'Topic Warning'}
+                        </h4>
+                        
+                        {topicAnalysis.issues.map((issue, idx) => (
+                          <p key={idx} className={`text-sm mt-1 ${
+                            topicAnalysis.severity === 'blocked' ? 'text-red-700' : 'text-amber-700'
+                          }`}>
+                            {issue.message}
+                          </p>
+                        ))}
+                        
+                        {topicAnalysis.modelCompatibility.mayRefuse.length > 0 && (
+                          <p className={`text-xs mt-2 ${
+                            topicAnalysis.severity === 'blocked' ? 'text-red-600' : 'text-amber-600'
+                          }`}>
+                            <strong>Models that may refuse:</strong> {topicAnalysis.modelCompatibility.mayRefuse.join(', ')}
+                          </p>
+                        )}
+                        
+                        {topicAnalysis.suggestions.length > 0 && (
+                          <div className="mt-2">
+                            <p className={`text-xs font-medium ${
+                              topicAnalysis.severity === 'blocked' ? 'text-red-700' : 'text-amber-700'
+                            }`}>
+                              {topicAnalysis.severity === 'blocked' ? 'Try instead:' : 'Suggestions:'}
+                            </p>
+                            <ul className="mt-1 space-y-1">
+                              {topicAnalysis.suggestions.map((suggestion, idx) => (
+                                <li key={idx} className={`text-xs ${
+                                  topicAnalysis.severity === 'blocked' ? 'text-red-600' : 'text-amber-600'
+                                }`}>
+                                  • {suggestion}
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                        
+                        {/* Show topic suggestions for blocked topics */}
+                        {topicAnalysis.severity === 'blocked' && (() => {
+                          const suggestions = getTopicSuggestions(config.topic);
+                          if (suggestions.length === 0) return null;
+                          
+                          return (
+                            <div className="mt-3 pt-2 border-t border-red-200">
+                              <p className="text-xs font-medium text-red-700 mb-2">Academic alternatives:</p>
+                              <div className="space-y-1">
+                                {suggestions.slice(0, 3).map((suggestion, idx) => (
+                                  <button
+                                    key={idx}
+                                    onClick={() => setConfig({ ...config, topic: suggestion })}
+                                    className="block w-full text-left text-xs text-red-600 hover:text-red-800 hover:bg-red-100 p-1 rounded transition-colors"
+                                  >
+                                    → {suggestion}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          );
+                        })()}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()
+            )}
           </div>
           
           <div className="mb-4">
@@ -309,27 +416,38 @@ Option 3 - Hybrid Model:
               </div>
               <div className="space-y-1 bg-blue-50 rounded-lg p-2">
                 {recommendedModels.map((model) => (
-                  <label key={model.id} className="flex items-center justify-between p-2 rounded hover:bg-blue-100 cursor-pointer transition-colors">
-                    <div className="flex items-center">
-                      <input
-                        type="checkbox"
-                        checked={config.models.some(m => m.id === model.id)}
-                        onChange={(e) => {
-                          if (e.target.checked) {
-                            setConfig({ ...config, models: [...config.models, model] });
-                          } else {
-                            setConfig({ ...config, models: config.models.filter(m => m.id !== model.id) });
-                          }
-                        }}
-                        className="mr-3 h-4 w-4 text-blue-600 rounded focus:ring-blue-500"
-                      />
-                      <span className="text-slate-700 font-medium">
-                        {model.costInfo?.emoji} {model.displayName}
+                  <label key={model.id} className="block p-2 rounded hover:bg-blue-100 cursor-pointer transition-colors">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center">
+                        <input
+                          type="checkbox"
+                          checked={config.models.some(m => m.id === model.id)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setConfig({ ...config, models: [...config.models, model] });
+                            } else {
+                              setConfig({ ...config, models: config.models.filter(m => m.id !== model.id) });
+                            }
+                          }}
+                          className="mr-3 h-4 w-4 text-blue-600 rounded focus:ring-blue-500"
+                        />
+                        <div>
+                          <span className="text-slate-700 font-medium">
+                            {model.costInfo?.emoji} {model.displayName}
+                          </span>
+                          <div className="text-xs text-slate-500 mt-1">
+                            {model.contextInfo?.suggestedRole}
+                          </div>
+                          <div className="text-xs text-slate-400 mt-1">
+                            {model.contextInfo?.strengths.map(s => s.charAt(0).toUpperCase() + s.slice(1)).join(', ')} • 
+                            {model.contextInfo?.maxTokens ? ` ${(model.contextInfo.maxTokens / 1000).toFixed(0)}K context` : ' Context TBD'}
+                          </div>
+                        </div>
+                      </div>
+                      <span className="text-sm text-slate-600">
+                        {model.costInfo ? formatCost(model.costInfo.estimatedCostPerResponse) : 'Price TBD'}/response
                       </span>
                     </div>
-                    <span className="text-sm text-slate-600">
-                      {model.costInfo ? formatCost(model.costInfo.estimatedCostPerResponse) : 'Price TBD'}/response
-                    </span>
                   </label>
                 ))}
               </div>
@@ -367,27 +485,38 @@ Option 3 - Hybrid Model:
                     {expandedProviders[provider] && (
                       <div className="border-t border-slate-200">
                         {models.map((model) => (
-                          <label key={model.id} className="flex items-center justify-between p-3 hover:bg-slate-50 cursor-pointer transition-colors border-b border-slate-100 last:border-b-0">
-                            <div className="flex items-center">
-                              <input
-                                type="checkbox"
-                                checked={config.models.some(m => m.id === model.id)}
-                                onChange={(e) => {
-                                  if (e.target.checked) {
-                                    setConfig({ ...config, models: [...config.models, model] });
-                                  } else {
-                                    setConfig({ ...config, models: config.models.filter(m => m.id !== model.id) });
-                                  }
-                                }}
-                                className="mr-3 h-4 w-4 text-blue-600 rounded focus:ring-blue-500"
-                              />
-                              <span className="text-slate-700 font-medium">
-                                {model.costInfo?.emoji} {model.displayName}
+                          <label key={model.id} className="block p-3 hover:bg-slate-50 cursor-pointer transition-colors border-b border-slate-100 last:border-b-0">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center">
+                                <input
+                                  type="checkbox"
+                                  checked={config.models.some(m => m.id === model.id)}
+                                  onChange={(e) => {
+                                    if (e.target.checked) {
+                                      setConfig({ ...config, models: [...config.models, model] });
+                                    } else {
+                                      setConfig({ ...config, models: config.models.filter(m => m.id !== model.id) });
+                                    }
+                                  }}
+                                  className="mr-3 h-4 w-4 text-blue-600 rounded focus:ring-blue-500"
+                                />
+                                <div>
+                                  <span className="text-slate-700 font-medium">
+                                    {model.costInfo?.emoji} {model.displayName}
+                                  </span>
+                                  <div className="text-xs text-slate-500 mt-1">
+                                    {model.contextInfo?.suggestedRole}
+                                  </div>
+                                  <div className="text-xs text-slate-400 mt-1">
+                                    {model.contextInfo?.strengths.map(s => s.charAt(0).toUpperCase() + s.slice(1)).join(', ')} • 
+                                    {model.contextInfo?.maxTokens ? ` ${(model.contextInfo.maxTokens / 1000).toFixed(0)}K context` : ' Context TBD'}
+                                  </div>
+                                </div>
+                              </div>
+                              <span className="text-sm text-slate-500">
+                                {model.costInfo ? formatCost(model.costInfo.estimatedCostPerResponse) : 'Price TBD'}/response
                               </span>
                             </div>
-                            <span className="text-sm text-slate-500">
-                              {model.costInfo ? formatCost(model.costInfo.estimatedCostPerResponse) : 'Price TBD'}/response
-                            </span>
                           </label>
                         ))}
                       </div>
@@ -397,6 +526,97 @@ Option 3 - Hybrid Model:
               </div>
             )}
             
+              </>
+            )}
+            
+            {/* Smart Recommendations & Analysis */}
+            {config.models.length > 0 && config.topic && (
+              <>
+                {(() => {
+                  const diversityAnalysis = analyzePanelDiversity(config.models);
+                  const contextAnalysis = calculateContextRequirements(config);
+                  const recommendations = getSmartRecommendations(config, availableModels);
+                  
+                  return (
+                    <>
+                      {/* Panel Diversity Analysis */}
+                      <div className="mt-4 p-4 bg-green-50 rounded-lg border border-green-200">
+                        <div className="flex items-center gap-2 text-sm font-semibold text-green-900 mb-2">
+                          <CheckCircle size={16} />
+                          Panel Analysis (Diversity Score: {diversityAnalysis.diversityScore}%)
+                        </div>
+                        
+                        {diversityAnalysis.warnings.map((warning, idx) => (
+                          <div key={idx} className={`flex items-start gap-2 text-sm mb-2 ${
+                            warning.severity === 'critical' ? 'text-red-700' : 
+                            warning.severity === 'warning' ? 'text-amber-700' : 'text-green-700'
+                          }`}>
+                            {warning.severity === 'critical' ? <AlertTriangle size={14} className="mt-0.5" /> :
+                             warning.severity === 'warning' ? <Info size={14} className="mt-0.5" /> :
+                             <CheckCircle size={14} className="mt-0.5" />}
+                            <span>{warning.message}</span>
+                          </div>
+                        ))}
+                        
+                        {diversityAnalysis.suggestions.length > 0 && (
+                          <div className="mt-2 pt-2 border-t border-green-200">
+                            <div className="flex items-center gap-1 text-xs font-semibold text-green-800 mb-1">
+                              <Lightbulb size={12} />
+                              Suggestions:
+                            </div>
+                            {diversityAnalysis.suggestions.map((suggestion, idx) => (
+                              <div key={idx} className="text-xs text-green-700 ml-4">• {suggestion}</div>
+                            ))}
+                          </div>
+                        )}
+                        
+                        {/* Role Assignments */}
+                        <div className="mt-2 pt-2 border-t border-green-200">
+                          <div className="text-xs font-semibold text-green-800 mb-1">Selected Panel Roles:</div>
+                          <div className="grid grid-cols-1 gap-1">
+                            {config.models.map((model) => (
+                              <div key={model.id} className="text-xs text-green-700">
+                                <span className="font-medium">{model.displayName}:</span> {model.contextInfo?.suggestedRole}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                      
+                      {/* Context Window Analysis */}
+                      {contextAnalysis.warnings.length > 0 && (
+                        <div className="mt-4 p-4 bg-amber-50 rounded-lg border border-amber-200">
+                          <div className="flex items-center gap-2 text-sm font-semibold text-amber-900 mb-2">
+                            <AlertTriangle size={16} />
+                            Context Window Analysis
+                          </div>
+                          {contextAnalysis.warnings.map((warning, idx) => (
+                            <div key={idx} className={`flex items-start gap-2 text-sm mb-1 ${
+                              warning.severity === 'critical' ? 'text-red-700' : 
+                              warning.severity === 'warning' ? 'text-amber-700' : 'text-slate-600'
+                            }`}>
+                              {warning.severity === 'critical' ? <AlertTriangle size={14} className="mt-0.5" /> :
+                               <Info size={14} className="mt-0.5" />}
+                              <span><strong>{warning.modelName}:</strong> {warning.warning}</span>
+                            </div>
+                          ))}
+                          <div className="text-xs text-amber-600 mt-2">
+                            Estimated usage: {contextAnalysis.initialTokens.toLocaleString()} initial tokens + 
+                            {contextAnalysis.tokensPerRound.reduce((sum, tokens) => sum + tokens, 0).toLocaleString()} across {config.rounds} rounds = 
+                            {contextAnalysis.totalTokensByRound[config.rounds - 1].toLocaleString()} total by round {config.rounds}
+                            <br />
+                            <span className="text-amber-500">
+                              {config.style === 'adversarial' 
+                                ? '⚔️ Adversarial mode: responses may get longer as models defend positions'
+                                : '🤝 Consensus mode: responses get shorter as models converge'
+                              }
+                            </span>
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  );
+                })()}
               </>
             )}
             
@@ -444,26 +664,68 @@ Option 3 - Hybrid Model:
           
           <div className="mb-4">
             <label className="block text-sm font-semibold text-slate-700 mb-2">
-              Debate Mode
+              Debate Style
+            </label>
+            <div className="space-y-3">
+              <label className="flex items-start p-3 border border-slate-300 rounded-lg hover:bg-slate-50 cursor-pointer transition-colors">
+                <input
+                  type="radio"
+                  name="debate-style"
+                  value="consensus-seeking"
+                  checked={config.style === 'consensus-seeking'}
+                  onChange={(e) => setConfig({ ...config, style: e.target.value as any })}
+                  className="mr-3 h-4 w-4 text-green-600 focus:ring-green-500 mt-1"
+                />
+                <div>
+                  <span className="text-slate-700 font-medium">🤝 Consensus-Seeking (Business Mode)</span>
+                  <p className="text-xs text-slate-500 mt-1">
+                    Like tech leads in a room who must agree on ONE solution before leaving. 
+                    Models start with different ideas but actively work toward the best shared answer.
+                  </p>
+                </div>
+              </label>
+              <label className="flex items-start p-3 border border-slate-300 rounded-lg hover:bg-slate-50 cursor-pointer transition-colors">
+                <input
+                  type="radio"
+                  name="debate-style"
+                  value="adversarial"
+                  checked={config.style === 'adversarial'}
+                  onChange={(e) => setConfig({ ...config, style: e.target.value as any })}
+                  className="mr-3 h-4 w-4 text-red-600 focus:ring-red-500 mt-1"
+                />
+                <div>
+                  <span className="text-slate-700 font-medium">⚔️ Adversarial (Classical Debate)</span>
+                  <p className="text-xs text-slate-500 mt-1">
+                    Traditional debate where models argue different sides vigorously. 
+                    They challenge each other relentlessly to stress-test all arguments.
+                  </p>
+                </div>
+              </label>
+            </div>
+          </div>
+          
+          <div className="mb-4">
+            <label className="block text-sm font-semibold text-slate-700 mb-2">
+              Participation Mode
             </label>
             <div className="space-y-3">
               <label className="flex items-center p-3 border border-slate-300 rounded-lg hover:bg-slate-50 cursor-pointer transition-colors">
                 <input
                   type="radio"
-                  name="debate-mode"
+                  name="participation-mode"
                   checked={!config.isInteractive}
                   onChange={() => setConfig({ ...config, isInteractive: false })}
                   className="mr-3 h-4 w-4 text-blue-600 focus:ring-blue-500"
                 />
                 <div>
-                  <span className="text-slate-700 font-medium">Watch AI Models Debate</span>
-                  <p className="text-xs text-slate-500 mt-1">Observe multiple AI models discuss and reach consensus</p>
+                  <span className="text-slate-700 font-medium">👀 Observer Mode</span>
+                  <p className="text-xs text-slate-500 mt-1">Watch AI models debate and reach their conclusion</p>
                 </div>
               </label>
               <label className="flex items-center p-3 border border-slate-300 rounded-lg hover:bg-slate-50 cursor-pointer transition-colors bg-gradient-to-r from-purple-50 to-blue-50 border-purple-300">
                 <input
                   type="radio"
-                  name="debate-mode"
+                  name="participation-mode"
                   checked={config.isInteractive || false}
                   onChange={() => setConfig({ ...config, isInteractive: true })}
                   className="mr-3 h-4 w-4 text-purple-600 focus:ring-purple-500"
@@ -471,9 +733,9 @@ Option 3 - Hybrid Model:
                 <div className="flex-1">
                   <span className="text-slate-700 font-medium flex items-center gap-2">
                     <Sparkles className="w-4 h-4 text-purple-600" />
-                    Join the Debate (Interactive)
+                    🎤 Participant Mode
                   </span>
-                  <p className="text-xs text-slate-500 mt-1">Participate alongside AI models and influence the discussion</p>
+                  <p className="text-xs text-slate-500 mt-1">Join the debate and influence the discussion with your perspective</p>
                 </div>
               </label>
             </div>
@@ -488,8 +750,11 @@ Option 3 - Hybrid Model:
               type="number"
               min="1"
               max="10"
-              value={config.rounds}
-              onChange={(e) => setConfig({ ...config, rounds: parseInt(e.target.value) })}
+              value={config.rounds || 3}
+              onChange={(e) => {
+                const value = parseInt(e.target.value);
+                setConfig({ ...config, rounds: isNaN(value) ? 3 : Math.max(1, Math.min(10, value)) });
+              }}
               className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-slate-900 bg-white font-medium"
             />
           </div>
@@ -570,14 +835,24 @@ Option 3 - Hybrid Model:
                     </div>
                   </div>
                 )}
-                <Button 
-                  type="submit" 
-                  className="w-full text-white font-semibold" 
-                  size="lg"
-                  disabled={availableModels.length === 0 || config.models.length === 0}
-                >
-                  {availableModels.length === 0 ? 'No Models Available' : `Start Debate (~${formatCost(cost.totalCost)})`}
-                </Button>
+                {(() => {
+                  const topicAnalysis = analyzeTopicSafety(config.topic, config.description, config.style);
+                  const isBlocked = topicAnalysis.severity === 'blocked';
+                  const isDisabled = availableModels.length === 0 || config.models.length === 0 || isBlocked;
+                  
+                  return (
+                    <Button 
+                      type="submit" 
+                      className="w-full text-white font-semibold" 
+                      size="lg"
+                      disabled={isDisabled}
+                    >
+                      {availableModels.length === 0 ? 'No Models Available' : 
+                       isBlocked ? 'Topic Not Allowed - See Suggestions Above' :
+                       `Start Debate (~${formatCost(cost.totalCost)})`}
+                    </Button>
+                  );
+                })()}
               </>
             );
           })()}
