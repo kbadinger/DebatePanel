@@ -45,7 +45,7 @@ export async function sendPasswordResetEmail(email: string, token: string, name?
               
               <p>Hi${name ? ` ${name}` : ''},</p>
               
-              <p>You requested to reset your password for your DebatePanel account. Click the button below to create a new password:</p>
+              <p>You requested to reset your password for your DecisionForge account. Click the button below to create a new password:</p>
               
               <div style="text-align: center; margin: 30px 0;">
                 <a href="${resetUrl}" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">
