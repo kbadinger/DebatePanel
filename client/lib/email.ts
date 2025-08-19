@@ -172,11 +172,11 @@ export async function sendWelcomeEmail(email: string, name?: string) {
         </html>
       `,
       text: `
-Welcome to DebatePanel!
+Welcome to DecisionForge!
 
 Hi${name ? ` ${name}` : ''},
 
-Welcome to DebatePanel! Your account has been created with $5 in free credits to get you started.
+Welcome to DecisionForge! Your account has been created with $5 in free credits to get you started.
 
 What you can do with your credits:
 - Run 5-15 debates with different AI models
