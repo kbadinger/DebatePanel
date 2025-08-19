@@ -102,7 +102,7 @@ export default function PrivacyPage() {
 
             <h2>10. International Users</h2>
             <p>
-              DebatePanel is operated from the United States. If you are accessing the service from outside 
+              DecisionForge is operated from the United States. If you are accessing the service from outside 
               the US, your information may be transferred to and processed in the United States.
             </p>
 
