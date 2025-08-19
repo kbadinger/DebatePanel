@@ -137,7 +137,7 @@ export async function sendWelcomeEmail(email: string, name?: string) {
               
               <p>Hi${name ? ` ${name}` : ''},</p>
               
-              <p>Welcome to DebatePanel! Your account has been created with <strong>$5 in free credits</strong> to get you started.</p>
+              <p>Welcome to DecisionForge! Your account has been created with <strong>$5 in free credits</strong> to get you started.</p>
               
               <div style="background: #f0fff4; border: 1px solid #9ae6b4; border-radius: 6px; padding: 20px; margin: 20px 0;">
                 <h3 style="color: #276749; margin-top: 0;">What you can do with your credits:</h3>
