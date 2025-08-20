@@ -345,7 +345,7 @@ export default function UserDetailPage() {
                 <div className="flex gap-2">
                   <AlertCircle className="h-4 w-4 text-amber-600 flex-shrink-0 mt-0.5" />
                   <p className="text-sm text-amber-700">
-                    This will immediately add credits to the user's balance. This action cannot be undone.
+                    This will immediately add credits to the user&apos;s balance. This action cannot be undone.
                   </p>
                 </div>
               </div>
