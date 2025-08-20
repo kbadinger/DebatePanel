@@ -11,6 +11,9 @@ const nextConfig: NextConfig = {
     // your project has type errors.
     ignoreDuringBuilds: true,
   },
+  experimental: {
+    typedRoutes: false,
+  },
 };
 
 export default nextConfig;
