@@ -87,7 +87,7 @@ export async function POST(request: NextRequest) {
         // Continue with AI responses
         const modelConfigs = debate.modelSelections.map(ms => ({
           id: ms.modelId,
-          provider: ms.provider as any,
+          provider: ms.provider as 'openai' | 'anthropic' | 'google' | 'mistral' | 'xai' | 'perplexity' | 'deepseek',
           name: ms.name,
           displayName: ms.name
         }));
@@ -196,10 +196,10 @@ export async function POST(request: NextRequest) {
 
 // Helper function to generate AI model responses
 async function generateModelResponse(
-  model: any,
+  model: { id: string; provider: string; name: string; displayName: string },
   topic: string,
   description: string,
-  previousResponses: any[],
+  previousResponses: Array<{ modelId: string; content: string; position: string; isHuman?: boolean }>,
   round: number
 ): Promise<{ content: string; position: string; confidence: number }> {
   const orchestrator = new ModelOrchestrator();
