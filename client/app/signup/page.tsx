@@ -151,11 +151,11 @@ export default function SignupPage() {
               <input type="checkbox" className="mr-2 mt-1" required />
               <label className="text-sm text-slate-600">
                 I agree to the{' '}
-                <Link href="/terms" className="text-blue-600 hover:underline">
+                <Link href="/terms" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
                   Terms of Service
                 </Link>{' '}
                 and{' '}
-                <Link href="/privacy" className="text-blue-600 hover:underline">
+                <Link href="/privacy" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
                   Privacy Policy
                 </Link>
               </label>
