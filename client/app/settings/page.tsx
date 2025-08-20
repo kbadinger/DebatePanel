@@ -190,7 +190,7 @@ export default function SettingsPage() {
           <div className="mt-6 p-4 bg-amber-50 rounded-lg border border-amber-200">
             <p className="text-sm text-amber-800">
               <strong>Note:</strong> API keys are encrypted and stored securely. Once saved, they cannot be viewed again. 
-              You'll need to generate new keys from your provider if lost.
+              You&apos;ll need to generate new keys from your provider if lost.
             </p>
           </div>
         </div>
