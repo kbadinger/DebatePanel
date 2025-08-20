@@ -153,7 +153,7 @@ Format your response as a clear argument with supporting points.`;
       }
       
       // For other errors, log and create error response
-      this.logger.logError(`Error getting response from ${model.displayName}: ${error.message}`);
+      this.logger.logError(`Error getting response from ${model.displayName}: ${error instanceof Error ? error.message : 'Unknown error'}`);
       
       return {
         modelId: model.id,
