@@ -53,7 +53,7 @@ Format your response as a clear argument with supporting points.`;
       style: 'consensus-seeking'
     };
     
-    const response = await this.getModelResponse(model, prompt, previousResponses.filter(r => !r.isHuman), defaultConfig);
+    const response = await this.getModelResponse(model, prompt, previousResponses.filter(r => !r.isHuman) as any, defaultConfig);
     
     return {
       content: response.content,
