@@ -46,7 +46,7 @@ export function WinnerDisplay({ debate }: WinnerDisplayProps) {
                 <span className="ml-2 text-sm bg-blue-100 text-blue-700 px-2 py-1 rounded">Human Participant</span>
               )}
             </p>
-            <p className="text-gray-600 italic">"{debate.winner.reason}"</p>
+            <p className="text-gray-600 italic">&quot;{debate.winner.reason}&quot;</p>
           </div>
         </div>
       )}
