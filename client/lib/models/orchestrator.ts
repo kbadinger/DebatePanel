@@ -135,10 +135,10 @@ Format your response as a clear argument with supporting points.`;
       }
     } catch (error: unknown) {
       // Handle context window exceeded errors gracefully
-      if (error?.message?.includes('context') || error?.message?.includes('token') || 
-          error?.status === 400 || error?.code === 'context_length_exceeded') {
+      if ((error instanceof Error && (error.message?.includes('context') || error.message?.includes('token'))) || 
+          (error as { status?: number })?.status === 400 || (error as { code?: string })?.code === 'context_length_exceeded') {
         
-        this.logger.logError(`Context limit exceeded for ${model.displayName}: ${error.message}`);
+        this.logger.logError(`Context limit exceeded for ${model.displayName}: ${error instanceof Error ? error.message : 'Unknown error'}`);
         
         return {
           modelId: model.id,
