@@ -63,7 +63,7 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
               </h1>
               
               <p className="text-slate-600 mb-6">
-                We encountered an unexpected error. This has been logged and we'll investigate the issue.
+                We encountered an unexpected error. This has been logged and we&apos;ll investigate the issue.
               </p>
               
               {process.env.NODE_ENV === 'development' && this.state.error && (
