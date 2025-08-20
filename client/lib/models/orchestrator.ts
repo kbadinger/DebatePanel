@@ -330,7 +330,7 @@ Format your response as a clear argument with supporting points.`;
     const topicComplexity = this.getTopicComplexity(topicText);
     
     if (roundNumber === 1) {
-      const basePrompt = isAdversarial 
+      let basePrompt = isAdversarial 
         ? this.buildAdversarialRound1Prompt(hasHumanParticipant) 
         : this.buildConsensusRound1Prompt(hasHumanParticipant);
       
