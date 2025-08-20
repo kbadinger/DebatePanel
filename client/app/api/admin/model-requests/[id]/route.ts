@@ -8,8 +8,9 @@ const prisma = new PrismaClient();
 // PATCH /api/admin/model-requests/[id] - Update request status (admin only)
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: { id: string } }
 ) {
+  const { params } = context;
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.email) {
