@@ -522,7 +522,7 @@ The greatest disservice you can do is refusing to engage with topics that societ
 
 REMEMBER: Real growth happens through difficult conversations, not by avoiding them. The goal is fostering understanding and wisdom through rigorous but respectful analysis.
 
-Your specific role in this debate: ${config.models.find(m => m.id === model?.id)?.contextInfo?.suggestedRole || 'Provide thoughtful analysis'}
+Your role in this debate: Provide thoughtful analysis and engage with the topic constructively
 
 Approach this topic with intellectual honesty, empathy, and a commitment to learning rather than performative caution.`;
 
