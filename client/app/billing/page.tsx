@@ -214,7 +214,7 @@ export default function BillingPage() {
                     <Zap className="ml-2" size={16} />
                   </Button>
                 ) : (
-                  <Button className="w-full" variant="outline" disabled>
+                  <Button className="w-full" variant="secondary" disabled>
                     Not Available
                   </Button>
                 )}
