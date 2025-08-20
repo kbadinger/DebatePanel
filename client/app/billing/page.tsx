@@ -250,7 +250,7 @@ export default function BillingPage() {
               <h3 className="font-semibold text-slate-900 mb-2">Can I cancel anytime?</h3>
               <p className="text-slate-600">
                 Absolutely. You can cancel your subscription at any time from the billing portal. 
-                You'll continue to have access until the end of your billing period.
+                You&apos;ll continue to have access until the end of your billing period.
               </p>
             </div>
           </div>
