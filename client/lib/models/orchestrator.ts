@@ -23,7 +23,7 @@ export class ModelOrchestrator {
     model: Model,
     topic: string,
     description: string,
-    previousResponses: any[],
+    previousResponses: Array<{ isHuman?: boolean; modelId: string; content: string }>,
     round: number
   ): Promise<{ content: string; position: string; confidence: number }> {
     // Build context from previous responses
@@ -72,7 +72,7 @@ Format your response as a clear argument with supporting points.`;
       ? this.buildSystemPrompt(model, previousResponses, config)
       : this.buildSystemPrompt(model, previousResponses, { style: 'consensus-seeking' } as DebateConfig);
     
-    let result;
+    let result: { text: string; usage?: { promptTokens?: number; completionTokens?: number } } | undefined;
     
     try {
       switch (model.provider) {
@@ -133,7 +133,7 @@ Format your response as a clear argument with supporting points.`;
           });
           break;
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       // Handle context window exceeded errors gracefully
       if (error?.message?.includes('context') || error?.message?.includes('token') || 
           error?.status === 400 || error?.code === 'context_length_exceeded') {
@@ -224,7 +224,7 @@ Format your response as a clear argument with supporting points.`;
           previousRounds.flatMap(r => r.responses),
           config
         );
-      } catch (error: any) {
+      } catch (error: unknown) {
         // If individual model fails completely, log and create error response
         this.logger.logError(`Complete failure for ${model.displayName}: ${error.message}`);
         
@@ -328,7 +328,7 @@ Format your response as a clear argument with supporting points.`;
     const topicComplexity = this.getTopicComplexity(topicText);
     
     if (roundNumber === 1) {
-      let basePrompt = isAdversarial 
+      const basePrompt = isAdversarial 
         ? this.buildAdversarialRound1Prompt(hasHumanParticipant) 
         : this.buildConsensusRound1Prompt(hasHumanParticipant);
       
@@ -350,7 +350,7 @@ Format your response as a clear argument with supporting points.`;
       })
       .join('\n\n')}`;
     
-    let basePrompt = isAdversarial 
+    const basePrompt = isAdversarial 
       ? this.buildAdversarialLaterRoundPrompt(roundNumber, hasHumanParticipant, previousDebate)
       : this.buildConsensusLaterRoundPrompt(roundNumber, hasHumanParticipant, previousDebate);
       
@@ -755,7 +755,7 @@ Confidence: [0-100]% confident in this stance`;
       .sort(([,a], [,b]) => b - a)[0];
     
     let consensus: string | undefined;
-    let disagreements: string[] = [];
+    const disagreements: string[] = [];
     
     if (style === 'consensus-seeking') {
       // For consensus-seeking, look for convergence on stances
@@ -867,7 +867,7 @@ Keep your analysis concise but insightful.`;
     };
   }
 
-  private extractWinner(analysisText: string, participants: any[]): { id: string; name: string; type: 'model' | 'human'; reason: string } | undefined {
+  private extractWinner(analysisText: string, participants: Array<{ model: string; isHuman?: boolean; confidence: number }>): { id: string; name: string; type: 'model' | 'human'; reason: string } | undefined {
     // Look for winner declaration patterns in the judge's analysis
     const winnerPatterns = [
       /WINNER:\s*([^\n]+)/i,
@@ -921,7 +921,7 @@ Keep your analysis concise but insightful.`;
     return undefined;
   }
 
-  private extractScores(analysisText: string, participants: any[]): Array<{ id: string; name: string; score: number }> {
+  private extractScores(analysisText: string, participants: Array<{ model: string; confidence: number; position: string; isHuman?: boolean }>): Array<{ id: string; name: string; score: number }> {
     const scores: Array<{ id: string; name: string; score: number }> = [];
     
     // Look for score patterns in the text
