@@ -677,7 +677,7 @@ Option 3 - Hybrid Model:
                   name="debate-style"
                   value="consensus-seeking"
                   checked={config.style === 'consensus-seeking'}
-                  onChange={(e) => setConfig({ ...config, style: e.target.value as any })}
+                  onChange={(e) => setConfig({ ...config, style: e.target.value as 'consensus-seeking' | 'adversarial' })}
                   className="mr-3 h-4 w-4 text-green-600 focus:ring-green-500 mt-1"
                 />
                 <div>
@@ -694,7 +694,7 @@ Option 3 - Hybrid Model:
                   name="debate-style"
                   value="adversarial"
                   checked={config.style === 'adversarial'}
-                  onChange={(e) => setConfig({ ...config, style: e.target.value as any })}
+                  onChange={(e) => setConfig({ ...config, style: e.target.value as 'consensus-seeking' | 'adversarial' })}
                   className="mr-3 h-4 w-4 text-red-600 focus:ring-red-500 mt-1"
                 />
                 <div>
