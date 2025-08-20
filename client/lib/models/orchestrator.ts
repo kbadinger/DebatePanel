@@ -72,7 +72,7 @@ Format your response as a clear argument with supporting points.`;
       ? this.buildSystemPrompt(model, previousResponses, config)
       : this.buildSystemPrompt(model, previousResponses, { style: 'consensus-seeking' } as DebateConfig);
     
-    let result: { text: string; usage?: { promptTokens?: number; completionTokens?: number } } | undefined;
+    let result: { text: string; usage?: { promptTokens?: number; completionTokens?: number } };
     
     try {
       switch (model.provider) {
