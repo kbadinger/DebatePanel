@@ -152,12 +152,45 @@ export async function PATCH(
     }
 
     if (action === 'toggle-admin') {
+      // Prevent self-privilege modification
+      if (params.userId === session.user.id) {
+        return NextResponse.json({
+          error: 'Cannot modify your own admin privileges'
+        }, { status: 403 });
+      }
+
+      // Get current user data to check existing admin status
+      const targetUser = await prisma.user.findUnique({
+        where: { id: params.userId },
+        select: { id: true, email: true, isAdmin: true }
+      });
+
+      if (!targetUser) {
+        return NextResponse.json({ error: 'User not found' }, { status: 404 });
+      }
+
+      // Check if we're trying to remove the last admin
+      if (targetUser.isAdmin && !body.isAdmin) {
+        const adminCount = await prisma.user.count({
+          where: { isAdmin: true }
+        });
+        
+        if (adminCount <= 1) {
+          return NextResponse.json({
+            error: 'Cannot remove the last admin user'
+          }, { status: 403 });
+        }
+      }
+
       const user = await prisma.user.update({
         where: { id: params.userId },
         data: {
           isAdmin: body.isAdmin
         }
       });
+
+      // Comprehensive audit logging
+      console.log(`ADMIN PRIVILEGE CHANGE: Admin ${session.user.email} (${session.user.id}) ${body.isAdmin ? 'GRANTED' : 'REVOKED'} admin privileges ${body.isAdmin ? 'to' : 'from'} user ${targetUser.email} (${params.userId}). Reason: ${reason || 'No reason provided'}`);
 
       return NextResponse.json({
         success: true,
