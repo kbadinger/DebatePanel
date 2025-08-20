@@ -78,8 +78,8 @@ export default function DebateViewPage() {
             stance: response.stance,
             consensusAlignment: response.consensusAlignment
           })),
-          consensus: round.consensus,
-          keyDisagreements: round.keyDisagreements
+          consensus: (round as any).consensus,
+          keyDisagreements: (round as any).keyDisagreements
         })),
         status: data.status,
         createdAt: new Date(data.createdAt),
