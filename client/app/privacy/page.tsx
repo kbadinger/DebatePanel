@@ -106,7 +106,7 @@ export default function PrivacyPage() {
               the US, your information may be transferred to and processed in the United States.
             </p>
 
-            <h2>11. Children's Privacy</h2>
+            <h2>11. Children&apos;s Privacy</h2>
             <p>
               Our service is not intended for children under 13. We do not knowingly collect personal 
               information from children under 13. If you become aware that a child has provided us with 
