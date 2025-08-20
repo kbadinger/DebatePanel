@@ -226,7 +226,7 @@ Format your response as a clear argument with supporting points.`;
         );
       } catch (error: unknown) {
         // If individual model fails completely, log and create error response
-        this.logger.logError(`Complete failure for ${model.displayName}: ${error.message}`);
+        this.logger.logError(`Complete failure for ${model.displayName}: ${error instanceof Error ? error.message : 'Unknown error'}`);
         
         return {
           modelId: model.id,
