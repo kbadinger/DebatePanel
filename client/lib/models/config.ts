@@ -106,7 +106,7 @@ function withModelInfo(model: Omit<Model, 'costInfo' | 'contextInfo'>): Model {
   if (pricing) {
     result.costInfo = {
       estimatedCostPerResponse: pricing.providerBaseCost * (1 + pricing.platformMarkup),
-      category: pricing.costCategory,
+      category: pricing.costCategory as any,
       emoji: getCostEmoji(pricing.costCategory)
     };
   }
