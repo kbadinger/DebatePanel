@@ -53,7 +53,7 @@ export default function DebateViewPage() {
         config: {
           topic: data.topic,
           description: data.description,
-          models: data.modelSelections.map((ms: any) => ({
+          models: data.modelSelections.map((ms: { modelId: string; provider: string; name: string }) => ({
             id: ms.modelId,
             provider: ms.provider,
             name: ms.name,
@@ -66,9 +66,9 @@ export default function DebateViewPage() {
             enabled: !!data.judgeAnalysis
           }
         },
-        rounds: data.debateRounds.map((round: any) => ({
+        rounds: data.debateRounds.map((round: { roundNumber: number; responses: Array<{ modelId: string; content: string; position: string; confidence: number; createdAt: string; stance?: string; consensusAlignment?: string }> }) => ({
           roundNumber: round.roundNumber,
-          responses: round.responses.map((response: any) => ({
+          responses: round.responses.map((response: { modelId: string; content: string; position: string; confidence: number; createdAt: string; stance?: string; consensusAlignment?: string }) => ({
             modelId: response.modelId,
             round: round.roundNumber,
             content: response.content,
