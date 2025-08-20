@@ -85,7 +85,7 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
                 </Button>
                 
                 <Button 
-                  variant="outline"
+                  variant="secondary"
                   onClick={() => window.location.href = '/'}
                   className="w-full"
                 >

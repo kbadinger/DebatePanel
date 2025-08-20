@@ -182,7 +182,7 @@ export default function SignupPage() {
           <div className="space-y-3">
             <Button
               type="button"
-              variant="outline"
+              variant="secondary"
               className="w-full"
               onClick={() => handleOAuthSignup('google')}
             >
@@ -209,7 +209,7 @@ export default function SignupPage() {
 
             <Button
               type="button"
-              variant="outline"
+              variant="secondary"
               className="w-full"
               onClick={() => handleOAuthSignup('github')}
             >

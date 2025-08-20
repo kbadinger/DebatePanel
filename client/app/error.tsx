@@ -66,7 +66,7 @@ export default function Error({
             </Button>
             
             <Button 
-              variant="outline"
+              variant="secondary"
               onClick={() => window.location.href = '/'}
               className="w-full"
             >

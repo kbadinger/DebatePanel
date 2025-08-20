@@ -189,18 +189,18 @@ export default function DebateViewPage() {
         {/* Header */}
         <div className="mb-6 flex items-center justify-between">
           <Link href="/history">
-            <Button variant="outline" size="sm">
+            <Button variant="secondary" size="sm">
               <ArrowLeft className="mr-2 h-4 w-4" />
               Back to History
             </Button>
           </Link>
           
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={handleShare}>
+            <Button variant="secondary" size="sm" onClick={handleShare}>
               <Share className="mr-2 h-4 w-4" />
               Share
             </Button>
-            <Button variant="outline" size="sm" onClick={handleDownload}>
+            <Button variant="secondary" size="sm" onClick={handleDownload}>
               <Download className="mr-2 h-4 w-4" />
               Export
             </Button>

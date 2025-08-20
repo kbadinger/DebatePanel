@@ -228,7 +228,7 @@ Option 3 - Hybrid Model:
                   </Button>
                 </Link>
                 <Link href="/login" className="block">
-                  <Button variant="outline" className="w-full" size="lg">
+                  <Button variant="secondary" className="w-full" size="lg">
                     Sign in
                   </Button>
                 </Link>
