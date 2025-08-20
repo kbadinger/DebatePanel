@@ -214,7 +214,7 @@ async function generateModelResponse(
   
   // Generate the AI response
   const response = await orchestrator.generateSingleModelResponse(
-    model,
+    model as any,
     topic,
     description,
     context,
