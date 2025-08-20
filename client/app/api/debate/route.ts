@@ -69,7 +69,7 @@ export async function POST(req: NextRequest) {
               
               // Calculate estimated cost
               const { models, rounds = 3 } = config;
-              const estimatedCost = models.reduce((total: number, model: any) => {
+              const estimatedCost = models.reduce((total: number, model: { costInfo?: { estimatedCostPerResponse?: number } }) => {
                 const costPerResponse = model.costInfo?.estimatedCostPerResponse || 0.50;
                 return total + (costPerResponse * rounds);
               }, 0) * 1.3; // Add 30% platform fee
@@ -96,7 +96,7 @@ export async function POST(req: NextRequest) {
               userId,
               isInteractive: config.isInteractive || false,
               modelSelections: {
-                create: config.models.map((model: any) => ({
+                create: config.models.map((model: { id: string; provider: string; name: string }) => ({
                   modelId: model.id,
                   provider: model.provider,
                   name: model.name,
@@ -125,7 +125,7 @@ export async function POST(req: NextRequest) {
       logger.startDebate(
         dbDebate.id,
         config.topic,
-        config.models.map((m: any) => m.displayName || m.id)
+        config.models.map((m: { displayName?: string; id: string }) => m.displayName || m.id)
       );
       
       try {
@@ -167,7 +167,7 @@ export async function POST(req: NextRequest) {
             })}\n\n`));
             
             // Close this stream - human input will continue via separate endpoint
-            debate.status = 'waiting-for-human' as any;
+            debate.status = 'waiting-for-human';
             await prisma.debate.update({
               where: { id: dbDebate.id },
               data: { status: 'waiting-for-human' }
@@ -245,7 +245,7 @@ export async function POST(req: NextRequest) {
               });
               
               // Store debate winner in the debate object for streaming
-              (debate as any).winner = judgeResult.winner;
+              (debate as { winner?: typeof judgeResult.winner }).winner = judgeResult.winner;
             }
             
             // Store scores if available
@@ -269,7 +269,7 @@ export async function POST(req: NextRequest) {
               }
               
               // Add scores to debate object for streaming
-              (debate as any).scores = judgeResult.scores;
+              (debate as { scores?: typeof judgeResult.scores }).scores = judgeResult.scores;
             }
             
             console.log('Generated judge analysis with winner:', judgeResult.winner?.name);
@@ -346,7 +346,7 @@ export async function POST(req: NextRequest) {
             type: 'error',
             data: {
               message: error instanceof Error ? error.message : 'An error occurred during the debate',
-              code: error instanceof Error && 'code' in error ? (error as any).code : 'UNKNOWN_ERROR'
+              code: error instanceof Error && 'code' in error ? (error as Error & { code?: string }).code : 'UNKNOWN_ERROR'
             }
           };
           controller.enqueue(encoder.encode(`data: ${JSON.stringify(errorUpdate)}\n\n`));
