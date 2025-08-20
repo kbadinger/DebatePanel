@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
     }
 
     const plan = SUBSCRIPTION_PLANS[planId as keyof typeof SUBSCRIPTION_PLANS];
-    if (!plan || !plan.stripePriceId) {
+    if (!plan || !(plan as any).stripePriceId) {
       return NextResponse.json({ error: 'Invalid plan' }, { status: 400 });
     }
 
