@@ -149,8 +149,6 @@ export function ExampleDebateResult() {
             <ModelResponseCard
               key={response.id}
               response={{...response, round: 3} as any}
-              isLatestRound={true}
-              roundNumber={3}
             />
           ))}
         </div>
