@@ -123,7 +123,7 @@ export default function PrivacyPage() {
             <p>
               If you have questions about this Privacy Policy or our data practices, please contact us at:
               <br />
-              Email: privacy@decisionforge.io
+              Email: privacy@app.decisionforge.io
               <br />
               Address: [Your Business Address]
             </p>
