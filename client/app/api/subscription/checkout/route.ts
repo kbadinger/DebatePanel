@@ -68,7 +68,7 @@ export async function POST(req: NextRequest) {
       payment_method_types: ['card'],
       line_items: [
         {
-          price: plan.stripePriceId,
+          price: (plan as any).stripePriceId,
           quantity: 1,
         },
       ],
