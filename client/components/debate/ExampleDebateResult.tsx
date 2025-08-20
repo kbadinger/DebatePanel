@@ -85,7 +85,7 @@ export function ExampleDebateResult() {
     <div className="space-y-6">
       {/* Judge's Verdict - Always First */}
       <div className="p-8 bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl border-2 border-purple-200 shadow-xl">
-        <h2 className="text-2xl font-bold mb-4 text-purple-900">⚖️ Judge's Verdict</h2>
+        <h2 className="text-2xl font-bold mb-4 text-purple-900">⚖️ Judge&apos;s Verdict</h2>
         
         <div className="mb-6">
           <div className="text-3xl font-bold text-purple-900 mb-2">
