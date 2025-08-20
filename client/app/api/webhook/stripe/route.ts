@@ -39,7 +39,7 @@ export async function POST(req: NextRequest) {
           data: {
             plan: planId,
             status: 'active',
-            stripePriceId: plan.stripePriceId,
+            stripePriceId: (plan as any).stripePriceId,
             monthlyAllowance: plan.monthlyCredits,
             currentBalance: plan.monthlyCredits,
             currentPeriodStart: new Date(),
