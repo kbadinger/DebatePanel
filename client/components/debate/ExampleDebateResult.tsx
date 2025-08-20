@@ -148,7 +148,7 @@ export function ExampleDebateResult() {
           {exampleDebate.responses.map((response) => (
             <ModelResponseCard
               key={response.id}
-              response={{...response, round: 3}}
+              response={{...response, round: 3} as any}
               isLatestRound={true}
               roundNumber={3}
             />
