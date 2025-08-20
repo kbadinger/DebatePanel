@@ -95,7 +95,7 @@ export default function PrivacyPage() {
             <h2>9. Third-Party Services</h2>
             <p>Our service integrates with:</p>
             <ul>
-              <li><strong>Stripe:</strong> Payment processing (subject to Stripe's privacy policy)</li>
+              <li><strong>Stripe:</strong> Payment processing (subject to Stripe&apos;s privacy policy)</li>
               <li><strong>AI Providers:</strong> OpenAI, Anthropic, Google, etc. (subject to their respective policies)</li>
               <li><strong>OAuth Providers:</strong> Google, GitHub for authentication (subject to their policies)</li>
             </ul>
