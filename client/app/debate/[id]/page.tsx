@@ -251,7 +251,7 @@ export default function DebateViewPage() {
             {/* Judge's Verdict */}
             {debate.judgeAnalysis && (
               <div className="p-8 bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl border-2 border-purple-200 shadow-xl">
-                <h2 className="text-2xl font-bold mb-4 text-purple-900">⚖️ Judge's Verdict</h2>
+                <h2 className="text-2xl font-bold mb-4 text-purple-900">⚖️ Judge&apos;s Verdict</h2>
                 <div className="prose prose-slate max-w-none">
                   <div 
                     className="text-slate-800 text-lg leading-relaxed"
