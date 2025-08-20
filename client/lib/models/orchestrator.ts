@@ -132,6 +132,8 @@ Format your response as a clear argument with supporting points.`;
             temperature: 0.7,
           });
           break;
+        default:
+          throw new Error(`Unsupported provider: ${model.provider}`);
       }
     } catch (error: unknown) {
       // Handle context window exceeded errors gracefully
