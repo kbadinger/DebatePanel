@@ -9,7 +9,7 @@ export default function TermsPage() {
           <div className="prose prose-slate max-w-none">
             <h2>1. Acceptance of Terms</h2>
             <p>
-              By accessing and using DecisionForge ("the Service"), you accept and agree to be bound by the terms and provision of this agreement.
+              By accessing and using DecisionForge (&quot;the Service&quot;), you accept and agree to be bound by the terms and provision of this agreement.
             </p>
 
             <h2>2. Description of Service</h2>
@@ -68,7 +68,7 @@ export default function TermsPage() {
 
             <h2>10. Limitation of Liability</h2>
             <p>
-              DebatePanel is provided "as is" without warranties of any kind. We shall not be liable for any damages arising from your use of the Service, including but not limited to direct, indirect, incidental, or consequential damages.
+              DebatePanel is provided &quot;as is&quot; without warranties of any kind. We shall not be liable for any damages arising from your use of the Service, including but not limited to direct, indirect, incidental, or consequential damages.
             </p>
 
             <h2>11. Termination</h2>
