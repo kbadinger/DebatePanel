@@ -158,7 +158,7 @@ Format your response as a clear argument with supporting points.`;
       return {
         modelId: model.id,
         round: previousResponses.length > 0 ? Math.max(...previousResponses.map(r => r.round)) + 1 : 1,
-        content: `❌ Error: ${model.displayName} encountered an error: ${error.message}`,
+        content: `❌ Error: ${model.displayName} encountered an error: ${error instanceof Error ? error.message : 'Unknown error'}`,
         position: 'neutral',
         confidence: 0,
         timestamp: new Date(),
