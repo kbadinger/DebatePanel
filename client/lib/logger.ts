@@ -41,7 +41,7 @@ export class DebateLogger {
     this.log('-'.repeat(80));
   }
 
-  logModelResponse(modelId: string, response: string, position: string, confidence: number, metadata?: any) {
+  logModelResponse(modelId: string, response: string, position: string, confidence: number, metadata?: Record<string, unknown>) {
     this.log(`\nMODEL: ${modelId}`);
     this.log(`Time: ${new Date().toISOString()}`);
     if (metadata) {
@@ -75,10 +75,10 @@ export class DebateLogger {
     this.log('='.repeat(80));
   }
 
-  logError(error: any) {
+  logError(error: unknown) {
     this.log(`\nERROR: ${new Date().toISOString()}`);
-    this.log(error.toString());
-    if (error.stack) {
+    this.log(error instanceof Error ? error.toString() : String(error));
+    if (error instanceof Error && error.stack) {
       this.log('Stack trace:');
       this.log(error.stack);
     }
