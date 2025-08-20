@@ -220,7 +220,7 @@ export function DebateInterface({ config, onComplete }: DebateInterfaceProps) {
             <Users className="text-purple-600" size={24} />
             <div>
               <h3 className="font-semibold text-purple-900">Interactive Debate Mode</h3>
-              <p className="text-sm text-purple-700">You'll be prompted to share your perspective after the AI models respond</p>
+              <p className="text-sm text-purple-700">You&apos;ll be prompted to share your perspective after the AI models respond</p>
             </div>
           </div>
           {participants.length > 0 && (
@@ -293,7 +293,7 @@ export function DebateInterface({ config, onComplete }: DebateInterfaceProps) {
           {/* Judge's Verdict */}
           {debate.judgeAnalysis && (
             <div className="mt-8 p-8 bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl border-2 border-purple-200 shadow-xl">
-              <h2 className="text-2xl font-bold mb-4 text-purple-900">⚖️ Judge's Verdict</h2>
+              <h2 className="text-2xl font-bold mb-4 text-purple-900">⚖️ Judge&apos;s Verdict</h2>
               <div className="prose prose-slate max-w-none">
                 <div 
                   className="text-slate-800 text-lg leading-relaxed"
