@@ -141,7 +141,7 @@ export default function BillingPage() {
                 <p className="text-sm text-slate-600 mb-2">
                   Next billing date: {new Date(subscription.currentPeriodEnd).toLocaleDateString()}
                 </p>
-                <Button onClick={handleManageSubscription} variant="outline">
+                <Button onClick={handleManageSubscription} variant="secondary">
                   <CreditCard className="mr-2" size={16} />
                   Manage Subscription
                 </Button>
