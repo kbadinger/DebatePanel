@@ -46,15 +46,10 @@ export async function POST(req: NextRequest) {
     
     if (!emailResult.success) {
       console.error('Failed to send password reset email:', emailResult.error);
-      
-      // Fallback: log the reset link in development
-      if (process.env.NODE_ENV === 'development') {
-        const resetUrl = `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/reset-password?token=${resetToken}&email=${encodeURIComponent(email)}`;
-        console.log('\n===========================================');
-        console.log('Password Reset Link (Development Only):');
-        console.log(resetUrl);
-        console.log('===========================================\n');
-      }
+      return NextResponse.json(
+        { error: 'Failed to send password reset email. Please try again.' },
+        { status: 500 }
+      );
     }
 
     return NextResponse.json({
