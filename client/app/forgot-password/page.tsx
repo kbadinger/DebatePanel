@@ -53,7 +53,7 @@ export default function ForgotPasswordPage() {
               We&apos;ve sent a password reset link to <strong>{email}</strong>
             </p>
             <p className="text-sm text-slate-500 mt-4">
-              Note: In development mode, check your server logs for the reset link.
+              The link will expire in 1 hour for security. Check your spam folder if you don&apos;t see it.
             </p>
           </div>
           <div className="mt-8">
