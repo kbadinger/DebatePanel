@@ -11,7 +11,10 @@
     "make-admin": "tsx scripts/make-admin.ts",
     "manage-models": "tsx scripts/manage-models.ts",
     "test-grok": "tsx scripts/test-grok-4.ts",
-    "test-providers": "tsx scripts/test-all-providers.ts"
+    "test-providers": "tsx scripts/test-all-providers.ts",
+    "update-model": "tsx scripts/quick-model-update.ts",
+    "fetch-models": "node scripts/fetch-all-models.js",
+    "test-model": "tsx scripts/test-single-model.ts"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^1.2.12",
