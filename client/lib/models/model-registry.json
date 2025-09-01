@@ -42,6 +42,36 @@
           "deprecated": false,
           "releaseDate": "2024-09",
           "verified": true
+        },
+        {
+          "id": "gpt-5",
+          "apiName": "gpt-5",
+          "displayName": "GPT-5",
+          "category": "flagship",
+          "deprecated": false,
+          "releaseDate": "2025-01",
+          "verified": true,
+          "notes": "The best model for coding and agentic tasks across domains"
+        },
+        {
+          "id": "gpt-5-mini",
+          "apiName": "gpt-5-mini",
+          "displayName": "GPT-5 Mini",
+          "category": "standard",
+          "deprecated": false,
+          "releaseDate": "2025-01",
+          "verified": true,
+          "notes": "A faster, cost-efficient version of GPT-5 for well-defined tasks"
+        },
+        {
+          "id": "gpt-5-nano",
+          "apiName": "gpt-5-nano",
+          "displayName": "GPT-5 Nano",
+          "category": "budget",
+          "deprecated": false,
+          "releaseDate": "2025-01",
+          "verified": true,
+          "notes": "Fastest, most cost-efficient version of GPT-5"
         }
       ]
     },
@@ -112,6 +142,26 @@
           "deprecated": false,
           "releaseDate": "2024-05",
           "verified": true
+        },
+        {
+          "id": "gemini-2.5-pro",
+          "apiName": "gemini-2.5-pro",
+          "displayName": "Gemini 2.5 Pro",
+          "category": "flagship",
+          "deprecated": false,
+          "releaseDate": "2025-01",
+          "verified": true,
+          "notes": "Latest flagship Gemini model"
+        },
+        {
+          "id": "gemini-2.5-flash",
+          "apiName": "gemini-2.5-flash",
+          "displayName": "Gemini 2.5 Flash",
+          "category": "standard",
+          "deprecated": false,
+          "releaseDate": "2025-01",
+          "verified": true,
+          "notes": "Fast and efficient Gemini 2.5 model"
         }
       ]
     },
@@ -157,9 +207,9 @@
           "displayName": "Grok 4",
           "category": "premium",
           "deprecated": false,
-          "releaseDate": "2025-07",
-          "verified": false,
-          "notes": "Requires special subscription - not available via standard API"
+          "releaseDate": "2025-01",
+          "verified": true,
+          "notes": "Latest Grok model with enhanced capabilities"
         },
         {
           "id": "grok-4-heavy",
@@ -196,6 +246,16 @@
           "deprecated": false,
           "releaseDate": "2024-07",
           "verified": true
+        },
+        {
+          "id": "sonar-pro",
+          "apiName": "sonar-pro",
+          "displayName": "Perplexity Sonar Pro",
+          "category": "flagship",
+          "deprecated": false,
+          "releaseDate": "2025-01",
+          "verified": true,
+          "notes": "Enhanced Sonar model with advanced search capabilities"
         }
       ]
     },
