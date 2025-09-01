@@ -77,11 +77,13 @@ Format your response as a clear argument with supporting points.`;
     try {
       switch (model.provider) {
         case 'openai':
+          // GPT-5 models only support default temperature (1.0)
+          const temperature = model.name.startsWith('gpt-5') ? undefined : 0.7;
           result = await generateText({
             model: openai(model.name),
             system: systemPrompt,
             prompt,
-            temperature: 0.7,
+            ...(temperature !== undefined && { temperature }),
           });
           break;
         case 'anthropic':
