@@ -5,24 +5,35 @@ export class DebateLogger {
   private logDir: string;
   private currentDebateId: string;
   private logStream: fs.WriteStream | null = null;
+  private isProduction: boolean;
 
   constructor() {
-    this.logDir = path.join(process.cwd(), 'logs', 'debates');
+    this.isProduction = process.env.NODE_ENV === 'production' || process.env.VERCEL === '1';
     this.currentDebateId = '';
     
-    // Ensure log directory exists
-    if (!fs.existsSync(this.logDir)) {
-      fs.mkdirSync(this.logDir, { recursive: true });
+    // Only create log directory in development
+    if (!this.isProduction) {
+      this.logDir = path.join(process.cwd(), 'logs', 'debates');
+      
+      // Ensure log directory exists
+      if (!fs.existsSync(this.logDir)) {
+        fs.mkdirSync(this.logDir, { recursive: true });
+      }
+    } else {
+      this.logDir = ''; // No file logging in production
     }
   }
 
   startDebate(debateId: string, topic: string, models: string[]) {
     this.currentDebateId = debateId;
-    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-    const filename = `debate_${debateId}_${timestamp}.log`;
-    const filepath = path.join(this.logDir, filename);
     
-    this.logStream = fs.createWriteStream(filepath, { flags: 'a' });
+    // Only create file stream in development
+    if (!this.isProduction) {
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+      const filename = `debate_${debateId}_${timestamp}.log`;
+      const filepath = path.join(this.logDir, filename);
+      this.logStream = fs.createWriteStream(filepath, { flags: 'a' });
+    }
     
     this.log('='.repeat(80));
     this.log(`DEBATE STARTED: ${new Date().toISOString()}`);
@@ -93,17 +104,28 @@ export class DebateLogger {
   }
 
   private log(message: string) {
-    if (this.logStream) {
-      this.logStream.write(message + '\n');
-    }
-    // Also log to console in development
-    if (process.env.NODE_ENV === 'development') {
+    // In production, only use console logging
+    if (this.isProduction) {
       console.log(`[DebateLog] ${message}`);
+    } else {
+      // In development, write to file and optionally to console
+      if (this.logStream) {
+        this.logStream.write(message + '\n');
+      }
+      // Also log to console in development if verbose logging is enabled
+      if (process.env.VERBOSE_LOGGING === 'true') {
+        console.log(`[DebateLog] ${message}`);
+      }
     }
   }
 
-  // Get log file path for a debate
+  // Get log file path for a debate (only works in development)
   static getLogPath(debateId: string): string | null {
+    // In production, logs are not stored in files
+    if (process.env.NODE_ENV === 'production' || process.env.VERCEL === '1') {
+      return null;
+    }
+    
     const logDir = path.join(process.cwd(), 'logs', 'debates');
     if (!fs.existsSync(logDir)) return null;
     

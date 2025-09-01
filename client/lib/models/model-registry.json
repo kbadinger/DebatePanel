@@ -107,6 +107,16 @@
           "deprecated": false,
           "releaseDate": "2024-02",
           "verified": true
+        },
+        {
+          "id": "claude-opus-4-1-20250805",
+          "apiName": "claude-opus-4-1-20250805",
+          "displayName": "Claude Opus 4.1",
+          "category": "flagship",
+          "deprecated": false,
+          "releaseDate": "2025-08",
+          "verified": true,
+          "notes": "Latest Claude Opus model with enhanced capabilities"
         }
       ]
     },
