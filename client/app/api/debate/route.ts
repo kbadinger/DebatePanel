@@ -469,23 +469,23 @@ export async function GET(req: NextRequest) {
 
 function extractKeyArguments(response: any): string[] {
   const content = response.content || '';
-  const arguments: string[] = [];
+  const keyPoints: string[] = [];
   
   // Extract bullet points or key statements
   const lines = content.split('\n');
   for (const line of lines) {
     if (line.match(/^[•\-\*]\s+/)) {
-      arguments.push(line.replace(/^[•\-\*]\s+/, '').trim());
+      keyPoints.push(line.replace(/^[•\-\*]\s+/, '').trim());
     }
   }
   
   // If no bullet points, extract first few substantive sentences
-  if (arguments.length === 0) {
+  if (keyPoints.length === 0) {
     const sentences = content.match(/[^.!?]+[.!?]+/g) || [];
-    arguments.push(...sentences.slice(0, 3).map(s => s.trim()));
+    keyPoints.push(...sentences.slice(0, 3).map(s => s.trim()));
   }
   
-  return arguments.slice(0, 3); // Return top 3 arguments
+  return keyPoints.slice(0, 3); // Return top 3 arguments
 }
 
 function generateSynthesis(debate: Debate): string {
