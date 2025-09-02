@@ -64,6 +64,16 @@ export const MODEL_PRICING: Record<string, ModelPricing> = {
     providerBaseCost: 0.0025,
     platformMarkup: 0.3
   },
+  'gpt-5': {
+    modelId: 'gpt-5',
+    costPer1kTokens: {
+      input: 0.010,  // Latest GPT flagship model
+      output: 0.040
+    },
+    costCategory: 'flagship',
+    providerBaseCost: 0.050,
+    platformMarkup: 0.3
+  },
   'o3-pro': {
     modelId: 'o3-pro',
     costPer1kTokens: {
