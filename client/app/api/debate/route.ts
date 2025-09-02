@@ -602,9 +602,15 @@ function generateSynthesis(debate: Debate): string {
     });
   });
 
+  // Add judge's definitive answer if available
+  const judgeConclusion = debate.judgeAnalysis ? `
+## 🏆 THE ANSWER:
+${debate.judgeAnalysis.split('\n').slice(0, 5).join('\n')}
+` : '';
+
   return `## 📊 Debate Analysis: "${debate.config.topic}"
 
-${debate.config.description ? `**Context:** ${debate.config.description}\n\n` : ''}### 🎯 Final Verdict (Round ${finalRound.roundNumber}):
+${debate.config.description ? `**Context:** ${debate.config.description}\n\n` : ''}${judgeConclusion}### 🎯 Final Positions (Round ${finalRound.roundNumber}):
 ${positionPercentages.map(p => 
   `• **${p.position.replace('-', ' ').toUpperCase()}**: ${p.percentage}% (${p.count}/${totalValidResponses} participating models)`
 ).join('\n')}

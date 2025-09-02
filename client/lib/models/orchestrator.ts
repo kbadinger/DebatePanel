@@ -641,11 +641,11 @@ Confidence: [0-100]% confident in this stance`;
     return `You are participating in a CONSENSUS-SEEKING panel - like 10 tech/business leads who must leave the room with ONE best solution.
 
 CONSENSUS-SEEKING RULES:
-1. Everyone starts with different ideas, but you MUST converge on the optimal solution
-2. Challenge ideas to improve them, not to win arguments
-3. Build on good points from others while maintaining critical analysis
-4. Identify common ground and synthesize the best elements from all positions
-5. Remember: You all succeed when you find the best answer together
+1. Everyone starts with DIFFERENT positions - DO NOT start neutral!
+2. Take a STRONG initial stance (agree, disagree, or a specific alternative)
+3. Challenge ideas vigorously to test them, not just to be nice
+4. You MUST converge on ONE concrete answer by the end - not a vague "it depends"
+5. The goal is finding the BEST answer through rigorous debate, not avoiding conflict
 
 CRITICAL INSTRUCTIONS FOR COLLABORATIVE ANALYSIS:
 ✅ DO evaluate everything objectively - your goal is finding truth, not defending positions  
@@ -745,17 +745,30 @@ Confidence: [0-100]% confident in this stance`;
     const basePrompt = `Topic: ${config.topic}\n${config.description ? `\nDescription: ${config.description}` : ''}`;
     
     if (roundNumber === 1) {
-      return `${basePrompt}\n\nProvide your initial critical analysis of this topic. Consider ALL options thoroughly, identify pros and cons, and take a clear position based on evidence and logic.`;
+      return `${basePrompt}\n\nProvide your initial critical analysis of this topic. Take a STRONG, CLEAR position - either strongly agree, strongly disagree, or propose a specific alternative. DO NOT be neutral or say "it depends". Make a concrete argument that others will have to reckon with.`;
     }
     
     const lastRound = previousRounds[previousRounds.length - 1];
-    return `${basePrompt}\n\nRound ${roundNumber}: CRITICAL ANALYSIS REQUIRED\n\nPrevious arguments to evaluate:\n${
+    
+    if (roundNumber === config.rounds) {
+      // Final round - force a conclusion
+      return `${basePrompt}\n\nFINAL ROUND - DECISIVE CONCLUSION REQUIRED\n\nPrevious arguments:\n${
+        lastRound.responses.map(r => `- ${r.modelId}: ${r.content.substring(0, 200)}...`).join('\n\n')
+      }\n\nThis is the FINAL round. You MUST:
+1. Weigh all arguments presented
+2. Declare which position is STRONGEST based on evidence
+3. Provide a CONCRETE recommendation - not "it depends" or "balance is needed"
+4. If the answer truly is nuanced, specify EXACTLY what should be done
+5. Example good answers: "Prioritize safety for the next 2 years while building capability", "Innovation first with these 3 specific safety measures", etc.`;
+    }
+    
+    return `${basePrompt}\n\nRound ${roundNumber}: PUSH TOWARD CONCLUSION\n\nPrevious arguments:\n${
       lastRound.responses.map(r => `- ${r.modelId}: ${r.content.substring(0, 200)}...`).join('\n\n')
     }\n\nYour task:
-1. Identify any flaws or gaps in the previous arguments
-2. Challenge positions you disagree with using evidence
-3. Strengthen your own position or change it if convinced by strong arguments
-4. DO NOT seek false consensus - prioritize analytical rigor`;
+1. Identify the STRONGEST and WEAKEST arguments so far
+2. Challenge vague "balanced" positions - demand specifics
+3. Push the debate toward a CONCRETE answer
+4. If you're neutral, explain EXACTLY what the middle ground looks like in practice`;
   }
   
   private analyzeResponse(text: string, roundNumber: number): { 
@@ -888,7 +901,7 @@ Confidence: [0-100]% confident in this stance`;
       isHuman: r.isHuman || false
     }));
 
-    const prompt = `As the judge, provide a nuanced final judgment on this debate.
+    const prompt = `As the judge, provide the DEFINITIVE ANSWER to this debate question.
 
 Topic: ${topic}
 
@@ -901,30 +914,29 @@ ${p.model}:
 - Key argument: ${p.keyPoint}...
 `).join('\n')}
 
-Your task:
-1. Look beyond the statistical positions to understand the nuanced arguments
-2. Identify if "neutral" positions are actually leaning one way
-3. Determine if there's practical consensus despite statistical disagreement
-4. Provide a clear final recommendation based on the debate quality, not just vote counts
-5. Address edge cases like when most are neutral but one has strong conviction
-${finalPositions.some(p => p.isHuman) ? '6. Give special consideration to the human participant\'s perspective and how the AI models responded to it' : ''}
+Your PRIMARY task is to provide THE ANSWER:
+1. Cut through any vagueness - what is the CORRECT answer based on the evidence presented?
+2. If it's "prioritize safety" - say that clearly and explain why
+3. If it's "prioritize innovation" - say that clearly and explain why  
+4. If it truly requires balance - specify EXACTLY what that means (e.g., "80% innovation, 20% safety" or "Safety gates at these 3 specific points")
+5. NO WAFFLING - Give the actionable answer someone could implement tomorrow
 
-7. DECLARE A WINNER: Choose which participant presented the BEST ARGUMENTS based on:
-   - Logical consistency and reasoning
-   - Quality of evidence and examples
-   - Persuasiveness and clarity
-   - How well they addressed counterarguments
-   - Overall contribution to reaching the best solution
+Your SECONDARY tasks:
+6. DECLARE A WINNER: Which participant made the BEST case for the correct answer?
+7. Score each participant (0-100) based on:
+   - How close they got to the right answer
+   - Quality of their reasoning
+   - Strength of their evidence
+   - Clarity of their position
 
 Provide:
-- A clear verdict on what the panel actually recommends
-- Analysis of why certain positions may be more valid than others
-- WINNER DECLARATION: State clearly which model/participant won and why
-- Score each participant's performance (0-100)
-- A confidence assessment of the panel's collective wisdom
-- Any important caveats or conditions
+- THE DEFINITIVE ANSWER (in 1-2 clear sentences)
+- WHY this is the correct answer (brief justification)
+- WINNER: Who argued best for this position
+- SCORES: Rate each participant
+- CONFIDENCE: How certain are you in this answer (0-100%)
 
-Keep your analysis concise but insightful.`;
+BE DECISIVE. The whole point of this debate was to get an answer, not to admire the complexity.`;
 
     const result = await generateText({
       model: this.getModelProvider(judgeModel),
