@@ -17,8 +17,8 @@ function safeSSEEncode(data: any, isStreamingUpdate: boolean = false): string {
     console.log(`Encoding SSE data of type: ${data.type}, streaming: ${isStreamingUpdate}`);
     
     // Different limits for streaming vs final completion
-    const MAX_RESPONSE_LENGTH = isStreamingUpdate ? 1500 : 2000; // Streaming: 1.5KB, Final: 2KB
-    const MAX_TOTAL_LENGTH = isStreamingUpdate ? 8000 : 15000; // Streaming: 8KB, Final: 15KB
+    const MAX_RESPONSE_LENGTH = isStreamingUpdate ? 8000 : 10000; // Streaming: 8KB, Final: 10KB (increased)
+    const MAX_TOTAL_LENGTH = isStreamingUpdate ? 50000 : 100000; // Streaming: 50KB, Final: 100KB (increased)
     
     // Deep clone and truncate if needed
     const processedData = JSON.parse(JSON.stringify(data, (key, value) => {
