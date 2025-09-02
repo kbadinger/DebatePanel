@@ -27,6 +27,7 @@ export function DebateInterface({ config, onComplete }: DebateInterfaceProps) {
   const [streamingResponses, setStreamingResponses] = useState<ModelResponse[]>([]);
   const [waitingForHuman, setWaitingForHuman] = useState(false);
   const [isSubmittingHuman, setIsSubmittingHuman] = useState(false);
+  const [debug, setDebug] = useState(false);
 
   
   const handleCopySynthesis = async () => {
@@ -234,7 +235,8 @@ export function DebateInterface({ config, onComplete }: DebateInterfaceProps) {
               console.log('Has judgeAnalysis:', !!data.data.judgeAnalysis);
               console.log('Current debate state before update:', debate);
               
-              // Merge completed debate with existing rounds data
+              // Merge completed debate with existing rounds data AND stop running in the same update
+              setIsRunning(false);
               setDebate(prevDebate => {
                 const completedDebate = {
                   ...prevDebate,  // Keep existing rounds and config
@@ -247,7 +249,6 @@ export function DebateInterface({ config, onComplete }: DebateInterfaceProps) {
                 console.log('Has judge:', !!completedDebate.judgeAnalysis);
                 return completedDebate;
               });
-              setIsRunning(false);
               
               // Add a small delay to ensure state updates and prevent race conditions
               setTimeout(() => {
@@ -343,8 +344,8 @@ export function DebateInterface({ config, onComplete }: DebateInterfaceProps) {
               setStreamingResponses([]);
             } else if (data.type === 'debate-complete') {
               console.log('Debate completed (2nd handler):', data.data);
-              setDebate(data.data);
               setIsRunning(false);
+              setDebate(data.data);
               onComplete?.(data.data);
             }
           }
@@ -373,6 +374,12 @@ export function DebateInterface({ config, onComplete }: DebateInterfaceProps) {
             {config.description}
           </p>
         )}
+        <button 
+          onClick={() => setDebug(!debug)}
+          className="mt-4 px-3 py-1 text-xs bg-gray-200 hover:bg-gray-300 rounded"
+        >
+          {debug ? 'Hide Debug' : 'Show Debug'}
+        </button>
       </div>
       
       {/* Interactive Mode Banner */}
@@ -393,8 +400,20 @@ export function DebateInterface({ config, onComplete }: DebateInterfaceProps) {
         </div>
       )}
       
-      {/* Final Results - Show at very top when completed */}
-      {(debate?.status === 'completed' || debate?.status === 'converged') && (
+      {/* Debug: Force show synthesis if it exists */}
+      {debug && debate?.finalSynthesis && (
+        <div className="mb-8 p-4 bg-yellow-100 border border-yellow-400 rounded">
+          <h3 className="font-bold">DEBUG: Found Synthesis Data</h3>
+          <p>Status: {debate.status}</p>
+          <p>Length: {debate.finalSynthesis.length} chars</p>
+          <div className="mt-2 p-2 bg-white rounded text-xs">
+            <pre>{debate.finalSynthesis.substring(0, 500)}...</pre>
+          </div>
+        </div>
+      )}
+
+      {/* Final Results - Show when we have synthesis (primary condition) */}
+      {(debate?.finalSynthesis && (debate?.status === 'completed' || debate?.status === 'converged' || debate?.rounds?.length > 0)) && (
         <div className="space-y-8 mb-8">
           {/* Winner/Leading Contributor - First */}
           <WinnerDisplay debate={debate} />
@@ -578,13 +597,27 @@ export function DebateInterface({ config, onComplete }: DebateInterfaceProps) {
       
       {/* Debug: Check debate state */}
       {(() => {
-        console.log('Rendering check - debate:', {
+        const debugData = {
           status: debate?.status,
           isRunning,
           hasSynthesis: !!debate?.finalSynthesis,
           synthesisLength: debate?.finalSynthesis?.length,
-          rounds: debate?.rounds?.length
-        });
+          synthesisPreview: debate?.finalSynthesis?.substring(0, 100),
+          rounds: debate?.rounds?.length,
+          showingFinalResults: (debate?.status === 'completed' || debate?.status === 'converged'),
+          finalResultsCondition: `(${debate?.status} === 'completed' || ${debate?.status} === 'converged') = ${(debate?.status === 'completed' || debate?.status === 'converged')}`
+        };
+        console.log('Rendering check - debate:', debugData);
+        
+        // Also show on screen for debugging
+        if (debug) {
+          return (
+            <div className="mt-4 p-4 bg-yellow-100 border border-yellow-400 rounded">
+              <h3>Debug Info:</h3>
+              <pre>{JSON.stringify(debugData, null, 2)}</pre>
+            </div>
+          );
+        }
         return null;
       })()}
       

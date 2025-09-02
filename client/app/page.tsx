@@ -10,6 +10,7 @@ import { calculateDebateCost, formatCost } from '@/lib/models/pricing';
 import { calculateContextRequirements, analyzePanelDiversity, getSmartRecommendations } from '@/lib/context-analysis';
 import { analyzeTopicSafety, getTopicSuggestions } from '@/lib/topic-filter';
 import { Button } from '@/components/ui/button';
+import ModelLimitDialog from '@/components/ui/ModelLimitDialog';
 import { ChevronDown, ChevronRight, Sparkles, AlertTriangle, CheckCircle, Info, Lightbulb, Shield, ShieldAlert } from 'lucide-react';
 import Link from 'next/link';
 
@@ -18,6 +19,13 @@ export default function Home() {
   const [showDebate, setShowDebate] = useState(false);
   const [expandedProviders, setExpandedProviders] = useState<Record<string, boolean>>({});
   const [showAllProviders, setShowAllProviders] = useState(false);
+  
+  // Dialog state for model limits
+  const [limitDialog, setLimitDialog] = useState<{
+    isOpen: boolean;
+    type: 'total-limit' | 'provider-limit';
+    providerName?: string;
+  }>({ isOpen: false, type: 'total-limit' });
   const [configuredProviders, setConfiguredProviders] = useState<ModelProvider[]>([]);
   const [loading, setLoading] = useState(true);
   
@@ -421,14 +429,21 @@ Option 3 - Hybrid Model:
                           onChange={(e) => {
                             if (e.target.checked) {
                               if (config.models.length >= 6) {
-                                alert('Maximum 6 models allowed. Focus on diverse models across different providers for best performance.');
+                                setLimitDialog({ 
+                                  isOpen: true, 
+                                  type: 'total-limit'
+                                });
                                 return;
                               }
                               
                               // Check provider limit (max 2 per provider)
                               const providerCount = config.models.filter(m => m.provider === model.provider).length;
                               if (providerCount >= 2) {
-                                alert(`Maximum 2 models per provider (${model.provider}). Try selecting from different providers for diverse perspectives.`);
+                                setLimitDialog({ 
+                                  isOpen: true, 
+                                  type: 'provider-limit',
+                                  providerName: model.provider
+                                });
                                 return;
                               }
                               
@@ -504,14 +519,21 @@ Option 3 - Hybrid Model:
                                   onChange={(e) => {
                                     if (e.target.checked) {
                                       if (config.models.length >= 6) {
-                                        alert('Maximum 6 models allowed. Focus on diverse models across different providers for best performance.');
+                                        setLimitDialog({ 
+                                          isOpen: true, 
+                                          type: 'total-limit'
+                                        });
                                         return;
                                       }
                                       
                                       // Check provider limit (max 2 per provider)
                                       const providerCount = config.models.filter(m => m.provider === model.provider).length;
                                       if (providerCount >= 2) {
-                                        alert(`Maximum 2 models per provider (${model.provider}). Try selecting from different providers for diverse perspectives.`);
+                                        setLimitDialog({ 
+                                          isOpen: true, 
+                                          type: 'provider-limit',
+                                          providerName: model.provider
+                                        });
                                         return;
                                       }
                                       
@@ -882,5 +904,15 @@ Option 3 - Hybrid Model:
         )}
       </div>
     </div>
+
+    {/* Model Limit Dialog */}
+    <ModelLimitDialog
+      isOpen={limitDialog.isOpen}
+      onClose={() => setLimitDialog({ ...limitDialog, isOpen: false })}
+      type={limitDialog.type}
+      providerName={limitDialog.providerName}
+      currentCount={selectedModels.length}
+      maxCount={6}
+    />
   );
 }
