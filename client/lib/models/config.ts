@@ -10,6 +10,9 @@ export const MODEL_CONTEXT_LIMITS = {
   'claude-opus-4-20250514': 200000,
   'claude-3-7-sonnet-20250219': 200000,
   'claude-3-5-sonnet-20241022': 200000,
+  'gemini-2.5-pro': 1048576,  // 1M tokens from API
+  'gemini-2.5-flash': 1048576,  // 1M tokens 
+  'gemini-2.0-flash': 1048576,  // 1M tokens
   'grok-4-0709': 256000,
   'grok-3': 128000,
 };
@@ -176,6 +179,26 @@ const FEATURED_MODELS: Model[] = [
     provider: 'anthropic',
     name: 'claude-3-7-sonnet-20250219',
     displayName: 'Claude Sonnet 3.7 (Feb 2025)'
+  }),
+  
+  // Google - Flagship Gemini Models (Discovered via API)
+  withModelInfo({
+    id: 'gemini-2.5-pro',
+    provider: 'google',
+    name: 'gemini-2.5-pro',
+    displayName: 'Gemini 2.5 Pro'
+  }),
+  withModelInfo({
+    id: 'gemini-2.5-flash',
+    provider: 'google',
+    name: 'gemini-2.5-flash',
+    displayName: 'Gemini 2.5 Flash'
+  }),
+  withModelInfo({
+    id: 'gemini-2.0-flash',
+    provider: 'google',
+    name: 'gemini-2.0-flash',
+    displayName: 'Gemini 2.0 Flash'
   }),
   
   // xAI - Flagship Grok Models (Discovered via API)
