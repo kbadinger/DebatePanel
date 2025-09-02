@@ -151,7 +151,9 @@ export async function POST(req: NextRequest) {
               type: 'response',
               data: response,
             };
-            controller.enqueue(encoder.encode(`data: ${JSON.stringify(update)}\n\n`));
+            // Properly escape JSON to prevent parsing errors
+          const jsonString = JSON.stringify(update);
+          controller.enqueue(encoder.encode(`data: ${jsonString}\n\n`));
           }
           
           // Stream round completion

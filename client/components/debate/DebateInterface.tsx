@@ -138,7 +138,14 @@ export function DebateInterface({ config, onComplete }: DebateInterfaceProps) {
         
         for (const line of lines) {
           if (line.startsWith('data: ')) {
-            const data = JSON.parse(line.slice(6));
+            let data;
+            try {
+              data = JSON.parse(line.slice(6));
+            } catch (parseError) {
+              console.error('JSON parse error:', parseError);
+              console.error('Failed to parse line:', line);
+              continue;
+            }
             
             if (data.type === 'response') {
               setStreamingResponses(prev => [...prev, data.data]);
@@ -240,7 +247,14 @@ export function DebateInterface({ config, onComplete }: DebateInterfaceProps) {
         
         for (const line of lines) {
           if (line.startsWith('data: ')) {
-            const data = JSON.parse(line.slice(6));
+            let data;
+            try {
+              data = JSON.parse(line.slice(6));
+            } catch (parseError) {
+              console.error('JSON parse error:', parseError);
+              console.error('Failed to parse line:', line);
+              continue;
+            }
             
             if (data.type === 'response') {
               setStreamingResponses(prev => [...prev, data.data]);
