@@ -112,15 +112,29 @@ export function WinnerDisplay({ debate }: WinnerDisplayProps) {
         </div>
       )}
 
-      {/* Victory Conditions Legend */}
+      {/* Evaluation Criteria Legend */}
       <div className="bg-gray-50 rounded-lg p-4 text-sm text-gray-600">
-        <h4 className="font-semibold text-gray-700 mb-2">How Winners Are Determined</h4>
+        <h4 className="font-semibold text-gray-700 mb-2">
+          {isConsensusMode ? 'How Contributors Are Evaluated' : 'How Winners Are Determined'}
+        </h4>
         <ul className="space-y-1 list-disc list-inside">
-          <li>Logical consistency and quality of reasoning</li>
-          <li>Strength of evidence and examples provided</li>
-          <li>Persuasiveness and clarity of arguments</li>
-          <li>Ability to address counterarguments effectively</li>
-          <li>Overall contribution to reaching the best solution</li>
+          {isConsensusMode ? (
+            <>
+              <li>Quality of collaborative reasoning and synthesis</li>
+              <li>Effectiveness in building consensus</li>
+              <li>Constructiveness of contributions</li>
+              <li>Ability to integrate diverse perspectives</li>
+              <li>Overall contribution to reaching the best solution</li>
+            </>
+          ) : (
+            <>
+              <li>Logical consistency and quality of reasoning</li>
+              <li>Strength of evidence and examples provided</li>
+              <li>Persuasiveness and clarity of arguments</li>
+              <li>Ability to address counterarguments effectively</li>
+              <li>Overall contribution to reaching the best solution</li>
+            </>
+          )}
         </ul>
       </div>
     </div>

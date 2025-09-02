@@ -396,7 +396,10 @@ export function DebateInterface({ config, onComplete }: DebateInterfaceProps) {
       {/* Final Results - Show at very top when completed */}
       {(debate?.status === 'completed' || debate?.status === 'converged') && (
         <div className="space-y-8 mb-8">
-          {/* Judge's Verdict - First */}
+          {/* Winner/Leading Contributor - First */}
+          <WinnerDisplay debate={debate} />
+          
+          {/* Judge's Verdict - Second */}
           {debate.judgeAnalysis && (
             <div className="p-8 bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl border-2 border-purple-200 shadow-xl">
               <div className="flex justify-between items-start mb-4">
@@ -437,8 +440,7 @@ export function DebateInterface({ config, onComplete }: DebateInterfaceProps) {
             </div>
           )}
 
-          {/* Winner Display - Second */}
-          <WinnerDisplay debate={debate} />
+
           
           {/* Statistical Analysis - Third */}
           {debate.finalSynthesis && (
