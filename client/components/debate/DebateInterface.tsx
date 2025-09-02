@@ -68,12 +68,24 @@ export function DebateInterface({ config, onComplete }: DebateInterfaceProps) {
     };
   }, []);
   
+  // Monitor debate state changes
+  useEffect(() => {
+    console.log('Debate state changed:', {
+      status: debate?.status,
+      hasSynthesis: !!debate?.finalSynthesis,
+      hasJudgeAnalysis: !!debate?.judgeAnalysis,
+      rounds: debate?.rounds?.length
+    });
+  }, [debate]);
+  
   const startDebate = async () => {
     if (isRunning) {
       console.log('Debate already running, skipping...');
       return;
     }
     
+    console.log('Starting new debate, clearing previous state');
+    setDebate(undefined); // Clear any previous debate
     setIsRunning(true);
     setCurrentRound(1);
     
@@ -149,16 +161,23 @@ export function DebateInterface({ config, onComplete }: DebateInterfaceProps) {
               
               // Force update with completed debate
               const completedDebate = { ...data.data };
+              console.log('Setting completed debate state');
               setDebate(completedDebate);
               setIsRunning(false);
               
-              // Add a small delay to ensure state updates
+              // Add a small delay to ensure state updates and prevent race conditions
               setTimeout(() => {
                 console.log('After state update - debate status:', completedDebate.status);
                 console.log('After state update - has synthesis:', !!completedDebate.finalSynthesis);
+                // Force another update in case of race condition
+                setDebate(prev => {
+                  console.log('Force update check - prev debate:', prev?.status);
+                  return completedDebate;
+                });
               }, 100);
               
               onComplete?.(completedDebate);
+              eventSource.close(); // Close the stream explicitly
             } else if (data.type === 'error') {
               console.error('Debate error:', data.data);
               alert(`Debate Error: ${data.data.message}\n\nPlease ensure all required API keys are configured.`);
@@ -170,7 +189,6 @@ export function DebateInterface({ config, onComplete }: DebateInterfaceProps) {
       }
     } catch (error) {
       console.error('Debate error:', error);
-    } finally {
       setIsRunning(false);
     }
   };
