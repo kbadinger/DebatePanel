@@ -2,77 +2,75 @@ import { NextRequest, NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
 import { getUserUsageForPeriod } from '@/lib/usage-tracking';
 import { AVAILABLE_MODELS } from '@/lib/models/config';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/auth';
 
 const prisma = new PrismaClient();
 
 export async function GET(req: NextRequest) {
   try {
-    // TODO: Get userId from session when auth is implemented
-    const userId = null;
+    // Get authenticated user
+    const session = await getServerSession(authOptions);
+    const userId = session?.user?.id;
     
-    // For now, return mock data
+    // Return error if not authenticated
     if (!userId) {
+      return NextResponse.json(
+        { error: 'Authentication required' },
+        { status: 401 }
+      );
+    }
+    
+    // For users without data yet, return minimal real data instead of mock
+    const hasData = await prisma.usageRecord.findFirst({
+      where: { userId }
+    });
+    
+    if (!hasData) {
+      // Get real subscription data even if no usage yet
+      const subscription = await prisma.subscription.findUnique({
+        where: { userId },
+      });
+      
+      // Get any debates even if no usage records
+      const debates = await prisma.debate.findMany({
+        where: { userId },
+        orderBy: { createdAt: 'desc' },
+        take: 10,
+        include: {
+          modelSelections: true,
+        },
+      });
+      
       return NextResponse.json({
         currentPeriod: {
-          totalCost: 0.45,
-          apiCost: 0.35,
-          platformFee: 0.10,
-          debateCount: 3,
-          tokenCount: 15000,
+          totalCost: 0,
+          apiCost: 0,
+          platformFee: 0,
+          debateCount: debates.length,
+          tokenCount: 0,
         },
-        subscription: {
-          plan: 'Free Trial',
-          monthlyAllowance: 5.00,
-          currentBalance: 4.55,
+        subscription: subscription ? {
+          plan: subscription.plan,
+          monthlyAllowance: subscription.monthlyAllowance,
+          currentBalance: subscription.currentBalance,
+          rolloverBalance: subscription.rolloverBalance,
+          periodEnd: subscription.currentPeriodEnd.toISOString(),
+        } : {
+          plan: 'Free',
+          monthlyAllowance: 0,
+          currentBalance: 0,
           rolloverBalance: 0,
           periodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
         },
-        modelBreakdown: [
-          {
-            modelId: 'gpt-4.1',
-            displayName: 'GPT-4.1',
-            tokenCount: 5000,
-            cost: 0.15,
-            percentage: 33,
-          },
-          {
-            modelId: 'claude-sonnet-4',
-            displayName: 'Claude Sonnet 4',
-            tokenCount: 5000,
-            cost: 0.15,
-            percentage: 33,
-          },
-          {
-            modelId: 'gemini-2.5-pro',
-            displayName: 'Gemini 2.5 Pro',
-            tokenCount: 5000,
-            cost: 0.15,
-            percentage: 33,
-          },
-        ],
-        recentDebates: [
-          {
-            id: '1',
-            topic: 'Should we use keyless or BYOK pricing model?',
-            cost: 0.15,
-            modelCount: 3,
-            createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-          },
-          {
-            id: '2',
-            topic: 'Mobile app vs Web app first?',
-            cost: 0.15,
-            modelCount: 3,
-            createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
-          },
-          {
-            id: '3',
-            topic: 'React vs Vue for the frontend?',
-            cost: 0.15,
-            modelCount: 3,
-            createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
-          },
-        ],
+        modelBreakdown: [],
+        recentDebates: debates.map(debate => ({
+          id: debate.id,
+          topic: debate.topic,
+          cost: 0, // No usage records yet
+          modelCount: debate.modelSelections.length,
+          createdAt: debate.createdAt.toISOString(),
+        })),
       });
     }
     
