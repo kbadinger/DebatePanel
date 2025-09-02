@@ -2,6 +2,8 @@ export type ModelProvider = 'openai' | 'anthropic' | 'google' | 'xai' | 'perplex
 
 export type ModelStrength = 'analytical' | 'creative' | 'ethical' | 'technical' | 'business' | 'research' | 'general';
 
+export type ResponseLength = 'concise' | 'standard' | 'detailed' | 'comprehensive';
+
 export interface Model {
   id: string;
   provider: ModelProvider;
@@ -29,6 +31,7 @@ export interface DebateConfig {
   format: 'free-form' | 'structured' | 'devils-advocate';
   style: DebateStyle; // NEW: Determines if models should seek consensus or argue different sides
   convergenceThreshold?: number;
+  responseLength?: ResponseLength; // NEW: Control response length and cost
   judge?: {
     enabled: boolean;
     model?: Model;

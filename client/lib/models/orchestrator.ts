@@ -1,6 +1,7 @@
 import { generateText } from 'ai';
 import { Model, ModelResponse, DebateConfig, DebateRound } from '@/types/debate';
 import { openai, anthropic, google, mistral, xai, perplexity, deepseek } from './providers';
+import { RESPONSE_LENGTH_OPTIONS } from '@/lib/tokenization';
 import { PrismaClient } from '@prisma/client';
 import { DebateLogger } from '@/lib/logger';
 import { UsageTracker } from '@/lib/usage-tracking';
@@ -73,6 +74,10 @@ Format your response as a clear argument with supporting points.`;
       ? this.buildSystemPrompt(model, previousResponses, config)
       : this.buildSystemPrompt(model, previousResponses, { style: 'consensus-seeking' } as DebateConfig);
     
+    // Get max_tokens from response length setting
+    const responseLength = config?.responseLength || 'standard';
+    const maxTokens = RESPONSE_LENGTH_OPTIONS[responseLength].maxTokens;
+    
     // Check context limits before sending request
     const contextCheck = this.checkContextLimits(model, prompt, systemPrompt);
     
@@ -123,6 +128,7 @@ Format your response as a clear argument with supporting points.`;
           system: systemPrompt,
           prompt,
           temperature,
+          maxTokens,
         });
         this.logger.log(`OpenAI (${model.name}) responded in ${Date.now() - openaiStartTime}ms`);
         break;
@@ -137,6 +143,7 @@ Format your response as a clear argument with supporting points.`;
             system: systemPrompt,
             prompt,
             temperature: 0.7,
+            maxTokens,
           });
           break;
         case 'google':
@@ -145,6 +152,7 @@ Format your response as a clear argument with supporting points.`;
             system: systemPrompt,
             prompt,
             temperature: 0.7,
+            maxTokens,
           });
           break;
         case 'mistral':
@@ -153,6 +161,7 @@ Format your response as a clear argument with supporting points.`;
             system: systemPrompt,
             prompt,
             temperature: 0.7,
+            maxTokens,
           });
           break;
         case 'xai':
@@ -163,6 +172,7 @@ Format your response as a clear argument with supporting points.`;
             system: systemPrompt,
             prompt,
             temperature: 0.7,
+            maxTokens,
           });
           this.logger.log(`X.AI (${model.name}) responded in ${Date.now() - xaiStartTime}ms`);
           break;
@@ -172,6 +182,7 @@ Format your response as a clear argument with supporting points.`;
             system: systemPrompt,
             prompt,
             temperature: 0.7,
+            maxTokens,
           });
           break;
         case 'deepseek':
@@ -180,6 +191,7 @@ Format your response as a clear argument with supporting points.`;
             system: systemPrompt,
             prompt,
             temperature: 0.7,
+            maxTokens,
           });
           break;
         default:

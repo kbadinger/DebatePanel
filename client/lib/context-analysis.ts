@@ -1,4 +1,5 @@
 import { Model, DebateConfig, ModelStrength } from '@/types/debate';
+import { RESPONSE_LENGTH_OPTIONS } from '@/lib/tokenization';
 
 // Rough token estimation for text (approximately 4 characters per token)
 export function estimateTokens(text: string): number {
@@ -23,6 +24,10 @@ export function calculateContextRequirements(config: DebateConfig): {
   const systemPromptTokens = 1000; // Approximate system prompt size (higher for role-based prompts)
   const initialTokens = topicTokens + descriptionTokens + systemPromptTokens;
   
+  // Get response length configuration
+  const responseLength = config.responseLength || 'standard';
+  const responseConfig = RESPONSE_LENGTH_OPTIONS[responseLength];
+  
   // Token estimation varies by debate style
   const tokensPerRound: number[] = [];
   const totalTokensByRound: number[] = [];
@@ -32,23 +37,26 @@ export function calculateContextRequirements(config: DebateConfig): {
   for (let round = 1; round <= config.rounds; round++) {
     let avgResponseTokens: number;
     
+    // Base response length on user's setting
+    const baseTokens = responseConfig.targetTokens;
+    
     if (config.style === 'adversarial') {
       // Adversarial: Responses get longer and more detailed as models defend positions
       if (round === 1) {
-        avgResponseTokens = 500; // Initial position
+        avgResponseTokens = baseTokens; // Initial position at target length
       } else if (round === 2) {
-        avgResponseTokens = 600; // Rebuttals and counter-arguments
+        avgResponseTokens = Math.min(baseTokens * 1.2, responseConfig.maxTokens); // 20% longer for rebuttals
       } else {
-        avgResponseTokens = 650; // Deep argumentation, citations, edge cases
+        avgResponseTokens = Math.min(baseTokens * 1.3, responseConfig.maxTokens); // 30% longer for deep argumentation
       }
     } else {
       // Consensus-seeking: Responses get shorter and more focused as they converge
       if (round === 1) {
-        avgResponseTokens = 500; // Initial diverse perspectives
+        avgResponseTokens = baseTokens; // Initial diverse perspectives at target length
       } else if (round === 2) {
-        avgResponseTokens = 400; // Building on others' ideas
+        avgResponseTokens = Math.max(baseTokens * 0.8, 200); // 20% shorter for building on ideas
       } else {
-        avgResponseTokens = 300; // Focused convergence toward solution
+        avgResponseTokens = Math.max(baseTokens * 0.6, 150); // 40% shorter for focused convergence
       }
     }
     

@@ -9,6 +9,7 @@ import { AVAILABLE_MODELS, MODEL_TIERS, PROVIDER_MODELS } from '@/lib/models/con
 import { calculateDebateCost, formatCost } from '@/lib/models/pricing';
 import { calculateContextRequirements, analyzePanelDiversity, getSmartRecommendations } from '@/lib/context-analysis';
 import { analyzeTopicSafety, getTopicSuggestions } from '@/lib/topic-filter';
+import { RESPONSE_LENGTH_OPTIONS, ResponseLength } from '@/lib/tokenization';
 import { Button } from '@/components/ui/button';
 import ModelLimitDialog from '@/components/ui/ModelLimitDialog';
 import { ChevronDown, ChevronRight, Sparkles, AlertTriangle, CheckCircle, Info, Lightbulb, Shield, ShieldAlert } from 'lucide-react';
@@ -67,6 +68,7 @@ export default function Home() {
     format: 'structured',
     style: 'consensus-seeking', // Default to consensus-seeking
     convergenceThreshold: 0.75,
+    responseLength: 'standard' as ResponseLength, // Default response length
     judge: {
       enabled: true,
       model: availableModels.find(m => m.id === 'claude-3-5-sonnet-20241022') || availableModels[0]
@@ -801,6 +803,64 @@ Option 3 - Hybrid Model:
               }}
               className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-slate-900 bg-white font-medium"
             />
+          </div>
+          
+          <div className="mb-4">
+            <label className="block text-sm font-semibold text-slate-700 mb-2">
+              Response Length & Cost Control
+            </label>
+            <div className="space-y-2">
+              {Object.entries(RESPONSE_LENGTH_OPTIONS).map(([key, option]) => {
+                const isSelected = config.responseLength === key;
+                const costInfo = calculateDebateCost(
+                  config.models, 
+                  config.rounds,
+                  config.topic,
+                  config.description || '',
+                  config.judge?.enabled ? config.judge.model : null
+                );
+                const adjustedCost = costInfo.totalCost * option.costMultiplier;
+                
+                return (
+                  <label 
+                    key={key} 
+                    className={`flex items-center p-3 border rounded-lg hover:bg-slate-50 cursor-pointer transition-colors ${
+                      isSelected ? 'border-blue-500 bg-blue-50' : 'border-slate-300'
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="response-length"
+                      checked={isSelected}
+                      onChange={() => setConfig({ ...config, responseLength: key as ResponseLength })}
+                      className="mr-3 h-4 w-4 text-blue-600 focus:ring-blue-500"
+                    />
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-700 font-medium">{option.label}</span>
+                        <div className="flex items-center gap-2 text-xs">
+                          <span className="text-slate-500">{option.targetTokens} tokens</span>
+                          {config.models.length > 0 && (
+                            <span className={`px-2 py-1 rounded text-xs font-medium ${
+                              option.costMultiplier <= 0.5 ? 'bg-green-100 text-green-800' :
+                              option.costMultiplier <= 1.5 ? 'bg-blue-100 text-blue-800' :
+                              option.costMultiplier <= 3 ? 'bg-amber-100 text-amber-800' :
+                              'bg-red-100 text-red-800'
+                            }`}>
+                              {formatCost(adjustedCost)}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      <p className="text-xs text-slate-500 mt-1">{option.description}</p>
+                    </div>
+                  </label>
+                );
+              })}
+            </div>
+            <div className="mt-2 text-xs text-slate-500">
+              💡 Longer responses provide more depth but cost more. Shorter responses are more focused and budget-friendly.
+            </div>
           </div>
           
           <div className="mb-6">
