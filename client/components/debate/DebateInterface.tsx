@@ -162,7 +162,10 @@ export function DebateInterface({ config, onComplete }: DebateInterfaceProps) {
               // Force update with completed debate
               const completedDebate = { ...data.data };
               console.log('Setting completed debate state');
-              setDebate(completedDebate);
+              console.log('Complete debate object:', completedDebate);
+              
+              // Use functional update to ensure state is set
+              setDebate(() => completedDebate);
               setIsRunning(false);
               
               // Add a small delay to ensure state updates and prevent race conditions
@@ -172,7 +175,11 @@ export function DebateInterface({ config, onComplete }: DebateInterfaceProps) {
                 // Force another update in case of race condition
                 setDebate(prev => {
                   console.log('Force update check - prev debate:', prev?.status);
-                  return completedDebate;
+                  if (!prev || prev.status !== 'completed') {
+                    console.log('Forcing debate update again');
+                    return completedDebate;
+                  }
+                  return prev;
                 });
               }, 100);
               
@@ -347,16 +354,24 @@ export function DebateInterface({ config, onComplete }: DebateInterfaceProps) {
         </div>
       )}
       
-      {console.log('Rendering check - debate:', {
-        status: debate?.status,
-        isRunning,
-        hasSynthesis: !!debate?.finalSynthesis,
-        synthesisLength: debate?.finalSynthesis?.length,
-        rounds: debate?.rounds?.length
-      })}
+      {/* Debug: Check debate state */}
+      {(() => {
+        console.log('Rendering check - debate:', {
+          status: debate?.status,
+          isRunning,
+          hasSynthesis: !!debate?.finalSynthesis,
+          synthesisLength: debate?.finalSynthesis?.length,
+          rounds: debate?.rounds?.length
+        });
+        return null;
+      })()}
+      
       {(debate?.status === 'completed' || debate?.status === 'converged') && (
         <div className="space-y-8">
-          {console.log('Rendering synthesis section')}
+          {(() => {
+            console.log('Rendering synthesis section');
+            return null;
+          })()}
           {/* Winner Display */}
           <WinnerDisplay debate={debate} />
           
