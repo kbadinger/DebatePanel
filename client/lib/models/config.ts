@@ -180,9 +180,15 @@ export interface ModelTier {
   secondary: Model[]; // Older models shown under "Show all"
 }
 
-// PRIMARY TIER MODELS (shown by default) - September 2025
-const PRIMARY_MODELS: Model[] = [
-  // OpenAI - Current Generation
+// Provider expansion for clean primary view
+export interface ProviderExpansion {
+  featured: Model[];  // Always visible (2-3 best models)
+  expanded: Model[];  // Hidden by default, shown on provider expansion
+}
+
+// FEATURED MODELS (always visible in primary tier)
+const FEATURED_MODELS: Model[] = [
+  // OpenAI - Featured Models Only
   withModelInfo({
     id: 'gpt-4o',
     provider: 'openai',
@@ -190,55 +196,13 @@ const PRIMARY_MODELS: Model[] = [
     displayName: 'GPT-4o'
   }),
   withModelInfo({
-    id: 'gpt-4o-mini',
-    provider: 'openai',
-    name: 'gpt-4o-mini',
-    displayName: 'GPT-4o Mini'
-  }),
-  withModelInfo({
-    id: 'gpt-4.1',
-    provider: 'openai',
-    name: 'gpt-4.1',
-    displayName: 'GPT-4.1'
-  }),
-  withModelInfo({
-    id: 'gpt-4.1-mini',
-    provider: 'openai',
-    name: 'gpt-4.1-mini',
-    displayName: 'GPT-4.1 Mini'
-  }),
-  withModelInfo({
-    id: 'gpt-4.1-nano',
-    provider: 'openai',
-    name: 'gpt-4.1-nano',
-    displayName: 'GPT-4.1 Nano'
-  }),
-  withModelInfo({
     id: 'o3-pro',
     provider: 'openai',
     name: 'o3-pro',
     displayName: 'o3 Pro'
   }),
-  withModelInfo({
-    id: 'o4-mini',
-    provider: 'openai',
-    name: 'o4-mini',
-    displayName: 'o4 Mini'
-  }),
   
-  // Anthropic - Claude 4 Series Only
-  withModelInfo({
-    id: 'claude-4-opus-20250522',
-    provider: 'anthropic',
-    name: 'claude-4-opus-20250522',
-    displayName: 'Claude 4 Opus'
-  }),
-  withModelInfo({
-    id: 'claude-4-sonnet-20250522',
-    provider: 'anthropic',
-    name: 'claude-4-sonnet-20250522',
-    displayName: 'Claude 4 Sonnet'
-  }),
+  // Anthropic - Featured Model Only
   withModelInfo({
     id: 'claude-opus-4-1-20250805',
     provider: 'anthropic',
@@ -246,7 +210,7 @@ const PRIMARY_MODELS: Model[] = [
     displayName: 'Claude Opus 4.1'
   }),
   
-  // Google - Latest Gemini Models
+  // Google - Featured Models Only
   withModelInfo({
     id: 'gemini-2.5-pro',
     provider: 'google',
@@ -259,96 +223,48 @@ const PRIMARY_MODELS: Model[] = [
     name: 'gemini-2.5-flash',
     displayName: 'Gemini 2.5 Flash'
   }),
-  withModelInfo({
-    id: 'gemini-2.5-flash-lite',
-    provider: 'google',
-    name: 'gemini-2.5-flash-lite',
-    displayName: 'Gemini 2.5 Flash Lite'
-  }),
-  withModelInfo({
-    id: 'gemini-2.0-flash',
-    provider: 'google',
-    name: 'gemini-2.0-flash',
-    displayName: 'Gemini 2.0 Flash'
-  }),
   
-  // X.AI - Latest Grok Models
+  // X.AI - Featured Model Only
   withModelInfo({
     id: 'grok-4',
     provider: 'xai',
     name: 'grok-4',
     displayName: 'Grok 4'
   }),
-  withModelInfo({
-    id: 'grok-3',
-    provider: 'xai',
-    name: 'grok-3',
-    displayName: 'Grok 3'
-  }),
   
-  // Perplexity - Latest Models
+  // Perplexity - Featured Model Only
   withModelInfo({
     id: 'sonar-pro',
     provider: 'perplexity',
     name: 'sonar-pro',
     displayName: 'Sonar Pro'
   }),
-  withModelInfo({
-    id: 'sonar-deep-research',
-    provider: 'perplexity',
-    name: 'sonar-deep-research',
-    displayName: 'Sonar Deep Research'
-  }),
-  withModelInfo({
-    id: 'sonar-reasoning-pro',
-    provider: 'perplexity',
-    name: 'sonar-reasoning-pro',
-    displayName: 'Sonar Reasoning Pro'
-  }),
   
-  // DeepSeek - Latest Models
+  // DeepSeek - Featured Model Only
   withModelInfo({
     id: 'deepseek-v3.1',
     provider: 'deepseek',
     name: 'deepseek-v3.1',
     displayName: 'DeepSeek V3.1 Hybrid'
   }),
-  withModelInfo({
-    id: 'deepseek-r1-0528',
-    provider: 'deepseek',
-    name: 'deepseek-r1-0528',
-    displayName: 'DeepSeek R1 Enhanced'
-  }),
   
-  // Meta - Llama 4 Series
+  // Meta - Featured Model Only
   withModelInfo({
     id: 'llama-4-scout',
     provider: 'meta',
     name: 'llama-4-scout',
     displayName: 'Llama 4 Scout'
   }),
-  withModelInfo({
-    id: 'llama-4-maverick',
-    provider: 'meta',
-    name: 'llama-4-maverick',
-    displayName: 'Llama 4 Maverick'
-  }),
   
-  // Mistral - Latest Models
+  // Mistral - Featured Model Only
   withModelInfo({
     id: 'mistral-large-24-11',
     provider: 'mistral',
     name: 'mistral-large-24-11',
     displayName: 'Mistral Large 24.11'
   }),
-  withModelInfo({
-    id: 'mistral-medium-3',
-    provider: 'mistral',
-    name: 'mistral-medium-3',
-    displayName: 'Mistral Medium 3'
-  }),
   
-  // Cohere - Latest
+  // Cohere - Featured Model Only
   withModelInfo({
     id: 'command-a-03-2025',
     provider: 'cohere',
@@ -356,22 +272,127 @@ const PRIMARY_MODELS: Model[] = [
     displayName: 'Command A 03-2025'
   }),
   
-  // Moonshot - Latest
+  // Moonshot - Featured Model Only
   withModelInfo({
     id: 'kimi-k2-instruct',
     provider: 'kimi',
     name: 'kimi-k2-instruct',
     displayName: 'Kimi K2 Instruct'
-  }),
-  
-  // AI21 - Latest
-  withModelInfo({
-    id: 'jamba-large-1-7',
-    provider: 'ai21',
-    name: 'jamba-large-1.7-2025-07',
-    displayName: 'Jamba Large 1.7'
   })
 ];
+
+// EXPANDABLE MODELS (shown when provider is expanded)
+const EXPANDABLE_MODELS: Record<string, Model[]> = {
+  openai: [
+    withModelInfo({
+      id: 'gpt-4o-mini',
+      provider: 'openai',
+      name: 'gpt-4o-mini',
+      displayName: 'GPT-4o Mini'
+    }),
+    withModelInfo({
+      id: 'gpt-4.1',
+      provider: 'openai',
+      name: 'gpt-4.1',
+      displayName: 'GPT-4.1'
+    }),
+    withModelInfo({
+      id: 'gpt-4.1-mini',
+      provider: 'openai',
+      name: 'gpt-4.1-mini',
+      displayName: 'GPT-4.1 Mini'
+    }),
+    withModelInfo({
+      id: 'gpt-4.1-nano',
+      provider: 'openai',
+      name: 'gpt-4.1-nano',
+      displayName: 'GPT-4.1 Nano'
+    }),
+    withModelInfo({
+      id: 'o4-mini',
+      provider: 'openai',
+      name: 'o4-mini',
+      displayName: 'o4 Mini'
+    })
+  ],
+  anthropic: [
+    withModelInfo({
+      id: 'claude-4-opus-20250522',
+      provider: 'anthropic',
+      name: 'claude-4-opus-20250522',
+      displayName: 'Claude 4 Opus'
+    }),
+    withModelInfo({
+      id: 'claude-4-sonnet-20250522',
+      provider: 'anthropic',
+      name: 'claude-4-sonnet-20250522',
+      displayName: 'Claude 4 Sonnet'
+    })
+  ],
+  google: [
+    withModelInfo({
+      id: 'gemini-2.5-flash-lite',
+      provider: 'google',
+      name: 'gemini-2.5-flash-lite',
+      displayName: 'Gemini 2.5 Flash Lite'
+    }),
+    withModelInfo({
+      id: 'gemini-2.0-flash',
+      provider: 'google',
+      name: 'gemini-2.0-flash',
+      displayName: 'Gemini 2.0 Flash'
+    })
+  ],
+  xai: [
+    withModelInfo({
+      id: 'grok-3',
+      provider: 'xai',
+      name: 'grok-3',
+      displayName: 'Grok 3'
+    })
+  ],
+  perplexity: [
+    withModelInfo({
+      id: 'sonar-deep-research',
+      provider: 'perplexity',
+      name: 'sonar-deep-research',
+      displayName: 'Sonar Deep Research'
+    }),
+    withModelInfo({
+      id: 'sonar-reasoning-pro',
+      provider: 'perplexity',
+      name: 'sonar-reasoning-pro',
+      displayName: 'Sonar Reasoning Pro'
+    })
+  ],
+  deepseek: [
+    withModelInfo({
+      id: 'deepseek-r1-0528',
+      provider: 'deepseek',
+      name: 'deepseek-r1-0528',
+      displayName: 'DeepSeek R1 Enhanced'
+    })
+  ],
+  meta: [
+    withModelInfo({
+      id: 'llama-4-maverick',
+      provider: 'meta',
+      name: 'llama-4-maverick',
+      displayName: 'Llama 4 Maverick'
+    })
+  ],
+  mistral: [
+    withModelInfo({
+      id: 'mistral-medium-3',
+      provider: 'mistral',
+      name: 'mistral-medium-3',
+      displayName: 'Mistral Medium 3'
+    })
+  ]
+};
+
+// Keep PRIMARY_MODELS as only featured for backward compatibility
+const PRIMARY_MODELS: Model[] = FEATURED_MODELS;
 
 // SECONDARY TIER MODELS (shown under "Show all models")
 const SECONDARY_MODELS: Model[] = [
@@ -501,9 +522,19 @@ const SECONDARY_MODELS: Model[] = [
 ];
 
 // Export all models and tiered structure
-export const AVAILABLE_MODELS: Model[] = [...PRIMARY_MODELS, ...SECONDARY_MODELS];
+export const AVAILABLE_MODELS: Model[] = [
+  ...FEATURED_MODELS, 
+  ...Object.values(EXPANDABLE_MODELS).flat(),
+  ...SECONDARY_MODELS
+];
 
 export const MODEL_TIERS: ModelTier = {
   primary: PRIMARY_MODELS,
   secondary: SECONDARY_MODELS
+};
+
+// Export the new expansion structure
+export const PROVIDER_MODELS = {
+  featured: FEATURED_MODELS,
+  expandable: EXPANDABLE_MODELS
 };

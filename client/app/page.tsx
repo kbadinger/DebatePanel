@@ -5,7 +5,8 @@ import { useSession } from 'next-auth/react';
 import { DebateConfig, Model, ModelProvider } from '@/types/debate';
 import { DebateInterface } from '@/components/debate/DebateInterface';
 import { ExampleDebateResult } from '@/components/debate/ExampleDebateResult';
-import { AVAILABLE_MODELS, MODEL_TIERS } from '@/lib/models/config';
+import { AVAILABLE_MODELS, MODEL_TIERS, PROVIDER_MODELS } from '@/lib/models/config';
+// Force cache clear v2
 import { calculateDebateCost, formatCost } from '@/lib/models/pricing';
 import { calculateContextRequirements, analyzePanelDiversity, getSmartRecommendations } from '@/lib/context-analysis';
 import { analyzeTopicSafety, getTopicSuggestions } from '@/lib/topic-filter';
@@ -17,6 +18,7 @@ export default function Home() {
   const { data: session, status } = useSession();
   const [showDebate, setShowDebate] = useState(false);
   const [expandedProviders, setExpandedProviders] = useState<Record<string, boolean>>({});
+  const [expandedProviderModels, setExpandedProviderModels] = useState<Record<string, boolean>>({});
   const [showAllProviders, setShowAllProviders] = useState(false);
   const [configuredProviders, setConfiguredProviders] = useState<ModelProvider[]>([]);
   const [loading, setLoading] = useState(true);
@@ -40,14 +42,22 @@ export default function Home() {
     configuredProviders.includes(model.provider)
   );
   
-  // Separate into tiers based on availability
-  const availablePrimaryModels = MODEL_TIERS.primary.filter(model => 
+  // Separate into featured and expandable models based on availability
+  const availableFeaturedModels = PROVIDER_MODELS.featured.filter(model => 
     configuredProviders.includes(model.provider)
   );
   
-  const availableSecondaryModels = MODEL_TIERS.secondary.filter(model => 
-    configuredProviders.includes(model.provider)
-  );
+  // Group expandable models by provider
+  const availableExpandableModelsByProvider = Object.entries(PROVIDER_MODELS.expandable).reduce((acc, [provider, models]) => {
+    if (configuredProviders.includes(provider as any)) {
+      acc[provider] = models;
+    }
+    return acc;
+  }, {} as Record<string, Model[]>);
+
+  // Debug logging
+  console.log('availableFeaturedModels:', availableFeaturedModels.map(m => m.displayName));
+  console.log('availableExpandableModelsByProvider:', Object.entries(availableExpandableModelsByProvider).map(([p, models]) => `${p}: ${models.length}`));
     
   const [config, setConfig] = useState<DebateConfig>({
     topic: '',
@@ -394,10 +404,10 @@ Option 3 - Hybrid Model:
               </div>
             ) : (
               <>
-            {/* Primary Tier Models */}
+            {/* Featured Models - Clean Primary View */}
             <div className="mb-4">
               <div className="flex items-center justify-between mb-2">
-                <div className="text-xs font-medium text-slate-600 uppercase tracking-wide">Latest Models (September 2025)</div>
+                <div className="text-xs font-medium text-slate-600 uppercase tracking-wide">🔄 Featured Models (September 2025) - v2</div>
                 <div className="flex items-center gap-3 text-xs text-slate-500">
                   <span className="flex items-center gap-1">💰 Budget</span>
                   <span className="flex items-center gap-1">📊 Standard</span>
@@ -406,7 +416,7 @@ Option 3 - Hybrid Model:
                 </div>
               </div>
               <div className="space-y-1 bg-blue-50 rounded-lg p-2">
-                {availablePrimaryModels.map((model) => (
+                {availableFeaturedModels.map((model) => (
                   <label key={model.id} className="block p-2 rounded hover:bg-blue-100 cursor-pointer transition-colors">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center">
@@ -444,15 +454,92 @@ Option 3 - Hybrid Model:
               </div>
             </div>
 
-            {/* Show All Providers Toggle */}
-            <button
-              type="button"
-              onClick={() => setShowAllProviders(!showAllProviders)}
-              className="mb-3 text-sm text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1"
-            >
-              {showAllProviders ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
-              {showAllProviders ? 'Hide' : 'Show'} all models by provider
-            </button>
+            {/* Provider Expansion Buttons */}
+            <div className="mb-4">
+              <div className="text-xs font-medium text-slate-600 uppercase tracking-wide mb-2">More Models by Provider</div>
+              <div className="flex flex-wrap gap-2">
+                {console.log('Rendering expansion buttons for:', Object.keys(availableExpandableModelsByProvider))}
+                {Object.entries(availableExpandableModelsByProvider).map(([provider, models]) => {
+                  const providerName = providerDisplayNames[provider] || provider;
+                  const modelCount = models.length;
+                  const isExpanded = expandedProviderModels[provider];
+                  
+                  return (
+                    <button
+                      key={provider}
+                      type="button"
+                      onClick={() => setExpandedProviderModels(prev => ({ ...prev, [provider]: !prev[provider] }))}
+                      className="text-sm text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1 px-3 py-2 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors"
+                    >
+                      {isExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+                      {isExpanded ? `Hide ${modelCount} ${providerName} models` : `Show ${modelCount} more ${providerName} models`}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Expanded Provider Models */}
+            {Object.entries(availableExpandableModelsByProvider).map(([provider, models]) => {
+              if (!expandedProviderModels[provider]) return null;
+              
+              return (
+                <div key={`expanded-${provider}`} className="mb-4">
+                  <div className="text-xs font-medium text-slate-600 uppercase tracking-wide mb-2">
+                    {providerDisplayNames[provider] || provider} - Additional Models
+                  </div>
+                  <div className="space-y-1 bg-slate-50 rounded-lg p-2">
+                    {models.map((model) => (
+                      <label key={model.id} className="block p-2 rounded hover:bg-slate-100 cursor-pointer transition-colors">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center">
+                            <input
+                              type="checkbox"
+                              checked={config.models.some(m => m.id === model.id)}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setConfig({ ...config, models: [...config.models, model] });
+                                } else {
+                                  setConfig({ ...config, models: config.models.filter(m => m.id !== model.id) });
+                                }
+                              }}
+                              className="mr-3 h-4 w-4 text-blue-600 rounded focus:ring-blue-500"
+                            />
+                            <div>
+                              <span className="text-slate-700 font-medium">
+                                {model.costInfo?.emoji} {model.displayName}
+                              </span>
+                              <div className="text-xs text-slate-500 mt-1">
+                                {model.contextInfo?.suggestedRole}
+                              </div>
+                              <div className="text-xs text-slate-400 mt-1">
+                                {model.contextInfo?.strengths.map(s => s.charAt(0).toUpperCase() + s.slice(1)).join(', ')} • 
+                                {model.contextInfo?.maxTokens ? ` ${(model.contextInfo.maxTokens / 1000).toFixed(0)}K context` : ' Context TBD'}
+                              </div>
+                            </div>
+                          </div>
+                          <span className="text-sm text-slate-600">
+                            {model.costInfo ? formatCost(model.costInfo.estimatedCostPerResponse) : 'Price TBD'}/response
+                          </span>
+                        </div>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+            
+            {/* Legacy Show All Models Toggle - Keep for complete exploration */}
+            <div className="mt-4 pt-4 border-t border-slate-200">
+              <button
+                type="button"
+                onClick={() => setShowAllProviders(!showAllProviders)}
+                className="mb-3 text-sm text-slate-600 hover:text-slate-700 font-medium flex items-center gap-1"
+              >
+                {showAllProviders ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+                {showAllProviders ? 'Hide' : 'Show'} all models (organized by provider)
+              </button>
+            </div>
 
             {/* All Models by Provider */}
             {showAllProviders && (
