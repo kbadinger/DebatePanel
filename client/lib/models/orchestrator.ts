@@ -129,12 +129,15 @@ Format your response as a clear argument with supporting points.`;
           });
           break;
         case 'xai':
+          this.logger.log(`Calling X.AI model: ${model.name}`);
+          const xaiStartTime = Date.now();
           result = await generateText({
             model: xai(model.name),
             system: systemPrompt,
             prompt,
             temperature: 0.7,
           });
+          this.logger.log(`X.AI (${model.name}) responded in ${Date.now() - xaiStartTime}ms`);
           break;
         case 'perplexity':
           result = await generateText({
@@ -268,9 +271,10 @@ Format your response as a clear argument with supporting points.`;
     // Run all models in parallel with timeout, but handle failures gracefully
     const responsePromises = config.models.map(async (model) => {
       try {
-        // Create a timeout promise that rejects after 60 seconds
+        // Create a timeout promise - give more time for certain models
+        const timeoutMs = model.provider === 'xai' ? 90000 : 60000; // 90s for X.AI, 60s for others
         const timeoutPromise = new Promise<never>((_, reject) => {
-          setTimeout(() => reject(new Error(`Timeout after 60 seconds`)), 60000);
+          setTimeout(() => reject(new Error(`Timeout after ${timeoutMs/1000} seconds`)), timeoutMs);
         });
         
         // Race between the actual response and the timeout
