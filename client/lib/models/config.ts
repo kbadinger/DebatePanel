@@ -15,6 +15,8 @@ export const MODEL_CONTEXT_LIMITS = {
   'gemini-2.0-flash': 1048576,  // 1M tokens
   'grok-4-0709': 256000,
   'grok-3': 128000,
+  'mistral-medium-2505': 128000,
+  'pixtral-large-2411': 128000,
 };
 
 // Model strengths and suggested roles - Updated for September 2025
@@ -82,8 +84,8 @@ const MODEL_ROLES: Record<string, { strengths: ModelStrength[], role: string }> 
   
   // Mistral
   'mistral-large-24-11': { strengths: ['technical', 'business'], role: 'European perspective and technical analysis' },
-  'mistral-medium-3': { strengths: ['business', 'general'], role: 'Balanced European perspective' },
-  'pixtral-large': { strengths: ['technical'], role: 'Multimodal analysis and technical insights' },
+  'mistral-medium-2505': { strengths: ['business', 'general'], role: 'Balanced European perspective' },
+  'pixtral-large-2411': { strengths: ['technical'], role: 'Multimodal analysis and technical insights' },
   
   // Cohere
   'command-a-03-2025': { strengths: ['business', 'analytical'], role: 'Enterprise-focused business analysis' },
@@ -302,9 +304,9 @@ const EXPANDABLE_MODELS: Record<string, Model[]> = {
   ],
   mistral: [
     withModelInfo({
-      id: 'mistral-medium-3',
+      id: 'mistral-medium-2505',
       provider: 'mistral',
-      name: 'mistral-medium-3',
+      name: 'mistral-medium-2505',
       displayName: 'Mistral Medium 3'
     })
   ]
@@ -433,9 +435,9 @@ const SECONDARY_MODELS: Model[] = [
     displayName: 'Flux 1.1'
   }),
   withModelInfo({
-    id: 'pixtral-large',
+    id: 'pixtral-large-2411',
     provider: 'mistral',
-    name: 'pixtral-large',
+    name: 'pixtral-large-2411',
     displayName: 'Pixtral Large'
   })
 ];

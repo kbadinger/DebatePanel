@@ -482,8 +482,8 @@ export const MODEL_PRICING: Record<string, ModelPricing> = {
     providerBaseCost: 0.012,
     platformMarkup: 0.3
   },
-  'mistral-medium-3': {
-    modelId: 'mistral-medium-3',
+  'mistral-medium-2505': {
+    modelId: 'mistral-medium-2505',
     costPer1kTokens: {
       input: 0.00125,
       output: 0.00375
@@ -492,8 +492,8 @@ export const MODEL_PRICING: Record<string, ModelPricing> = {
     providerBaseCost: 0.005,
     platformMarkup: 0.3
   },
-  'pixtral-large': {
-    modelId: 'pixtral-large',
+  'pixtral-large-2411': {
+    modelId: 'pixtral-large-2411',
     costPer1kTokens: {
       input: 0.003,
       output: 0.009
