@@ -969,15 +969,64 @@ Confidence: [0-100]% confident in this stance`;
     judgeModel: Model,
     isConsensusMode: boolean = false
   ): Promise<{ analysis: string; winner?: { id: string; name: string; type: 'model' | 'human'; reason: string }; scores?: Array<{ id: string; name: string; score: number }> }> {
-    const finalRound = debate[debate.length - 1];
     
-    // Build a comprehensive summary of the final positions
-    const finalPositions = finalRound.responses.map(r => ({
+    // Check if we have any debate rounds at all
+    if (!debate || debate.length === 0) {
+      return {
+        analysis: `Unable to provide judge analysis: No debate rounds were completed. The debate may have failed to start due to technical issues.`
+      };
+    }
+    
+    // Helper function to check if a response is valid (not a timeout/error)
+    const isValidResponse = (r: any): boolean => {
+      return r && 
+             !r.content.includes('❌ Timeout:') &&
+             !r.content.includes('❌ Error:') &&
+             !r.content.includes('⚠️ Context limit exceeded') &&
+             r.stance !== 'Timeout' &&
+             r.stance !== 'Complete Failure' &&
+             r.stance !== 'Context Limit Exceeded' &&
+             r.confidence > 0;
+    };
+    
+    // Find the best round to analyze (prefer later rounds, but require valid responses)
+    let analysisRound = null;
+    for (let i = debate.length - 1; i >= 0; i--) {
+      const round = debate[i];
+      const validResponses = round.responses.filter(isValidResponse);
+      if (validResponses.length > 0) {
+        analysisRound = round;
+        break;
+      }
+    }
+    
+    // If no valid responses found in any round, provide fallback analysis
+    if (!analysisRound) {
+      const totalModels = debate[0]?.responses?.length || 0;
+      const timeoutCount = debate.reduce((count, round) => {
+        return count + round.responses.filter(r => 
+          r.content.includes('❌ Timeout:') || r.stance === 'Timeout'
+        ).length;
+      }, 0);
+      
+      return {
+        analysis: `Unable to provide judge analysis: All ${totalModels} models failed to complete the debate successfully. ${timeoutCount} timeout(s) occurred across ${debate.length} round(s). This typically indicates the topic was too complex for the given context limits or the models encountered technical difficulties.
+
+**Recommendation**: Try simplifying the topic, reducing the number of debate rounds, or selecting models with larger context windows.`
+      };
+    }
+    
+    // Filter to only valid responses for analysis
+    const validResponses = analysisRound.responses.filter(isValidResponse);
+    const failedCount = analysisRound.responses.length - validResponses.length;
+    
+    // Build a comprehensive summary of the valid positions
+    const finalPositions = validResponses.map(r => ({
       model: r.isHuman ? 'Human Participant' : r.modelId,
       position: r.position,
       stance: r.stance || 'Not specified',
       confidence: r.confidence,
-      keyPoint: r.content, // CRITICAL FIX: Use full content, not truncated
+      keyPoint: r.content,
       isHuman: r.isHuman || false
     }));
 
@@ -985,7 +1034,9 @@ Confidence: [0-100]% confident in this stance`;
 
 Topic: ${topic}
 
-Final Round Positions:
+${failedCount > 0 ? `Note: ${failedCount} model(s) failed to respond due to timeouts or technical issues. Analysis based on ${validResponses.length} successful participant(s).
+
+` : ''}Available Round ${analysisRound.roundNumber} Positions:
 ${finalPositions.map(p => `
 ${p.model}:
 - Position: ${p.position}
@@ -1032,7 +1083,13 @@ BE DECISIVE. The whole point of this debate was to get an answer, not to admire 
     });
 
     // Parse the judge's analysis to extract winner and scores
-    const analysisText = result.text;
+    let analysisText = result.text;
+    
+    // Add note about partial results if some models failed
+    if (failedCount > 0) {
+      analysisText += `\n\n---\n*Note: This analysis is based on ${validResponses.length} of ${analysisRound.responses.length} models due to ${failedCount} timeout(s)/failure(s) in Round ${analysisRound.roundNumber}.*`;
+    }
+    
     const winner = this.extractWinner(analysisText, finalPositions);
     const scores = this.extractScores(analysisText, finalPositions);
     
