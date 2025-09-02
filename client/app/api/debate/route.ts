@@ -146,7 +146,7 @@ export async function POST(req: NextRequest) {
       );
       
       try {
-        // Add a global timeout for the entire debate (5 minutes per round)
+        // Add a global timeout for the entire debate (10 minutes per round for safety)
         const debateTimeout = setTimeout(() => {
           console.error('Debate timeout - taking too long');
           controller.enqueue(encoder.encode(safeSSEEncode({
@@ -154,7 +154,7 @@ export async function POST(req: NextRequest) {
             data: { message: 'Debate timeout - the debate took too long to complete' }
           })));
           controller.close();
-        }, config.rounds * 5 * 60 * 1000);
+        }, config.rounds * 10 * 60 * 1000); // Increased to 10 minutes per round
         
         console.log(`Starting debate with ${config.rounds} rounds`);
         for (let i = 1; i <= config.rounds; i++) {
@@ -326,10 +326,14 @@ export async function POST(req: NextRequest) {
         }
         
         // Then generate the statistical synthesis
-        debate.finalSynthesis = generateSynthesis(debate);
-        
-        console.log('Generated synthesis length:', debate.finalSynthesis?.length || 0);
-        console.log('First 500 chars of synthesis:', debate.finalSynthesis?.substring(0, 500));
+        try {
+          debate.finalSynthesis = generateSynthesis(debate);
+          console.log('Generated synthesis length:', debate.finalSynthesis?.length || 0);
+          console.log('First 500 chars of synthesis:', debate.finalSynthesis?.substring(0, 500));
+        } catch (synthError) {
+          console.error('Failed to generate synthesis:', synthError);
+          debate.finalSynthesis = '## Error generating synthesis\n\nAn error occurred while generating the debate synthesis.';
+        }
         
         // Log final synthesis
         logger.logFinalSynthesis(debate.finalSynthesis, debate.status);
@@ -377,21 +381,39 @@ export async function POST(req: NextRequest) {
           }
         }
         
-        // Stream final debate
-        console.log('Streaming final debate update with:', {
-          status: debate.status,
-          hasSynthesis: !!debate.finalSynthesis,
-          hasJudgeAnalysis: !!debate.judgeAnalysis,
-          synthesisLength: debate.finalSynthesis?.length,
-          rounds: debate.rounds.length
-        });
-        
-        const finalUpdate: DebateStreamUpdate = {
-          type: 'debate-complete',
-          data: debate,
-        };
-        controller.enqueue(encoder.encode(safeSSEEncode(finalUpdate)));
-        console.log('Final update streamed successfully');
+        // Stream final debate - ensure this always happens
+        try {
+          console.log('Streaming final debate update with:', {
+            status: debate.status,
+            hasSynthesis: !!debate.finalSynthesis,
+            hasJudgeAnalysis: !!debate.judgeAnalysis,
+            synthesisLength: debate.finalSynthesis?.length,
+            rounds: debate.rounds.length
+          });
+          
+          // Ensure we have at least some synthesis
+          if (!debate.finalSynthesis) {
+            debate.finalSynthesis = `## Debate Complete\n\nDebate completed with ${debate.rounds.length} rounds.`;
+          }
+          
+          const finalUpdate: DebateStreamUpdate = {
+            type: 'debate-complete',
+            data: debate,
+          };
+          controller.enqueue(encoder.encode(safeSSEEncode(finalUpdate)));
+          console.log('Final update streamed successfully');
+        } catch (streamError) {
+          console.error('Failed to stream final update:', streamError);
+          // Try to send at least a completion signal
+          const minimalUpdate: DebateStreamUpdate = {
+            type: 'debate-complete',
+            data: {
+              ...debate,
+              finalSynthesis: debate.finalSynthesis || 'Debate completed.',
+            },
+          };
+          controller.enqueue(encoder.encode(safeSSEEncode(minimalUpdate)));
+        }
         
         } catch (error) {
           console.error('Debate stream error:', error);
