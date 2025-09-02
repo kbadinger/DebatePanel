@@ -6,7 +6,12 @@ export const MODEL_CONTEXT_LIMITS = {
   'gpt-5-2025-08-07': 200000,
   'gpt-5': 200000,
   'claude-opus-4-1-20250805': 200000,
+  'claude-sonnet-4-20250514': 200000,
+  'claude-opus-4-20250514': 200000,
+  'claude-3-7-sonnet-20250219': 200000,
   'claude-3-5-sonnet-20241022': 200000,
+  'grok-4-0709': 256000,
+  'grok-3': 128000,
 };
 
 // Model strengths and suggested roles - Updated for September 2025
@@ -29,6 +34,9 @@ const MODEL_ROLES: Record<string, { strengths: ModelStrength[], role: string }> 
   
   // Anthropic - Claude 4.1 and 3.5 Series
   'claude-opus-4-1-20250805': { strengths: ['ethical', 'analytical', 'general'], role: 'Most advanced Claude model with superior reasoning and ethical analysis' },
+  'claude-sonnet-4-20250514': { strengths: ['ethical', 'analytical', 'general'], role: 'Claude 4 with balanced reasoning and creative capabilities' },
+  'claude-opus-4-20250514': { strengths: ['ethical', 'analytical', 'general'], role: 'Claude 4 Opus with deep analytical and ethical reasoning' },
+  'claude-3-7-sonnet-20250219': { strengths: ['ethical', 'analytical', 'general'], role: 'Advanced Sonnet model with enhanced capabilities' },
   'claude-3-5-sonnet-20241022': { strengths: ['general', 'ethical', 'analytical'], role: 'Balanced perspective with ethical considerations' },
   'claude-3-5-sonnet-20240620': { strengths: ['general', 'ethical', 'analytical'], role: 'Ethical reasoning and nuanced analysis' },
   'claude-3-opus-20240229': { strengths: ['ethical', 'analytical', 'general'], role: 'Deep ethical implications and comprehensive analysis' },
@@ -43,8 +51,11 @@ const MODEL_ROLES: Record<string, { strengths: ModelStrength[], role: string }> 
   'gemini-1.5-flash-8b': { strengths: ['research'], role: 'Lightweight research assistance' },
   
   // X.AI Grok
+  'grok-4-0709': { strengths: ['creative', 'business', 'research'], role: 'Latest Grok with unconventional thinking and real-time insights' },
   'grok-4': { strengths: ['creative', 'business', 'research'], role: 'Unconventional thinking with real-time search' },
   'grok-3': { strengths: ['creative', 'business'], role: 'Creative solutions and alternative perspectives' },
+  'grok-3-fast': { strengths: ['creative'], role: 'Fast creative analysis and unique perspectives' },
+  'grok-3-mini': { strengths: ['creative'], role: 'Efficient creative thinking and alternative viewpoints' },
   'grok-2': { strengths: ['creative'], role: 'Alternative perspectives and creative approaches' },
   'grok-2-1212': { strengths: ['creative'], role: 'Creative analysis and unique viewpoints' },
   
@@ -149,10 +160,36 @@ const FEATURED_MODELS: Model[] = [
     displayName: 'Claude Opus 4.1 (Aug 2025)'
   }),
   withModelInfo({
-    id: 'claude-3-5-sonnet-20241022',
+    id: 'claude-sonnet-4-20250514',
     provider: 'anthropic',
-    name: 'claude-3-5-sonnet-20241022',
-    displayName: 'Claude 3.5 Sonnet (Oct 2024)'
+    name: 'claude-sonnet-4-20250514',
+    displayName: 'Claude Sonnet 4.0 (May 2025)'
+  }),
+  withModelInfo({
+    id: 'claude-opus-4-20250514',
+    provider: 'anthropic',
+    name: 'claude-opus-4-20250514',
+    displayName: 'Claude Opus 4.0 (May 2025)'
+  }),
+  withModelInfo({
+    id: 'claude-3-7-sonnet-20250219',
+    provider: 'anthropic',
+    name: 'claude-3-7-sonnet-20250219',
+    displayName: 'Claude Sonnet 3.7 (Feb 2025)'
+  }),
+  
+  // xAI - Flagship Grok Models (Discovered via API)
+  withModelInfo({
+    id: 'grok-4-0709',
+    provider: 'xai',
+    name: 'grok-4-0709',
+    displayName: 'Grok 4 (July 2025)'
+  }),
+  withModelInfo({
+    id: 'grok-3',
+    provider: 'xai',
+    name: 'grok-3',
+    displayName: 'Grok 3'
   })
 ];
 

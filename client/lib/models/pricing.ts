@@ -148,6 +148,36 @@ export const MODEL_PRICING: Record<string, ModelPricing> = {
     providerBaseCost: 0.150,
     platformMarkup: 0.3
   },
+  'claude-sonnet-4-20250514': {
+    modelId: 'claude-sonnet-4-20250514',
+    costPer1kTokens: {
+      input: 0.020,  // Claude 4 Sonnet model
+      output: 0.100
+    },
+    costCategory: 'flagship',
+    providerBaseCost: 0.120,
+    platformMarkup: 0.3
+  },
+  'claude-opus-4-20250514': {
+    modelId: 'claude-opus-4-20250514',
+    costPer1kTokens: {
+      input: 0.025,  // Claude 4 Opus model
+      output: 0.125
+    },
+    costCategory: 'flagship',
+    providerBaseCost: 0.150,
+    platformMarkup: 0.3
+  },
+  'claude-3-7-sonnet-20250219': {
+    modelId: 'claude-3-7-sonnet-20250219',
+    costPer1kTokens: {
+      input: 0.015,  // Claude 3.7 Sonnet model
+      output: 0.075
+    },
+    costCategory: 'premium',
+    providerBaseCost: 0.090,
+    platformMarkup: 0.3
+  },
   'claude-3-5-sonnet-20241022': {
     modelId: 'claude-3-5-sonnet-20241022',
     costPer1kTokens: {
@@ -374,6 +404,28 @@ export const MODEL_PRICING: Record<string, ModelPricing> = {
     },
     costCategory: 'budget',
     providerBaseCost: 0.00275,
+    platformMarkup: 0.3
+  },
+  
+  // X.AI Grok Models
+  'grok-4-0709': {
+    modelId: 'grok-4-0709',
+    costPer1kTokens: {
+      input: 0.015,  // Latest Grok flagship model
+      output: 0.060
+    },
+    costCategory: 'flagship',
+    providerBaseCost: 0.075,
+    platformMarkup: 0.3
+  },
+  'grok-3': {
+    modelId: 'grok-3',
+    costPer1kTokens: {
+      input: 0.010,  // Grok 3 model
+      output: 0.040
+    },
+    costCategory: 'premium',
+    providerBaseCost: 0.050,
     platformMarkup: 0.3
   },
   

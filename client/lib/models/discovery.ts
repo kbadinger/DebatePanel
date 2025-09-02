@@ -84,56 +84,75 @@ export class ModelDiscovery {
   }
 
   /**
-   * Discover available models from Anthropic (Claude)
-   * Note: Anthropic doesn't have a public models endpoint, so we test known patterns
+   * Discover available models from Anthropic using their /v1/models API
+   * Note: Anthropic DOES have a models endpoint! SDK types were wrong.
    */
   async discoverAnthropicModels(): Promise<ModelDiscoveryResult> {
     const cacheKey = 'anthropic';
     const cached = this.getFromCache(cacheKey);
     if (cached) return cached;
 
-    // Known Claude model patterns to test
-    const modelsToTest = [
-      'claude-3-5-sonnet-20241022',
-      'claude-3-5-sonnet-20240620', 
-      'claude-3-5-haiku-20241022',
-      'claude-3-opus-20240229',
-      'claude-3-haiku-20240307',
-      // Test newer patterns
-      'claude-4-opus-20250101',
-      'claude-4-sonnet-20250101',
-      'claude-opus-4-1-20250805', // Your missing model
-    ];
+    try {
+      // Use Anthropic's /v1/models endpoint - the ONLY reliable source
+      const response = await fetch('https://api.anthropic.com/v1/models', {
+        headers: {
+          'x-api-key': process.env.ANTHROPIC_API_KEY!,
+          'anthropic-version': '2023-06-01',
+        },
+      });
 
-    const models: DiscoveredModel[] = [];
-    
-    for (const modelId of modelsToTest) {
-      try {
-        const isWorking = await this.testAnthropicModel(modelId);
-        if (isWorking) {
+      if (!response.ok) {
+        throw new Error(`Anthropic API error: ${response.status} ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      const models: DiscoveredModel[] = [];
+
+      // Process each model from the API
+      for (const apiModel of data.data) {
+        // Test the model to ensure it actually works
+        try {
+          const isWorking = await this.testAnthropicModel(apiModel.id);
           models.push({
-            id: modelId,
+            id: apiModel.id,
             provider: 'anthropic',
-            displayName: this.formatModelName(modelId),
-            verified: true,
+            displayName: apiModel.display_name || this.formatModelName(apiModel.id),
+            verified: isWorking,
+            deprecated: false,
+            lastTested: new Date().toISOString(),
+          });
+        } catch (error) {
+          console.log(`Anthropic model ${apiModel.id} test failed: ${error}`);
+          // Still add it but mark as unverified
+          models.push({
+            id: apiModel.id,
+            provider: 'anthropic',
+            displayName: apiModel.display_name || this.formatModelName(apiModel.id),
+            verified: false,
             deprecated: false,
             lastTested: new Date().toISOString(),
           });
         }
-      } catch (error) {
-        // Model doesn't work, skip it
-        console.log(`Anthropic model ${modelId} not available: ${error}`);
       }
+
+      const result = {
+        provider: 'anthropic',
+        models,
+        lastUpdated: new Date().toISOString(),
+      };
+
+      this.setCache(cacheKey, result);
+      return result;
+
+    } catch (error) {
+      console.error('Failed to discover Anthropic models:', error);
+      return {
+        provider: 'anthropic',
+        models: [],
+        error: `Failed to discover models: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        lastUpdated: new Date().toISOString(),
+      };
     }
-
-    const result = {
-      provider: 'anthropic',
-      models,
-      lastUpdated: new Date().toISOString(),
-    };
-
-    this.setCache(cacheKey, result);
-    return result;
   }
 
   /**
@@ -170,8 +189,8 @@ export class ModelDiscovery {
     if (cached) return cached;
 
     try {
-      // Google has a models endpoint
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1/models?key=${process.env.GOOGLE_API_KEY}`);
+      // Google has a models endpoint - use v1beta as suggested
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${process.env.GOOGLE_API_KEY}`);
       
       if (!response.ok) {
         throw new Error(`Google API error: ${response.status}`);
@@ -213,6 +232,204 @@ export class ModelDiscovery {
   }
 
   /**
+   * Discover available models from xAI (Grok) using their /v1/models API
+   */
+  async discoverXAIModels(): Promise<ModelDiscoveryResult> {
+    const cacheKey = 'xai';
+    const cached = this.getFromCache(cacheKey);
+    if (cached) return cached;
+
+    try {
+      // Use xAI's /v1/models endpoint
+      const response = await fetch('https://api.x.ai/v1/models', {
+        headers: {
+          'Authorization': `Bearer ${process.env.XAI_API_KEY}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`xAI API error: ${response.status} ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      const models: DiscoveredModel[] = [];
+
+      // Filter to only text/chat models (exclude image models for now)
+      const chatModels = data.data.filter((model: any) => 
+        !model.id.includes('image') && !model.id.includes('vision')
+      );
+
+      for (const apiModel of chatModels) {
+        models.push({
+          id: apiModel.id,
+          provider: 'xai',
+          displayName: this.formatModelName(apiModel.id),
+          verified: true, // Assume xAI models work if listed
+          deprecated: false,
+          lastTested: new Date().toISOString(),
+        });
+      }
+
+      const result = {
+        provider: 'xai',
+        models,
+        lastUpdated: new Date().toISOString(),
+      };
+
+      this.setCache(cacheKey, result);
+      return result;
+
+    } catch (error) {
+      console.error('Failed to discover xAI models:', error);
+      return {
+        provider: 'xai',
+        models: [],
+        error: `Failed to discover models: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        lastUpdated: new Date().toISOString(),
+      };
+    }
+  }
+
+  /**
+   * Discover available models from Mistral (based on documentation)
+   */
+  async discoverMistralModels(): Promise<ModelDiscoveryResult> {
+    const cacheKey = 'mistral';
+    const cached = this.getFromCache(cacheKey);
+    if (cached) return cached;
+
+    try {
+      // Based on https://docs.mistral.ai/getting-started/models/models_overview/
+      const knownMistralModels = [
+        'mistral-large-latest',
+        'mistral-small-latest',
+        'pixtral-large-latest',
+        'ministral-8b-latest',
+        'ministral-3b-latest',
+        'open-mistral-7b',
+        'open-mixtral-8x7b',
+        'open-mixtral-8x22b',
+      ];
+
+      const models: DiscoveredModel[] = knownMistralModels.map(modelId => ({
+        id: modelId,
+        provider: 'mistral',
+        displayName: this.formatModelName(modelId),
+        verified: true, // Assume working based on documentation
+        deprecated: false,
+        lastTested: new Date().toISOString(),
+      }));
+
+      const result = {
+        provider: 'mistral',
+        models,
+        lastUpdated: new Date().toISOString(),
+      };
+
+      this.setCache(cacheKey, result);
+      return result;
+
+    } catch (error) {
+      console.error('Failed to discover Mistral models:', error);
+      return {
+        provider: 'mistral',
+        models: [],
+        error: `Failed to discover models: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        lastUpdated: new Date().toISOString(),
+      };
+    }
+  }
+
+  /**
+   * Discover available models from Perplexity (based on documentation)
+   */
+  async discoverPerplexityModels(): Promise<ModelDiscoveryResult> {
+    const cacheKey = 'perplexity';
+    const cached = this.getFromCache(cacheKey);
+    if (cached) return cached;
+
+    try {
+      // Based on https://docs.perplexity.ai/getting-started/models
+      const knownPerplexityModels = [
+        'sonar-pro',
+        'sonar-reasoning-pro',
+        'sonar-deep-research',
+      ];
+
+      const models: DiscoveredModel[] = knownPerplexityModels.map(modelId => ({
+        id: modelId,
+        provider: 'perplexity',
+        displayName: this.formatModelName(modelId),
+        verified: true, // Assume working based on documentation
+        deprecated: false,
+        lastTested: new Date().toISOString(),
+      }));
+
+      const result = {
+        provider: 'perplexity',
+        models,
+        lastUpdated: new Date().toISOString(),
+      };
+
+      this.setCache(cacheKey, result);
+      return result;
+
+    } catch (error) {
+      console.error('Failed to discover Perplexity models:', error);
+      return {
+        provider: 'perplexity',
+        models: [],
+        error: `Failed to discover models: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        lastUpdated: new Date().toISOString(),
+      };
+    }
+  }
+
+  /**
+   * Discover available models from AIML API (Kimi)
+   */
+  async discoverAIMLModels(): Promise<ModelDiscoveryResult> {
+    const cacheKey = 'aiml';
+    const cached = this.getFromCache(cacheKey);
+    if (cached) return cached;
+
+    try {
+      // Based on https://docs.aimlapi.com/api-references/text-models-llm/moonshot/kimi-k2-preview
+      const knownAIMLModels = [
+        'kimi-k2-preview',
+        'kimi-k1.5',
+      ];
+
+      const models: DiscoveredModel[] = knownAIMLModels.map(modelId => ({
+        id: modelId,
+        provider: 'aiml',
+        displayName: this.formatModelName(modelId),
+        verified: true, // Assume working based on documentation
+        deprecated: false,
+        lastTested: new Date().toISOString(),
+      }));
+
+      const result = {
+        provider: 'aiml',
+        models,
+        lastUpdated: new Date().toISOString(),
+      };
+
+      this.setCache(cacheKey, result);
+      return result;
+
+    } catch (error) {
+      console.error('Failed to discover AIML models:', error);
+      return {
+        provider: 'aiml',
+        models: [],
+        error: `Failed to discover models: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        lastUpdated: new Date().toISOString(),
+      };
+    }
+  }
+
+  /**
    * Discover all models from all providers
    */
   async discoverAllModels(): Promise<ModelDiscoveryResult[]> {
@@ -220,6 +437,10 @@ export class ModelDiscovery {
       this.discoverOpenAIModels(),
       this.discoverAnthropicModels(),
       this.discoverGoogleModels(),
+      this.discoverXAIModels(),
+      this.discoverMistralModels(),
+      this.discoverPerplexityModels(),
+      this.discoverAIMLModels(),
     ]);
 
     return results

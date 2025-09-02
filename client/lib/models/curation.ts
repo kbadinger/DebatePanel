@@ -123,14 +123,14 @@ export class ModelCurator {
       // OpenAI flagships
       'gpt-5$', 'gpt-5-2025', 'o1$', 'o3$', 'gpt-4o$',
       
-      // Anthropic flagships  
-      'claude-opus-4', 'claude-3-5-sonnet-20241022',
+      // Anthropic flagships (all Claude 4 models)
+      'claude-opus-4', 'claude-sonnet-4', 'claude-3-7-sonnet', 'claude-3-5-sonnet-20241022',
       
       // Google flagships
       'gemini-2.5-pro$', 'gemini-1.5-pro$',
       
       // X.AI flagships
-      'grok-4$', 'grok-3$',
+      'grok-4', 'grok-3$',
       
       // Other flagships
       'sonar-pro$', 'deepseek-v3'
@@ -246,7 +246,11 @@ export class ModelCurator {
       'gpt-5': 200000,
       'gpt-4o': 128000,
       'claude-opus-4': 200000,
+      'claude-sonnet-4': 200000,
+      'claude-3-7-sonnet': 200000,
       'claude-3-5-sonnet': 200000,
+      'grok-4': 256000,
+      'grok-3': 128000,
       'gemini-1.5-pro': 2000000,
       'gemini-2.5-pro': 2000000,
       'o1': 128000,
