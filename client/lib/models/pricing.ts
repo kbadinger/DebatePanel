@@ -500,6 +500,121 @@ export const MODEL_PRICING: Record<string, ModelPricing> = {
   }
 };
 
+// Helper functions
+export function calculateDebateCost(
+  models: Model[], 
+  rounds: number,
+  topic: string = '',
+  description: string = '',
+  judgeModel?: Model | null
+): {
+  apiCost: number;
+  platformFee: number;
+  totalCost: number;
+  breakdown: Array<{
+    modelId: string;
+    displayName: string;
+    apiCost: number;
+    userCost: number;
+  }>;
+} {
+  // If no models selected, return zero
+  if (models.length === 0) {
+    return {
+      apiCost: 0,
+      platformFee: 0,
+      totalCost: 0,
+      breakdown: []
+    };
+  }
+
+  let totalApiCost = 0;
+  const breakdown = [];
+
+  // Calculate prompt tokens based on actual text (1 token ≈ 3 chars for English)
+  const promptChars = topic.length + description.length;
+  const systemPromptTokens = 30; // Fixed overhead for system instructions
+  const userPromptTokens = Math.ceil(promptChars / 3);
+  const basePromptTokens = systemPromptTokens + userPromptTokens;
+  
+  for (const model of models) {
+    const pricing = MODEL_PRICING[model.id];
+    if (!pricing) continue;
+
+    // Adjust response tokens based on model category
+    const responseTokensPerRound = pricing.costCategory === 'budget' ? 750 : 
+                                  pricing.costCategory === 'standard' ? 1000 :
+                                  pricing.costCategory === 'premium' ? 1250 : 
+                                  pricing.costCategory === 'luxury' ? 1500 : 
+                                  pricing.costCategory === 'flagship' ? 2000 : 1000;
+
+    // Calculate tokens for each round with realistic growth
+    let totalInputTokens = 0;
+    let cumulativeContext = 0;
+    
+    for (let round = 1; round <= rounds; round++) {
+      const contextGrowth = round === 1 ? 0 : 
+                           round === 2 ? responseTokensPerRound * 0.3 :
+                           responseTokensPerRound * 0.5;
+      cumulativeContext += contextGrowth;
+      const roundInputTokens = basePromptTokens + cumulativeContext;
+      totalInputTokens += roundInputTokens;
+    }
+    
+    totalInputTokens = totalInputTokens / 1000; // Convert to thousands
+    const totalOutputTokens = (responseTokensPerRound * rounds) / 1000;
+    
+    const inputCost = totalInputTokens * pricing.costPer1kTokens.input;
+    const outputCost = totalOutputTokens * pricing.costPer1kTokens.output;
+    const modelApiCost = inputCost + outputCost;
+    
+    const modelUserCost = modelApiCost * (1 + pricing.platformMarkup);
+    
+    totalApiCost += modelApiCost;
+    breakdown.push({
+      modelId: model.id,
+      displayName: model.displayName,
+      apiCost: modelApiCost,
+      userCost: modelUserCost
+    });
+  }
+
+  // Add judge cost if enabled
+  if (judgeModel) {
+    const judgePricing = MODEL_PRICING[judgeModel.id];
+    if (judgePricing) {
+      // Judge reviews the final round's responses
+      const finalRoundResponses = models.length;
+      const judgeInputChars = promptChars + (finalRoundResponses * 1000 * 3);
+      const judgeInputTokens = (systemPromptTokens + Math.ceil(judgeInputChars / 3)) / 1000;
+      const judgeOutputTokens = 0.5; // Judge writes ~500 token analysis
+      
+      const judgeInputCost = judgeInputTokens * judgePricing.costPer1kTokens.input;
+      const judgeOutputCost = judgeOutputTokens * judgePricing.costPer1kTokens.output;
+      const judgeApiCost = judgeInputCost + judgeOutputCost;
+      const judgeUserCost = judgeApiCost * (1 + judgePricing.platformMarkup);
+      
+      totalApiCost += judgeApiCost;
+      breakdown.push({
+        modelId: judgeModel.id,
+        displayName: `${judgeModel.displayName} (Judge)`,
+        apiCost: judgeApiCost,
+        userCost: judgeUserCost
+      });
+    }
+  }
+
+  const platformFee = totalApiCost * 0.3; // Average 30% markup
+  const totalCost = totalApiCost + platformFee;
+
+  return {
+    apiCost: totalApiCost,
+    platformFee,
+    totalCost,
+    breakdown
+  };
+}
+
 export function getCostEmoji(category: string): string {
   switch (category) {
     case 'budget': return '💰';
@@ -509,4 +624,11 @@ export function getCostEmoji(category: string): string {
     case 'flagship': return '🚀';
     default: return '📊';
   }
+}
+
+export function formatCost(cost: number | null | undefined): string {
+  if (cost === null || cost === undefined) return '$0.00';
+  if (cost === 0) return 'Free';
+  if (cost < 0.01) return `$${(cost * 100).toFixed(2)}¢`;
+  return `$${cost.toFixed(3)}`;
 }
