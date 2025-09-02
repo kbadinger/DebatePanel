@@ -85,7 +85,7 @@ export function DebateInterface({ config, onComplete }: DebateInterfaceProps) {
     }
     
     console.log('Starting new debate, clearing previous state');
-    setDebate(undefined); // Clear any previous debate
+    setDebate(null); // Clear any previous debate
     setIsRunning(true);
     setCurrentRound(1);
     
