@@ -29,10 +29,10 @@ function safeSSEEncode(data: any): string {
           .replace(/\\/g, '\\\\') // Escape backslashes
           .replace(/"/g, '\\"'); // Escape quotes
         
-        // Then truncate if too long
-        if (cleanValue.length > MAX_RESPONSE_LENGTH) {
-          console.warn(`Truncating large ${key} field from ${cleanValue.length} to ${MAX_RESPONSE_LENGTH} chars`);
-          return cleanValue.substring(0, MAX_RESPONSE_LENGTH) + '... [Content truncated]';
+        // Then truncate if too long (but only for streaming, not storage)
+        if (cleanValue.length > MAX_RESPONSE_LENGTH && key === 'content') {
+          console.warn(`Truncating large ${key} field from ${cleanValue.length} to ${MAX_RESPONSE_LENGTH} chars for streaming`);
+          return cleanValue.substring(0, MAX_RESPONSE_LENGTH) + `... [Truncated for streaming - full response available after debate completes]`;
         }
         return cleanValue;
       }

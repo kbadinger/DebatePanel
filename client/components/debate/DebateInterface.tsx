@@ -7,7 +7,7 @@ import { RatingsKey } from './RatingsKey';
 import { HumanInputPanel } from './HumanInputPanel';
 import { WinnerDisplay } from './WinnerDisplay';
 import { Button } from '@/components/ui/button';
-import { Loader2, Users, Copy, Check } from 'lucide-react';
+import { Loader2, Users, Copy, Check, Download } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import { useState as useStateCopy } from 'react';
 
@@ -48,6 +48,28 @@ export function DebateInterface({ config, onComplete }: DebateInterfaceProps) {
       await navigator.clipboard.writeText(plainText);
       setCopiedJudge(true);
       setTimeout(() => setCopiedJudge(false), 2000);
+    }
+  };
+
+  const handleDownloadFull = async () => {
+    if (!debate?.id) return;
+    
+    try {
+      const response = await fetch(`/api/debate/${debate.id}/download`);
+      if (!response.ok) throw new Error('Download failed');
+      
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `debate-${debate.id}-full.md`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (error) {
+      console.error('Download error:', error);
+      alert('Failed to download full debate');
     }
   };
   const [participants, setParticipants] = useState<Array<{ userId: string; userName: string }>>([]);
@@ -464,17 +486,26 @@ export function DebateInterface({ config, onComplete }: DebateInterfaceProps) {
             <div className="p-8 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl border-2 border-blue-200 shadow-xl">
               <div className="flex justify-between items-start mb-4">
                 <h2 className="text-2xl font-bold text-blue-900">📊 {debate.judgeAnalysis ? 'Statistical Analysis' : 'Debate Results'}</h2>
-                <button
-                  onClick={handleCopySynthesis}
-                  className="p-2 hover:bg-white/50 rounded-lg transition-colors"
-                  title="Copy synthesis"
-                >
-                  {copiedSynthesis ? (
-                    <Check className="w-5 h-5 text-green-600" />
-                  ) : (
-                    <Copy className="w-5 h-5 text-blue-600" />
-                  )}
-                </button>
+                <div className="flex gap-2">
+                  <button
+                    onClick={handleCopySynthesis}
+                    className="p-2 hover:bg-white/50 rounded-lg transition-colors"
+                    title="Copy synthesis"
+                  >
+                    {copiedSynthesis ? (
+                      <Check className="w-5 h-5 text-green-600" />
+                    ) : (
+                      <Copy className="w-5 h-5 text-blue-600" />
+                    )}
+                  </button>
+                  <button
+                    onClick={handleDownloadFull}
+                    className="p-2 hover:bg-white/50 rounded-lg transition-colors"
+                    title="Download full debate (untruncated responses)"
+                  >
+                    <Download className="w-5 h-5 text-blue-600" />
+                  </button>
+                </div>
               </div>
               <div className="prose prose-slate max-w-none">
                 <div 
