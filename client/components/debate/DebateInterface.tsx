@@ -196,7 +196,9 @@ export function DebateInterface({ config, onComplete }: DebateInterfaceProps) {
       }
     } catch (error) {
       console.error('Debate error:', error);
+      alert(`Failed to start debate: ${error instanceof Error ? error.message : 'Unknown error'}`);
       setIsRunning(false);
+      setDebate(null);
     }
   };
   
@@ -338,6 +340,7 @@ export function DebateInterface({ config, onComplete }: DebateInterfaceProps) {
         <div className="text-center py-16 col-span-full">
           <div className="text-slate-600">
             <p>Preparing debate...</p>
+            <p className="text-sm mt-2">If this persists, check the browser console for errors</p>
           </div>
         </div>
       )}
@@ -347,8 +350,8 @@ export function DebateInterface({ config, onComplete }: DebateInterfaceProps) {
           <div className="bg-white rounded-xl shadow-lg border border-slate-200 p-6 flex items-center justify-center gap-4">
             <Loader2 className="animate-spin text-blue-600" size={28} />
             <div>
-              <p className="text-lg font-semibold text-slate-800">Processing Debate</p>
-              <p className="text-sm text-slate-600">Round {currentRound} of {config.rounds}</p>
+              <p className="text-lg font-semibold text-slate-800">Starting Debate</p>
+              <p className="text-sm text-slate-600">Initializing models...</p>
             </div>
           </div>
         </div>

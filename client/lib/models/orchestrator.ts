@@ -88,16 +88,19 @@ Format your response as a clear argument with supporting points.`;
         }
         
         switch (model.provider) {
-        case 'openai':
-          // GPT-5 models only support default temperature (1.0)
-          const temperature = model.name.startsWith('gpt-5') ? 1.0 : 0.7;
-          result = await generateText({
-            model: openai(model.name),
-            system: systemPrompt,
-            prompt,
-            temperature,
-          });
-          break;
+              case 'openai':
+        this.logger.log(`Calling OpenAI model: ${model.name}`);
+        const openaiStartTime = Date.now();
+        // GPT-5 models only support default temperature (1.0)
+        const temperature = model.name.startsWith('gpt-5') ? 1.0 : 0.7;
+        result = await generateText({
+          model: openai(model.name),
+          system: systemPrompt,
+          prompt,
+          temperature,
+        });
+        this.logger.log(`OpenAI (${model.name}) responded in ${Date.now() - openaiStartTime}ms`);
+        break;
         case 'anthropic':
           // If Claude Opus is overloaded and this is a retry, try falling back to Sonnet
           let modelToUse = model.name;
@@ -272,7 +275,8 @@ Format your response as a clear argument with supporting points.`;
     const responsePromises = config.models.map(async (model) => {
       try {
         // Create a timeout promise - give more time for certain models
-        const timeoutMs = model.provider === 'xai' ? 90000 : 60000; // 90s for X.AI, 60s for others
+        const timeoutMs = model.provider === 'xai' ? 90000 : 
+                         model.name === 'gpt-5' ? 90000 : 60000; // 90s for X.AI and GPT-5, 60s for others
         const timeoutPromise = new Promise<never>((_, reject) => {
           setTimeout(() => reject(new Error(`Timeout after ${timeoutMs/1000} seconds`)), timeoutMs);
         });
