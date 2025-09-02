@@ -712,6 +712,14 @@ All critical day 1 features now implemented:
 2. **Test both debate styles when making orchestration changes**
 3. **Consider how changes affect both business decision-making and academic debate use cases**
 4. **Maintain backward compatibility with existing debates**
+5. **CRITICAL: Manual Vercel Deployment Required**
+   - GitHub pushes DO NOT trigger automatic deployments
+   - After any commit, must manually trigger deployment using:
+   ```bash
+   curl -X POST "https://api.vercel.com/v1/integrations/deploy/prj_Cg4uBe79Ad0WMENHEQuPNFXJ36De/eSnGWYEPAQ"
+   ```
+   - Deployment hook details are in `vercel-deploy-hook.md`
+   - Without manual trigger, changes will NOT be deployed to production
 
 ## Project Structure Notes:
 
