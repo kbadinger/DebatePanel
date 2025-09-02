@@ -14,19 +14,47 @@ const prisma = new PrismaClient();
 function safeSSEEncode(data: any): string {
   try {
     // For very large responses, truncate the content to prevent parsing errors
-    const MAX_RESPONSE_LENGTH = 30000; // Limit individual response content
+    const MAX_RESPONSE_LENGTH = 10000; // Reduced limit for individual response content
+    const MAX_TOTAL_LENGTH = 25000; // Max total JSON size
     
     // Deep clone and truncate if needed
     const processedData = JSON.parse(JSON.stringify(data, (key, value) => {
-      if (typeof value === 'string' && value.length > MAX_RESPONSE_LENGTH) {
-        console.warn(`Truncating large ${key} field from ${value.length} to ${MAX_RESPONSE_LENGTH} chars`);
-        return value.substring(0, MAX_RESPONSE_LENGTH) + '... [Content truncated for transmission]';
+      if (typeof value === 'string') {
+        // First, clean up any problematic characters
+        let cleanValue = value
+          .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '') // Remove control characters
+          .replace(/\\/g, '\\\\') // Escape backslashes
+          .replace(/"/g, '\\"'); // Escape quotes
+        
+        // Then truncate if too long
+        if (cleanValue.length > MAX_RESPONSE_LENGTH) {
+          console.warn(`Truncating large ${key} field from ${cleanValue.length} to ${MAX_RESPONSE_LENGTH} chars`);
+          return cleanValue.substring(0, MAX_RESPONSE_LENGTH) + '... [Content truncated]';
+        }
+        return cleanValue;
       }
       return value;
     }));
     
     // First stringify to handle any special characters
     let jsonString = JSON.stringify(processedData);
+    
+    // If still too large, truncate the whole thing
+    if (jsonString.length > MAX_TOTAL_LENGTH) {
+      console.warn(`Total JSON too large (${jsonString.length}), sending summary only`);
+      // Send a minimal version
+      const minimalData = {
+        type: data.type,
+        data: {
+          id: data.data?.id,
+          status: data.data?.status || 'completed',
+          message: 'Full debate data too large for transmission. Please check the debate history.',
+          finalSynthesis: data.data?.finalSynthesis?.substring(0, 5000),
+          judgeAnalysis: data.data?.judgeAnalysis?.substring(0, 5000)
+        }
+      };
+      jsonString = JSON.stringify(minimalData);
+    }
     
     // Extra safety: ensure no raw newlines that could break SSE format
     jsonString = jsonString.replace(/\n/g, '\\n').replace(/\r/g, '\\r');

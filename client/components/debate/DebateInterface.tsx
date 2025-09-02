@@ -314,7 +314,7 @@ export function DebateInterface({ config, onComplete }: DebateInterfaceProps) {
   };
   
   const allResponses = [
-    ...(debate?.rounds.flatMap(r => r.responses) || []),
+    ...(debate?.rounds?.flatMap(r => r?.responses || []) || []),
     ...streamingResponses
   ];
   
