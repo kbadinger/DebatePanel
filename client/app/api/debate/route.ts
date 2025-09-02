@@ -618,7 +618,9 @@ ${failedResponses.length > 0 ? `\n⚠️ **${failedResponses.length} model${fail
 
 ### Final Consensus:
 ${hasConsensus && totalValidResponses > 0
-  ? `The participating models reached a ${topPosition.percentage}% consensus on **"${topPosition.position.replace('-', ' ')}"** in the final round`
+  ? topPosition.position === 'neutral' 
+    ? `⚠️ Models failed to reach a decisive position - ${topPosition.percentage}% remained undecided. The debate needs stronger positions.`
+    : `The participating models reached a ${topPosition.percentage}% consensus on **"${topPosition.position.replace('-', ' ')}"** in the final round`
   : totalValidResponses === 0
     ? '❌ No models could complete the debate due to technical issues'
     : 'No clear consensus emerged - the participating models remain divided on this topic'}

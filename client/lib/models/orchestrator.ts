@@ -807,16 +807,52 @@ Confidence: [0-100]% confident in this stance`;
       }
     }
     
-    // Map stance to position for backward compatibility
+    // Analyze the actual position from the text
     let position: ModelResponse['position'] = 'neutral';
-    if (stance) {
+    
+    // Look for explicit agreement/disagreement signals
+    if (lowerText.includes('strongly agree') || lowerText.includes('absolutely agree') || 
+        lowerText.includes('completely agree') || lowerText.includes('wholeheartedly agree')) {
+      position = 'strongly-agree';
+    } else if (lowerText.includes('strongly disagree') || lowerText.includes('absolutely disagree') || 
+               lowerText.includes('completely disagree') || lowerText.includes('fundamentally disagree')) {
+      position = 'strongly-disagree';
+    } else if (lowerText.includes('agree') && !lowerText.includes('disagree')) {
+      position = 'agree';
+    } else if (lowerText.includes('disagree') && !lowerText.includes('agree')) {
+      position = 'disagree';
+    } else if (stance) {
+      // If no clear agreement/disagreement, analyze the stance
       const stanceLower = stance.toLowerCase();
-      if (stanceLower.includes('keyless')) {
-        position = 'agree'; // Agrees with charging users
-      } else if (stanceLower.includes('byok')) {
-        position = 'disagree'; // Disagrees with charging users
-      } else if (stanceLower.includes('hybrid') || stanceLower.includes('both')) {
-        position = 'neutral'; // Middle ground
+      
+      // Look for priority indicators
+      if (stanceLower.includes('prioritize safety') || stanceLower.includes('safety first') || 
+          stanceLower.includes('safety over')) {
+        position = 'agree'; // Agrees with prioritizing safety
+      } else if (stanceLower.includes('prioritize innovation') || stanceLower.includes('innovation first') || 
+                 stanceLower.includes('rapid development')) {
+        position = 'disagree'; // Disagrees with prioritizing safety
+      } else if (stanceLower.includes('balance') || stanceLower.includes('both') || 
+                 stanceLower.includes('integrate')) {
+        // For balanced positions, look for lean
+        if (stanceLower.includes('lean') && stanceLower.includes('safety')) {
+          position = 'agree';
+        } else if (stanceLower.includes('lean') && stanceLower.includes('innovation')) {
+          position = 'disagree';
+        } else {
+          // Only use neutral if truly balanced with no lean
+          position = 'neutral';
+        }
+      }
+    }
+    
+    // In final rounds, discourage neutral positions
+    if (roundNumber >= 3 && position === 'neutral') {
+      // Try harder to find a lean
+      if (lowerText.includes('safety') && lowerText.includes('important')) {
+        position = 'agree';
+      } else if (lowerText.includes('innovation') && lowerText.includes('important')) {
+        position = 'disagree';
       }
     }
     
