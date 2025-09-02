@@ -346,7 +346,8 @@ export async function POST(req: NextRequest) {
             const judgeResult = await orchestrator.generateJudgeAnalysis(
               debate.rounds,
               debate.config.topic,
-              judgeModel
+              judgeModel,
+              debate.config.style === 'consensus-seeking'
             );
             
             debate.judgeAnalysis = judgeResult.analysis;

@@ -923,7 +923,8 @@ Confidence: [0-100]% confident in this stance`;
   async generateJudgeAnalysis(
     debate: DebateRound[],
     topic: string,
-    judgeModel: Model
+    judgeModel: Model,
+    isConsensusMode: boolean = false
   ): Promise<{ analysis: string; winner?: { id: string; name: string; type: 'model' | 'human'; reason: string }; scores?: Array<{ id: string; name: string; score: number }> }> {
     const finalRound = debate[debate.length - 1];
     
@@ -958,17 +959,24 @@ Your PRIMARY task is to provide THE ANSWER:
 5. NO WAFFLING - Give the actionable answer someone could implement tomorrow
 
 Your SECONDARY tasks:
-6. DECLARE A WINNER: Which participant made the BEST case for the correct answer?
+${isConsensusMode 
+  ? `6. IDENTIFY LEADING CONTRIBUTOR: Which participant contributed most effectively to reaching the consensus?
+7. Score each participant (0-100) based on:
+   - How well they facilitated consensus
+   - Quality of their collaborative reasoning
+   - Constructiveness of their contributions
+   - Clarity of their synthesis`
+  : `6. DECLARE A WINNER: Which participant made the BEST case for the correct answer?
 7. Score each participant (0-100) based on:
    - How close they got to the right answer
    - Quality of their reasoning
    - Strength of their evidence
-   - Clarity of their position
+   - Clarity of their position`}
 
 Provide:
 - THE DEFINITIVE ANSWER (in 1-2 clear sentences)
 - WHY this is the correct answer (brief justification)
-- WINNER: Who argued best for this position
+- ${isConsensusMode ? 'LEADING CONTRIBUTOR: Who facilitated the best consensus' : 'WINNER: Who argued best for this position'}
 - SCORES: Rate each participant
 - CONFIDENCE: How certain are you in this answer (0-100%)
 

@@ -3,15 +3,16 @@
 import { ModelResponse } from '@/types/debate';
 import { AVAILABLE_MODELS } from '@/lib/models/config';
 import { clsx } from 'clsx';
-import { User, Sparkles, Copy, Check } from 'lucide-react';
+import { User, Sparkles, Copy, Check, Download } from 'lucide-react';
 import { useState } from 'react';
 
 interface ModelResponseCardProps {
   response: ModelResponse;
   isStreaming?: boolean;
+  debateId?: string;
 }
 
-export function ModelResponseCard({ response, isStreaming }: ModelResponseCardProps) {
+export function ModelResponseCard({ response, isStreaming, debateId }: ModelResponseCardProps) {
   const model = AVAILABLE_MODELS.find(m => m.id === response.modelId);
   const isHuman = response.isHuman || response.modelId.startsWith('human-');
   const [copied, setCopied] = useState(false);
@@ -28,6 +29,31 @@ export function ModelResponseCard({ response, isStreaming }: ModelResponseCardPr
     await navigator.clipboard.writeText(textToCopy);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleDownloadResponse = async () => {
+    if (!debateId) {
+      alert('Debate ID not available for download');
+      return;
+    }
+    
+    try {
+      const response = await fetch(`/api/debate/${debateId}/download-response?modelId=${response.modelId}&round=${response.round}`);
+      if (!response.ok) throw new Error('Download failed');
+      
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${model?.displayName || response.modelId}-round-${response.round}.md`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (error) {
+      console.error('Download error:', error);
+      alert('Failed to download response');
+    }
   };
   
   // For round 1, show stance. For round 2+, show consensus alignment
@@ -78,9 +104,13 @@ export function ModelResponseCard({ response, isStreaming }: ModelResponseCardPr
   } else if (showConsensus) {
     colorScheme = consensusColors[response.consensusAlignment!];
     indicator = consensusIndicators[response.consensusAlignment!];
+  } else if (response.round === 1) {
+    // Round 1: No colors, neutral styling
+    colorScheme = 'border-slate-300 bg-white';
+    indicator = { color: 'bg-gray-400', label: response.stance || 'Initial Position' };
   } else {
     colorScheme = positionColors[response.position];
-    indicator = { color: 'bg-gray-400', label: response.stance || 'Initial Position' };
+    indicator = { color: 'bg-gray-400', label: response.stance || 'Position' };
   }
   
   return (
@@ -139,6 +169,15 @@ export function ModelResponseCard({ response, isStreaming }: ModelResponseCardPr
               <Copy className="w-4 h-4 text-slate-500" />
             )}
           </button>
+          {isTruncated && debateId && (
+            <button
+              onClick={handleDownloadResponse}
+              className="p-2 hover:bg-white/50 rounded-lg transition-colors"
+              title="Download full untruncated response"
+            >
+              <Download className="w-4 h-4 text-slate-500" />
+            </button>
+          )}
           <div className="text-xs text-slate-500">
             Round {response.round}
           </div>

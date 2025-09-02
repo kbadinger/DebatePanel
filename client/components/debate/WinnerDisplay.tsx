@@ -12,6 +12,10 @@ export function WinnerDisplay({ debate }: WinnerDisplayProps) {
     return null;
   }
 
+  const isConsensusMode = debate.config?.style === 'consensus-seeking';
+  const winnerTitle = isConsensusMode ? 'Leading Contributor' : 'Debate Winner';
+  const scoreTitle = isConsensusMode ? 'Contribution Scores' : 'Performance Scores';
+
   const getScoreColor = (score: number) => {
     if (score >= 80) return 'text-green-600';
     if (score >= 60) return 'text-blue-600';
@@ -36,7 +40,7 @@ export function WinnerDisplay({ debate }: WinnerDisplayProps) {
         <div className="bg-gradient-to-r from-yellow-50 to-amber-50 border-2 border-yellow-300 rounded-lg p-6 shadow-lg">
           <div className="flex items-center gap-3 mb-3">
             <Trophy className="w-8 h-8 text-yellow-600" />
-            <h3 className="text-2xl font-bold text-gray-900">Debate Winner</h3>
+            <h3 className="text-2xl font-bold text-gray-900">{winnerTitle}</h3>
           </div>
           
           <div className="space-y-2">
@@ -54,7 +58,7 @@ export function WinnerDisplay({ debate }: WinnerDisplayProps) {
       {/* Scores Leaderboard */}
       {sortedScores.length > 0 && (
         <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Performance Scores</h3>
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">{scoreTitle}</h3>
           
           <div className="space-y-3">
             {sortedScores.map((score, index) => {
