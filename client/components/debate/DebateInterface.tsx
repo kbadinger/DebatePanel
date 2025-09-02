@@ -140,10 +140,12 @@ export function DebateInterface({ config, onComplete }: DebateInterfaceProps) {
               const participant = data.data as { userId: string; userName: string };
               setParticipants(prev => [...prev, participant]);
             } else if (data.type === 'debate-complete') {
-              console.log('Debate completed:', data.data);
+              console.log('Debate completed - Full data:', JSON.stringify(data.data, null, 2));
               console.log('Debate status:', data.data.status);
               console.log('Has finalSynthesis:', !!data.data.finalSynthesis);
+              console.log('Synthesis content:', data.data.finalSynthesis?.substring(0, 200));
               console.log('Has judgeAnalysis:', !!data.data.judgeAnalysis);
+              console.log('Current debate state before update:', debate);
               setDebate(data.data);
               setIsRunning(false);
               onComplete?.(data.data);
@@ -317,6 +319,7 @@ export function DebateInterface({ config, onComplete }: DebateInterfaceProps) {
         </div>
       )}
       
+      {console.log('Rendering check - debate status:', debate?.status, 'isRunning:', isRunning)}
       {debate?.status === 'completed' && (
         <div className="space-y-8">
           {/* Winner Display */}
