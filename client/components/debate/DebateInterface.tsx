@@ -23,6 +23,7 @@ export function DebateInterface({ config, onComplete }: DebateInterfaceProps) {
   const [copiedJudge, setCopiedJudge] = useStateCopy(false);
   const [isRunning, setIsRunning] = useState(false);
   const [currentRound, setCurrentRound] = useState(0);
+  const [initTimeout, setInitTimeout] = useState(false);
   const [streamingResponses, setStreamingResponses] = useState<ModelResponse[]>([]);
   const [waitingForHuman, setWaitingForHuman] = useState(false);
   const [isSubmittingHuman, setIsSubmittingHuman] = useState(false);
@@ -88,6 +89,12 @@ export function DebateInterface({ config, onComplete }: DebateInterfaceProps) {
     setDebate(null); // Clear any previous debate
     setIsRunning(true);
     setCurrentRound(1);
+    setInitTimeout(false);
+    
+    // Set a timeout to show a message if initialization takes too long
+    const timeoutId = setTimeout(() => {
+      setInitTimeout(true);
+    }, 30000); // Show message after 30 seconds
     
     try {
       console.log('Starting debate with config:', config);
@@ -121,13 +128,21 @@ export function DebateInterface({ config, onComplete }: DebateInterfaceProps) {
       if (!response.ok) {
         const errorText = await response.text();
         console.error('API error response:', errorText);
+        clearTimeout(timeoutId);
         throw new Error(`Failed to start debate: ${response.status} ${response.statusText}`);
       }
       
       const reader = response.body?.getReader();
-      if (!reader) throw new Error('No response body');
+      if (!reader) {
+        clearTimeout(timeoutId);
+        throw new Error('No response body');
+      }
       
       const decoder = new TextDecoder();
+      
+      // Clear the timeout since we got a response
+      clearTimeout(timeoutId);
+      setInitTimeout(false);
       
       while (true) {
         const { done, value } = await reader.read();
@@ -206,6 +221,8 @@ export function DebateInterface({ config, onComplete }: DebateInterfaceProps) {
       }
     } catch (error) {
       console.error('Debate error:', error);
+      clearTimeout(timeoutId);
+      setInitTimeout(false);
       // Only show alert if it's not a normal closure
       if (error instanceof Error && !error.message.includes('eventSource')) {
         alert(`Failed to start debate: ${error.message}`);
@@ -372,6 +389,11 @@ export function DebateInterface({ config, onComplete }: DebateInterfaceProps) {
             <div>
               <p className="text-lg font-semibold text-slate-800">Starting Debate</p>
               <p className="text-sm text-slate-600">Initializing models...</p>
+              {initTimeout && (
+                <p className="text-sm text-amber-600 mt-2">
+                  ⏱️ Models are taking longer than usual to respond. This can happen with complex topics or when models are under high load. Please wait...
+                </p>
+              )}
             </div>
           </div>
         </div>

@@ -28,7 +28,7 @@ export function Header() {
             <img 
               src="/logos/svg/Color logo - no background.svg" 
               alt="DecisionForge" 
-              className="h-8 w-auto"
+              className="h-12 w-auto"
             />
           </Link>
           <nav className="flex items-center gap-6">
