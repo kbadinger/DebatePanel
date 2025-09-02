@@ -191,14 +191,24 @@ export async function POST(req: NextRequest) {
           
           // Check for convergence
           if (round.consensus && config.convergenceThreshold) {
-            const agreementRate = round.responses.filter(r => 
-              r.position === 'agree' || r.position === 'strongly-agree'
-            ).length / round.responses.length;
+            // Count models with similar positions (neutral counts as consensus if most are neutral)
+            const positionCounts = round.responses.reduce((acc, r) => {
+              acc[r.position] = (acc[r.position] || 0) + 1;
+              return acc;
+            }, {} as Record<string, number>);
             
-            console.log(`Round ${i} convergence check: ${agreementRate} vs threshold ${config.convergenceThreshold}`);
+            const maxPositionCount = Math.max(...Object.values(positionCounts));
+            const agreementRate = maxPositionCount / round.responses.length;
+            
+            console.log(`Round ${i} convergence check:`, {
+              positions: positionCounts,
+              agreementRate,
+              threshold: config.convergenceThreshold,
+              willConverge: agreementRate >= config.convergenceThreshold
+            });
             
             if (agreementRate >= config.convergenceThreshold) {
-              console.log('Debate converged early!');
+              console.log('Debate converged early due to consensus!');
               debate.status = 'converged';
               break;
             }
