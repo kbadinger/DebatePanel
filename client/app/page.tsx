@@ -910,7 +910,7 @@ Option 3 - Hybrid Model:
         onClose={() => setLimitDialog({ ...limitDialog, isOpen: false })}
         type={limitDialog.type}
         providerName={limitDialog.providerName}
-        currentCount={selectedModels.length}
+        currentCount={config.models.length}
         maxCount={6}
       />
     </div>
