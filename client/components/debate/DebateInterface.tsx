@@ -393,10 +393,125 @@ export function DebateInterface({ config, onComplete }: DebateInterfaceProps) {
         </div>
       )}
       
-      {/* Ratings Key - Horizontal at top */}
-      <div className="mb-6">
-        <RatingsKey />
-      </div>
+      {/* Final Results - Show at very top when completed */}
+      {(debate?.status === 'completed' || debate?.status === 'converged') && (
+        <div className="space-y-8 mb-8">
+          {/* Judge's Verdict - First */}
+          {debate.judgeAnalysis && (
+            <div className="p-8 bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl border-2 border-purple-200 shadow-xl">
+              <div className="flex justify-between items-start mb-4">
+                <h2 className="text-2xl font-bold text-purple-900">⚖️ Judge&apos;s Verdict</h2>
+                <div className="flex gap-2">
+                  <button
+                    onClick={handleCopyJudge}
+                    className="p-2 hover:bg-white/50 rounded-lg transition-colors"
+                    title="Copy judge's verdict"
+                  >
+                    {copiedJudge ? (
+                      <Check className="w-5 h-5 text-green-600" />
+                    ) : (
+                      <Copy className="w-5 h-5 text-purple-600" />
+                    )}
+                  </button>
+                  <button
+                    onClick={handleDownloadFull}
+                    className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg transition-colors font-medium"
+                    title="Download complete debate with full untruncated responses"
+                  >
+                    <Download className="w-4 h-4" />
+                    Download Full Debate
+                  </button>
+                </div>
+              </div>
+              <div className="prose prose-slate max-w-none">
+                <div 
+                  className="text-slate-800 text-lg leading-relaxed"
+                  dangerouslySetInnerHTML={{ 
+                    __html: debate.judgeAnalysis
+                      .replace(/\*\*(.*?)\*\*/g, '<strong class="font-bold text-slate-900">$1</strong>')
+                      .replace(/^- (.*?)$/gm, '<div class="ml-4 mb-2">• $1</div>')
+                      .replace(/^\d+\. (.*?)$/gm, '<div class="ml-4 mb-2">$&</div>')
+                      .replace(/\n/g, '<br/>')
+                  }} />
+              </div>
+            </div>
+          )}
+
+          {/* Winner Display - Second */}
+          <WinnerDisplay debate={debate} />
+          
+          {/* Statistical Analysis - Third */}
+          {debate.finalSynthesis && (
+            <div className="p-8 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl border-2 border-blue-200 shadow-xl">
+              <div className="flex justify-between items-start mb-4">
+                <h2 className="text-2xl font-bold text-blue-900">📊 {debate.judgeAnalysis ? 'Statistical Analysis' : 'Debate Results'}</h2>
+                <div className="flex gap-2">
+                  <button
+                    onClick={handleCopySynthesis}
+                    className="p-2 hover:bg-white/50 rounded-lg transition-colors"
+                    title="Copy synthesis"
+                  >
+                    {copiedSynthesis ? (
+                      <Check className="w-5 h-5 text-green-600" />
+                    ) : (
+                      <Copy className="w-5 h-5 text-blue-600" />
+                    )}
+                  </button>
+                  <button
+                    onClick={handleDownloadFull}
+                    className="p-2 hover:bg-white/50 rounded-lg transition-colors"
+                    title="Download full debate (untruncated responses)"
+                  >
+                    <Download className="w-5 h-5 text-blue-600" />
+                  </button>
+                </div>
+              </div>
+              <div className="prose prose-slate max-w-none">
+                <div 
+                  className="text-slate-800"
+                  dangerouslySetInnerHTML={{ 
+                    __html: debate.finalSynthesis
+                      .replace(/^## (.*?)$/gm, '<h3 class="text-xl font-bold mb-3 text-slate-900 mt-6">$1</h3>')
+                      .replace(/^### (.*?)$/gm, '<h4 class="text-lg font-semibold mb-2 text-slate-800 mt-4">$1</h4>')
+                      .replace(/\*\*(.*?)\*\*/g, '<strong class="font-bold text-slate-900">$1</strong>')
+                      .replace(/^• (.*?)$/gm, '<div class="ml-4 mb-1">• $1</div>')
+                      .replace(/^\d+\. (.*?)$/gm, '<div class="ml-4 mb-1">$&</div>')
+                      .replace(/\n/g, '<br/>')
+                  }} />
+              </div>
+            </div>
+          )}
+          
+          {/* Final Action Buttons */}
+          <div className="text-center space-y-4">
+            <div className="flex justify-center gap-4">
+              <button
+                onClick={handleDownloadFull}
+                className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-lg transition-colors font-medium shadow-lg"
+              >
+                <Download className="w-5 h-5" />
+                Download Complete Debate
+              </button>
+              <button
+                onClick={() => window.location.href = '/'}
+                className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg transition-colors font-medium shadow-lg"
+              >
+                Start New Debate
+              </button>
+            </div>
+            <p className="text-sm text-slate-500">
+              Download includes full untruncated responses from all models
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Ratings Key - Show during debate */}
+      {!debate?.status || debate?.status === 'running' ? (
+        <div className="mb-6">
+          <RatingsKey />
+        </div>
+      ) : null}
       
       {/* Loading States - Always at top after legend */}
       {isRunning && allResponses.length === 0 && (
@@ -471,133 +586,7 @@ export function DebateInterface({ config, onComplete }: DebateInterfaceProps) {
         return null;
       })()}
       
-      {(debate?.status === 'completed' || debate?.status === 'converged') && (
-        <div className="space-y-8">
-          {(() => {
-            console.log('Rendering synthesis section');
-            return null;
-          })()}
-          {/* Winner Display */}
-          <WinnerDisplay debate={debate} />
-          
-          {/* Judge's Verdict */}
-          {debate.judgeAnalysis && (
-            <div className="mt-8 p-8 bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl border-2 border-purple-200 shadow-xl">
-              <div className="flex justify-between items-start mb-4">
-                <h2 className="text-2xl font-bold text-purple-900">⚖️ Judge&apos;s Verdict</h2>
-                <div className="flex gap-2">
-                  <button
-                    onClick={handleCopyJudge}
-                    className="p-2 hover:bg-white/50 rounded-lg transition-colors"
-                    title="Copy judge's verdict"
-                  >
-                    {copiedJudge ? (
-                      <Check className="w-5 h-5 text-green-600" />
-                    ) : (
-                      <Copy className="w-5 h-5 text-purple-600" />
-                    )}
-                  </button>
-                  <button
-                    onClick={handleDownloadFull}
-                    className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg transition-colors font-medium"
-                    title="Download complete debate with full untruncated responses"
-                  >
-                    <Download className="w-4 h-4" />
-                    Download Full Debate
-                  </button>
-                </div>
-              </div>
-              <div className="prose prose-slate max-w-none">
-                <div 
-                  className="text-slate-800 text-lg leading-relaxed"
-                  dangerouslySetInnerHTML={{ 
-                    __html: debate.judgeAnalysis
-                      .replace(/\*\*(.*?)\*\*/g, '<strong class="font-bold text-slate-900">$1</strong>')
-                      .replace(/^- (.*?)$/gm, '<div class="ml-4 mb-2">• $1</div>')
-                      .replace(/^\d+\. (.*?)$/gm, '<div class="ml-4 mb-2">$&</div>')
-                      .replace(/\n/g, '<br/>')
-                  }} />
-              </div>
-            </div>
-          )}
-          
-          {/* Statistical Analysis - Always Second */}
-          {debate.finalSynthesis && (
-            <div className="p-8 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl border-2 border-blue-200 shadow-xl">
-              <div className="flex justify-between items-start mb-4">
-                <h2 className="text-2xl font-bold text-blue-900">📊 {debate.judgeAnalysis ? 'Statistical Analysis' : 'Debate Results'}</h2>
-                <div className="flex gap-2">
-                  <button
-                    onClick={handleCopySynthesis}
-                    className="p-2 hover:bg-white/50 rounded-lg transition-colors"
-                    title="Copy synthesis"
-                  >
-                    {copiedSynthesis ? (
-                      <Check className="w-5 h-5 text-green-600" />
-                    ) : (
-                      <Copy className="w-5 h-5 text-blue-600" />
-                    )}
-                  </button>
-                  <button
-                    onClick={handleDownloadFull}
-                    className="p-2 hover:bg-white/50 rounded-lg transition-colors"
-                    title="Download full debate (untruncated responses)"
-                  >
-                    <Download className="w-5 h-5 text-blue-600" />
-                  </button>
-                </div>
-              </div>
-              <div className="prose prose-slate max-w-none">
-                <div 
-                  className="text-slate-800"
-                  dangerouslySetInnerHTML={{ 
-                    __html: debate.finalSynthesis
-                      .replace(/^## (.*?)$/gm, '<h3 class="text-xl font-bold mb-3 text-slate-900 mt-6">$1</h3>')
-                      .replace(/^### (.*?)$/gm, '<h4 class="text-lg font-semibold mb-2 text-slate-800 mt-4">$1</h4>')
-                      .replace(/\*\*(.*?)\*\*/g, '<strong class="font-bold text-slate-900">$1</strong>')
-                      .replace(/^• (.*?)$/gm, '<div class="ml-4 mb-1">• $1</div>')
-                      .replace(/^\d+\. (.*?)$/gm, '<div class="ml-4 mb-1">$&</div>')
-                      .replace(/\n/g, '<br/>')
-                  }} />
-              </div>
-            </div>
-          )}
-          
-          {/* Error fallback */}
-          {!debate.finalSynthesis && !debate.judgeAnalysis && (
-            <div className="mt-8 p-8 bg-gray-50 rounded-xl border-2 border-gray-200">
-              <p className="text-slate-600">The debate has finished but no analysis was generated.</p>
-              <pre className="mt-4 text-xs bg-slate-100 p-4 rounded">
-                {JSON.stringify(debate, null, 2)}
-              </pre>
-            </div>
-          )}
-          
-          <div className="text-center mt-8 space-y-4">
-            <div className="flex justify-center gap-4">
-              <Button 
-                onClick={handleDownloadFull}
-                size="lg"
-                variant="outline"
-                className="shadow-lg border-purple-200 text-purple-700 hover:bg-purple-50"
-              >
-                <Download className="w-5 h-5 mr-2" />
-                Download Complete Debate
-              </Button>
-              <Button 
-                onClick={() => window.location.href = '/'} 
-                size="lg"
-                className="shadow-lg"
-              >
-                Start New Debate
-              </Button>
-            </div>
-            <p className="text-sm text-slate-500">
-              Download includes full untruncated responses from all models
-            </p>
-          </div>
-        </div>
-      )}
+
     </div>
   );
 }
