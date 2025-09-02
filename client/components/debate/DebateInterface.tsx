@@ -455,17 +455,27 @@ export function DebateInterface({ config, onComplete }: DebateInterfaceProps) {
             <div className="mt-8 p-8 bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl border-2 border-purple-200 shadow-xl">
               <div className="flex justify-between items-start mb-4">
                 <h2 className="text-2xl font-bold text-purple-900">⚖️ Judge&apos;s Verdict</h2>
-                <button
-                  onClick={handleCopyJudge}
-                  className="p-2 hover:bg-white/50 rounded-lg transition-colors"
-                  title="Copy judge's verdict"
-                >
-                  {copiedJudge ? (
-                    <Check className="w-5 h-5 text-green-600" />
-                  ) : (
-                    <Copy className="w-5 h-5 text-purple-600" />
-                  )}
-                </button>
+                <div className="flex gap-2">
+                  <button
+                    onClick={handleCopyJudge}
+                    className="p-2 hover:bg-white/50 rounded-lg transition-colors"
+                    title="Copy judge's verdict"
+                  >
+                    {copiedJudge ? (
+                      <Check className="w-5 h-5 text-green-600" />
+                    ) : (
+                      <Copy className="w-5 h-5 text-purple-600" />
+                    )}
+                  </button>
+                  <button
+                    onClick={handleDownloadFull}
+                    className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg transition-colors font-medium"
+                    title="Download complete debate with full untruncated responses"
+                  >
+                    <Download className="w-4 h-4" />
+                    Download Full Debate
+                  </button>
+                </div>
               </div>
               <div className="prose prose-slate max-w-none">
                 <div 
@@ -533,14 +543,28 @@ export function DebateInterface({ config, onComplete }: DebateInterfaceProps) {
             </div>
           )}
           
-          <div className="text-center mt-8">
-            <Button 
-              onClick={() => window.location.href = '/'} 
-              size="lg"
-              className="shadow-lg"
-            >
-              Start New Debate
-            </Button>
+          <div className="text-center mt-8 space-y-4">
+            <div className="flex justify-center gap-4">
+              <Button 
+                onClick={handleDownloadFull}
+                size="lg"
+                variant="outline"
+                className="shadow-lg border-purple-200 text-purple-700 hover:bg-purple-50"
+              >
+                <Download className="w-5 h-5 mr-2" />
+                Download Complete Debate
+              </Button>
+              <Button 
+                onClick={() => window.location.href = '/'} 
+                size="lg"
+                className="shadow-lg"
+              >
+                Start New Debate
+              </Button>
+            </div>
+            <p className="text-sm text-slate-500">
+              Download includes full untruncated responses from all models
+            </p>
           </div>
         </div>
       )}
