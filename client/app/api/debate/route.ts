@@ -189,26 +189,24 @@ export async function POST(req: NextRequest) {
             return;
           }
           
-          // Check for convergence
+          // Check for convergence (only for agree/strongly-agree positions, not neutral)
           if (round.consensus && config.convergenceThreshold) {
-            // Count models with similar positions (neutral counts as consensus if most are neutral)
-            const positionCounts = round.responses.reduce((acc, r) => {
-              acc[r.position] = (acc[r.position] || 0) + 1;
-              return acc;
-            }, {} as Record<string, number>);
-            
-            const maxPositionCount = Math.max(...Object.values(positionCounts));
-            const agreementRate = maxPositionCount / round.responses.length;
+            const agreeCount = round.responses.filter(r => 
+              r.position === 'agree' || r.position === 'strongly-agree'
+            ).length;
+            const agreementRate = agreeCount / round.responses.length;
             
             console.log(`Round ${i} convergence check:`, {
-              positions: positionCounts,
+              agreeCount,
+              totalResponses: round.responses.length,
               agreementRate,
               threshold: config.convergenceThreshold,
               willConverge: agreementRate >= config.convergenceThreshold
             });
             
+            // Only converge if models actually agree, not if they're all neutral
             if (agreementRate >= config.convergenceThreshold) {
-              console.log('Debate converged early due to consensus!');
+              console.log('Debate converged early due to agreement consensus!');
               debate.status = 'converged';
               break;
             }
@@ -469,6 +467,27 @@ export async function GET(req: NextRequest) {
   return Response.json(debates);
 }
 
+function extractKeyArguments(response: any): string[] {
+  const content = response.content || '';
+  const arguments: string[] = [];
+  
+  // Extract bullet points or key statements
+  const lines = content.split('\n');
+  for (const line of lines) {
+    if (line.match(/^[•\-\*]\s+/)) {
+      arguments.push(line.replace(/^[•\-\*]\s+/, '').trim());
+    }
+  }
+  
+  // If no bullet points, extract first few substantive sentences
+  if (arguments.length === 0) {
+    const sentences = content.match(/[^.!?]+[.!?]+/g) || [];
+    arguments.push(...sentences.slice(0, 3).map(s => s.trim()));
+  }
+  
+  return arguments.slice(0, 3); // Return top 3 arguments
+}
+
 function generateSynthesis(debate: Debate): string {
   // Focus on FINAL ROUND for position determination
   const finalRound = debate.rounds[debate.rounds.length - 1];
@@ -527,9 +546,26 @@ function generateSynthesis(debate: Debate): string {
     .map(r => r.consensus)
     .filter(Boolean);
   
-  return `## Debate Analysis: "${debate.config.topic}"
+  // Extract key themes and arguments
+  const modelArguments: Record<string, string[]> = {};
+  debate.rounds.forEach(round => {
+    round.responses.forEach(response => {
+      if (!response.content.includes('❌') && !response.content.includes('⚠️')) {
+        if (!modelArguments[response.modelId]) {
+          modelArguments[response.modelId] = [];
+        }
+        // Extract first meaningful sentence or stance
+        const lines = response.content.split('\n').filter(l => l.trim().length > 20);
+        if (lines.length > 0) {
+          modelArguments[response.modelId].push(lines[0].substring(0, 200));
+        }
+      }
+    });
+  });
 
-### Final Verdict (Round ${finalRound.roundNumber}):
+  return `## 📊 Debate Analysis: "${debate.config.topic}"
+
+${debate.config.description ? `**Context:** ${debate.config.description}\n\n` : ''}### 🎯 Final Verdict (Round ${finalRound.roundNumber}):
 ${positionPercentages.map(p => 
   `• **${p.position.replace('-', ' ').toUpperCase()}**: ${p.percentage}% (${p.count}/${totalValidResponses} participating models)`
 ).join('\n')}
@@ -555,7 +591,7 @@ ${failedResponses.length > 0
 ### Journey Summary:
 • Started with ${initialPositions.size} different positions in Round 1
 • Converged to ${Object.keys(positionCounts).length} positions by Round ${finalRound.roundNumber}
-• ${debate.status === 'converged' ? `Debate converged early at ${Math.round((finalResponses.filter(r => r.position === topPosition.position).length / totalFinalResponses) * 100)}% agreement` : `Completed all ${debate.config.rounds} rounds`}
+• ${debate.status === 'converged' ? `Debate converged early at ${Math.round((finalResponses.filter(r => r.position === topPosition.position).length / totalFinalResponses) * 100)}% agreement` : `Completed ${debate.rounds.length} of ${debate.config.rounds} rounds`}
 
 ### Confidence Evolution:
 • Initial confidence: ${Math.round(initialRound.responses.reduce((sum, r) => sum + r.confidence, 0) / initialRound.responses.length)}%
@@ -564,5 +600,13 @@ ${failedResponses.length > 0
 ### Key Turning Points:
 ${keyPoints.length > 0 
   ? keyPoints.slice(-3).map((point, i) => `${i + 1}. ${point}`).join('\n')
-  : 'The debate evolved gradually without dramatic shifts in consensus.'}`;
+  : 'The debate evolved gradually without dramatic shifts in consensus.'}
+
+### 💭 Model Perspectives:
+${Object.entries(modelArguments).slice(0, 3).map(([modelId, args]) => 
+  `**${modelId}:** "${args[0] || 'No clear stance recorded'}..."`
+).join('\n')}
+
+---
+*Analysis generated on ${new Date().toLocaleString()}*`;
 }
