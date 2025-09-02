@@ -229,10 +229,13 @@ Format your response as a clear argument with supporting points.`;
     
     // Track token usage if tracker is available
     if (this.usageTracker && result.usage) {
+      // Log the full usage object to understand what cost data is available
+      console.log(`[COST DEBUG] ${model.displayName} usage object:`, JSON.stringify(result.usage, null, 2));
+      
       await this.usageTracker.trackModelUsage(model, roundNumber, {
         inputTokens: result.usage.promptTokens || 0,
         outputTokens: result.usage.completionTokens || 0,
-      });
+      }, result.usage); // Pass the full usage object
     }
     
     // Log the model response

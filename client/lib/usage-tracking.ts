@@ -21,7 +21,8 @@ export class UsageTracker {
   async trackModelUsage(
     model: Model,
     roundNumber: number,
-    usage: TokenUsage
+    usage: TokenUsage,
+    providerUsage?: any // Raw usage data from AI provider
   ): Promise<void> {
     // Skip if no user (anonymous debates)
     if (!this.userId) return;
@@ -32,10 +33,39 @@ export class UsageTracker {
       return;
     }
 
-    // Calculate costs
-    const inputCost = (usage.inputTokens / 1000) * pricing.costPer1kTokens.input;
-    const outputCost = (usage.outputTokens / 1000) * pricing.costPer1kTokens.output;
-    const apiCost = inputCost + outputCost;
+    // Calculate costs - use real provider cost if available, otherwise estimate
+    let apiCost: number;
+    let isRealCost = false;
+    
+    if (providerUsage) {
+      console.log(`[COST DEBUG] Checking for real cost data in provider usage:`, providerUsage);
+      
+      // Check for real cost data from different providers
+      const realCost = providerUsage.cost || 
+                       providerUsage.totalCost || 
+                       providerUsage.usage?.cost ||
+                       providerUsage.usage_cost ||
+                       providerUsage.totalTokenCost;
+      
+      if (realCost && typeof realCost === 'number' && realCost > 0) {
+        apiCost = realCost;
+        isRealCost = true;
+        console.log(`[COST DEBUG] ✅ Using REAL API cost: $${apiCost} for ${model.displayName}`);
+      } else {
+        // Fallback to estimated cost
+        const inputCost = (usage.inputTokens / 1000) * pricing.costPer1kTokens.input;
+        const outputCost = (usage.outputTokens / 1000) * pricing.costPer1kTokens.output;
+        apiCost = inputCost + outputCost;
+        console.log(`[COST DEBUG] ⚠️ Using ESTIMATED cost: $${apiCost} for ${model.displayName} (no real cost found)`);
+      }
+    } else {
+      // No provider usage data, use estimates
+      const inputCost = (usage.inputTokens / 1000) * pricing.costPer1kTokens.input;
+      const outputCost = (usage.outputTokens / 1000) * pricing.costPer1kTokens.output;
+      apiCost = inputCost + outputCost;
+      console.log(`[COST DEBUG] ⚠️ Using ESTIMATED cost: $${apiCost} for ${model.displayName} (no provider usage)`);
+    }
+    
     const platformFee = apiCost * pricing.platformMarkup;
     const totalCost = apiCost + platformFee;
 
@@ -53,12 +83,15 @@ export class UsageTracker {
           apiCost,
           platformFee,
           totalCost,
+          // Note: We'd need to add this field to schema if we want to track real vs estimated
+          // isRealCost,
         },
       });
 
-      console.log(`Tracked usage for ${model.displayName}:`, {
+      console.log(`[COST DEBUG] ✅ Tracked usage for ${model.displayName}:`, {
         tokens: usage,
-        costs: { apiCost, platformFee, totalCost }
+        costs: { apiCost, platformFee, totalCost },
+        costType: isRealCost ? 'REAL' : 'ESTIMATED'
       });
     } catch (error) {
       console.error('Failed to track usage:', error);
