@@ -61,7 +61,7 @@ export default function Home() {
     convergenceThreshold: 0.75,
     judge: {
       enabled: true,
-      model: availableModels.find(m => m.id === 'claude-4-sonnet-20250522') || availableModels[0]
+      model: availableModels.find(m => m.id === 'claude-3-5-sonnet-20241022') || availableModels[0]
     }
   });
 

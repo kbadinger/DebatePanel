@@ -19,10 +19,10 @@ const MODEL_CONTEXT_LIMITS: Record<string, number> = {
   'o3': 128000,
   'o3-mini': 128000,
   
-  // Anthropic Models - Claude 4 Series Only
-  'claude-4-opus-20250522': 200000,
-  'claude-4-sonnet-20250522': 200000,
-  'claude-opus-4-1-20250805': 200000,
+  // Anthropic Models - Claude 3.5 Series (Claude 4 not yet available)
+  'claude-3-5-sonnet-20241022': 200000,
+  'claude-3-5-sonnet-20240620': 200000,
+  'claude-3-opus-20240229': 200000,
   
   // Google Models - Current and Legacy
   'gemini-2.5-pro': 2000000,
@@ -89,10 +89,10 @@ const MODEL_ROLES: Record<string, { strengths: ModelStrength[], role: string }> 
   'o3': { strengths: ['analytical', 'technical'], role: 'Advanced problem-solving and technical analysis' },
   'o3-mini': { strengths: ['analytical'], role: 'Efficient reasoning and problem-solving' },
   
-  // Anthropic - Claude 4 Series
-  'claude-4-opus-20250522': { strengths: ['ethical', 'analytical', 'general'], role: 'Ethical implications and comprehensive analysis' },
-  'claude-4-sonnet-20250522': { strengths: ['general', 'ethical', 'analytical'], role: 'Balanced perspective with ethical considerations' },
-  'claude-opus-4-1-20250805': { strengths: ['ethical', 'analytical', 'general'], role: 'Latest ethical reasoning and nuanced analysis' },
+  // Anthropic - Claude 3.5 Series
+  'claude-3-5-sonnet-20241022': { strengths: ['general', 'ethical', 'analytical'], role: 'Balanced perspective with ethical considerations' },
+  'claude-3-5-sonnet-20240620': { strengths: ['general', 'ethical', 'analytical'], role: 'Ethical reasoning and nuanced analysis' },
+  'claude-3-opus-20240229': { strengths: ['ethical', 'analytical', 'general'], role: 'Deep ethical implications and comprehensive analysis' },
   
   // Google Gemini
   'gemini-2.5-pro': { strengths: ['research', 'analytical', 'technical'], role: 'Comprehensive research and technical analysis' },
@@ -210,12 +210,12 @@ const FEATURED_MODELS: Model[] = [
     displayName: 'o1 Preview'
   }),
   
-  // Anthropic - Featured Model Only
+  // Anthropic - Featured Model Only  
   withModelInfo({
-    id: 'claude-opus-4-1-20250805',
+    id: 'claude-3-5-sonnet-20241022',
     provider: 'anthropic',
-    name: 'claude-opus-4-1-20250805',
-    displayName: 'Claude Opus 4.1'
+    name: 'claude-3-5-sonnet-20241022',
+    displayName: 'Claude 3.5 Sonnet'
   }),
   
   // Google - Featured Models Only
@@ -325,16 +325,16 @@ const EXPANDABLE_MODELS: Record<string, Model[]> = {
   ],
   anthropic: [
     withModelInfo({
-      id: 'claude-4-opus-20250522',
+      id: 'claude-3-5-sonnet-20240620',
       provider: 'anthropic',
-      name: 'claude-4-opus-20250522',
-      displayName: 'Claude 4 Opus'
+      name: 'claude-3-5-sonnet-20240620',
+      displayName: 'Claude 3.5 Sonnet (June)'
     }),
     withModelInfo({
-      id: 'claude-4-sonnet-20250522',
+      id: 'claude-3-opus-20240229',
       provider: 'anthropic',
-      name: 'claude-4-sonnet-20250522',
-      displayName: 'Claude 4 Sonnet'
+      name: 'claude-3-opus-20240229',
+      displayName: 'Claude 3 Opus'
     })
   ],
   google: [

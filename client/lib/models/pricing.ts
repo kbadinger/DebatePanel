@@ -137,19 +137,9 @@ export const MODEL_PRICING: Record<string, ModelPricing> = {
     platformMarkup: 0.3
   },
   
-  // Anthropic Models - Claude 4 Series Only
-  'claude-4-opus-20250522': {
-    modelId: 'claude-4-opus-20250522',
-    costPer1kTokens: {
-      input: 0.015,
-      output: 0.075
-    },
-    costCategory: 'flagship',
-    providerBaseCost: 0.090,
-    platformMarkup: 0.3
-  },
-  'claude-4-sonnet-20250522': {
-    modelId: 'claude-4-sonnet-20250522',
+  // Anthropic Models - Claude 3.5 Series (Real Models)
+  'claude-3-5-sonnet-20241022': {
+    modelId: 'claude-3-5-sonnet-20241022',
     costPer1kTokens: {
       input: 0.003,
       output: 0.015
@@ -158,8 +148,18 @@ export const MODEL_PRICING: Record<string, ModelPricing> = {
     providerBaseCost: 0.018,
     platformMarkup: 0.3
   },
-  'claude-opus-4-1-20250805': {
-    modelId: 'claude-opus-4-1-20250805',
+  'claude-3-5-sonnet-20240620': {
+    modelId: 'claude-3-5-sonnet-20240620',
+    costPer1kTokens: {
+      input: 0.003,
+      output: 0.015
+    },
+    costCategory: 'premium',
+    providerBaseCost: 0.018,
+    platformMarkup: 0.3
+  },
+  'claude-3-opus-20240229': {
+    modelId: 'claude-3-opus-20240229',
     costPer1kTokens: {
       input: 0.020,
       output: 0.100
