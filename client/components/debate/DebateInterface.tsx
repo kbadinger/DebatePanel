@@ -173,6 +173,14 @@ export function DebateInterface({ config, onComplete }: DebateInterfaceProps) {
             } else if (data.type === 'human-joined') {
               const participant = data.data as { userId: string; userName: string };
               setParticipants(prev => [...prev, participant]);
+            } else if (data.type === 'debate-summary') {
+              console.log('Debate summary received, full data follows...');
+              // Update with summary data first
+              setDebate(prevDebate => ({
+                ...prevDebate,
+                ...data.data,
+                status: data.data.status || 'completed'
+              }));
             } else if (data.type === 'debate-complete') {
               console.log('Debate completed - Full data:', JSON.stringify(data.data, null, 2));
               console.log('Debate status:', data.data.status);

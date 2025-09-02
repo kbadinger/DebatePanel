@@ -13,8 +13,20 @@ const prisma = new PrismaClient();
 // Helper function to safely encode JSON for SSE
 function safeSSEEncode(data: any): string {
   try {
+    // For very large responses, truncate the content to prevent parsing errors
+    const MAX_RESPONSE_LENGTH = 30000; // Limit individual response content
+    
+    // Deep clone and truncate if needed
+    const processedData = JSON.parse(JSON.stringify(data, (key, value) => {
+      if (typeof value === 'string' && value.length > MAX_RESPONSE_LENGTH) {
+        console.warn(`Truncating large ${key} field from ${value.length} to ${MAX_RESPONSE_LENGTH} chars`);
+        return value.substring(0, MAX_RESPONSE_LENGTH) + '... [Content truncated for transmission]';
+      }
+      return value;
+    }));
+    
     // First stringify to handle any special characters
-    let jsonString = JSON.stringify(data);
+    let jsonString = JSON.stringify(processedData);
     
     // Extra safety: ensure no raw newlines that could break SSE format
     jsonString = jsonString.replace(/\n/g, '\\n').replace(/\r/g, '\\r');
@@ -404,6 +416,29 @@ export async function POST(req: NextRequest) {
           // Ensure we have at least some synthesis
           if (!debate.finalSynthesis) {
             debate.finalSynthesis = `## Debate Complete\n\nDebate completed with ${debate.rounds.length} rounds.`;
+          }
+          
+          // For very large debates, send summary first then full data
+          const totalSize = JSON.stringify(debate).length;
+          console.log(`Total debate size: ${totalSize} bytes`);
+          
+          if (totalSize > 25000) {
+            // Send a summary first
+            console.log('Large debate detected, sending summary first');
+            const summaryUpdate: DebateStreamUpdate = {
+              type: 'debate-summary',
+              data: {
+                id: debate.id,
+                status: debate.status,
+                config: debate.config,
+                finalSynthesis: debate.finalSynthesis,
+                judgeAnalysis: debate.judgeAnalysis,
+                winner: (debate as any).winner,
+                roundCount: debate.rounds.length,
+                message: 'Full debate data follows...'
+              }
+            };
+            controller.enqueue(encoder.encode(safeSSEEncode(summaryUpdate)));
           }
           
           const finalUpdate: DebateStreamUpdate = {
