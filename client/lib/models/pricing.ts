@@ -74,10 +74,10 @@ export const MODEL_PRICING: Record<string, ModelPricing> = {
     providerBaseCost: 0.050,
     platformMarkup: 0.3
   },
-  'o1-preview': {
-    modelId: 'o1-preview',
+  'o1': {
+    modelId: 'o1',
     costPer1kTokens: {
-      input: 0.015,  // OpenAI o1-preview reasoning model
+      input: 0.015,  // OpenAI o1 reasoning model
       output: 0.060
     },
     costCategory: 'flagship',
@@ -96,16 +96,6 @@ export const MODEL_PRICING: Record<string, ModelPricing> = {
   },
   
   // OpenAI - Secondary Tier (Older Models)
-  'o1': {
-    modelId: 'o1',
-    costPer1kTokens: {
-      input: 0.015,  // Advanced reasoning
-      output: 0.060
-    },
-    costCategory: 'premium',
-    providerBaseCost: 0.075,
-    platformMarkup: 0.3
-  },
   'o1-mini': {
     modelId: 'o1-mini',
     costPer1kTokens: {
@@ -410,8 +400,8 @@ export const MODEL_PRICING: Record<string, ModelPricing> = {
   },
   
   // Mistral Models
-  'mistral-large-24-11': {
-    modelId: 'mistral-large-24-11',
+  'mistral-large-latest': {
+    modelId: 'mistral-large-latest',
     costPer1kTokens: {
       input: 0.003,
       output: 0.009
