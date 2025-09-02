@@ -10,7 +10,7 @@ const MODEL_CONTEXT_LIMITS: Record<string, number> = {
   'gpt-4.1-mini': 1000000,
   'gpt-4.1-nano': 1000000,
   'gpt-5': 200000, // Latest GPT with extended context
-  'o3-pro': 128000,
+  'o1-preview': 128000,
   'o4-mini': 128000,
   
   // OpenAI - Secondary Tier
@@ -80,7 +80,7 @@ const MODEL_ROLES: Record<string, { strengths: ModelStrength[], role: string }> 
   'gpt-4.1-mini': { strengths: ['business', 'general'], role: 'Practical business analysis' },
   'gpt-4.1-nano': { strengths: ['business'], role: 'Quick business insights' },
   'gpt-5': { strengths: ['business', 'analytical', 'creative'], role: 'Advanced flagship analysis across all domains' },
-  'o3-pro': { strengths: ['analytical', 'technical'], role: 'Advanced reasoning and problem-solving' },
+  'o1-preview': { strengths: ['analytical', 'technical'], role: 'Advanced reasoning and problem-solving' },
   'o4-mini': { strengths: ['analytical'], role: 'Efficient reasoning and analysis' },
   
   // OpenAI - Secondary Tier
@@ -204,10 +204,10 @@ const FEATURED_MODELS: Model[] = [
     displayName: 'GPT-5'
   }),
   withModelInfo({
-    id: 'o3-pro',
+    id: 'o1-preview',
     provider: 'openai',
-    name: 'o3-pro',
-    displayName: 'o3 Pro'
+    name: 'o1-preview',
+    displayName: 'o1 Preview'
   }),
   
   // Anthropic - Featured Model Only

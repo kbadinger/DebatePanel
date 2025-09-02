@@ -74,14 +74,14 @@ export const MODEL_PRICING: Record<string, ModelPricing> = {
     providerBaseCost: 0.050,
     platformMarkup: 0.3
   },
-  'o3-pro': {
-    modelId: 'o3-pro',
+  'o1-preview': {
+    modelId: 'o1-preview',
     costPer1kTokens: {
-      input: 0.030,  // Advanced reasoning model
-      output: 0.120
+      input: 0.015,  // OpenAI o1-preview reasoning model
+      output: 0.060
     },
     costCategory: 'flagship',
-    providerBaseCost: 0.150,
+    providerBaseCost: 0.075,
     platformMarkup: 0.3
   },
   'o4-mini': {

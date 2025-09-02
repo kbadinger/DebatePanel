@@ -229,8 +229,17 @@ Format your response as a clear argument with supporting points.`;
     
     // Track token usage if tracker is available
     if (this.usageTracker && result.usage) {
-      // Log the full usage object to understand what cost data is available
+      // Log the full usage object and entire result to understand what cost data is available
+      console.log(`[COST DEBUG] ${model.displayName} full result keys:`, Object.keys(result));
       console.log(`[COST DEBUG] ${model.displayName} usage object:`, JSON.stringify(result.usage, null, 2));
+      
+      // Check if there are any other fields in the result that might contain cost info
+      const resultFields = Object.entries(result).filter(([key, value]) => 
+        key !== 'text' && key !== 'usage' && value != null
+      );
+      if (resultFields.length > 0) {
+        console.log(`[COST DEBUG] ${model.displayName} additional result fields:`, resultFields);
+      }
       
       await this.usageTracker.trackModelUsage(model, roundNumber, {
         inputTokens: result.usage.promptTokens || 0,
