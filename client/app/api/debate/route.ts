@@ -17,8 +17,8 @@ function safeSSEEncode(data: any, isStreamingUpdate: boolean = false): string {
     console.log(`Encoding SSE data of type: ${data.type}, streaming: ${isStreamingUpdate}`);
     
     // Different limits for streaming vs final completion
-    const MAX_RESPONSE_LENGTH = isStreamingUpdate ? 3000 : 2000; // Streaming: 3KB, Final: 2KB
-    const MAX_TOTAL_LENGTH = isStreamingUpdate ? 20000 : 15000; // Streaming: 20KB, Final: 15KB
+    const MAX_RESPONSE_LENGTH = isStreamingUpdate ? 1500 : 2000; // Streaming: 1.5KB, Final: 2KB
+    const MAX_TOTAL_LENGTH = isStreamingUpdate ? 8000 : 15000; // Streaming: 8KB, Final: 15KB
     
     // Deep clone and truncate if needed
     const processedData = JSON.parse(JSON.stringify(data, (key, value) => {
@@ -209,20 +209,37 @@ export async function POST(req: NextRequest) {
           debate.rounds.push(round);
           
           // Stream each response
+          console.log(`Streaming ${round.responses.length} responses for round ${i}`);
           for (const response of round.responses) {
+            console.log(`Streaming response from ${response.modelId}, content length: ${response.content?.length || 0}`);
             const update: DebateStreamUpdate = {
               type: 'response',
               data: response,
             };
-            controller.enqueue(encoder.encode(safeSSEEncode(update, true))); // true = streaming update
+            try {
+              const encoded = safeSSEEncode(update, true);
+              console.log(`Encoded response size: ${encoded.length} chars`);
+              controller.enqueue(encoder.encode(encoded));
+              console.log(`Successfully streamed response from ${response.modelId}`);
+            } catch (streamError) {
+              console.error(`Failed to stream response from ${response.modelId}:`, streamError);
+            }
           }
           
           // Stream round completion
+          console.log(`Streaming round ${i} completion`);
           const roundUpdate: DebateStreamUpdate = {
             type: 'round-complete',
             data: round,
           };
-          controller.enqueue(encoder.encode(safeSSEEncode(roundUpdate, true))); // true = streaming update
+          try {
+            const encoded = safeSSEEncode(roundUpdate, true);
+            console.log(`Round completion encoded size: ${encoded.length} chars`);
+            controller.enqueue(encoder.encode(encoded));
+            console.log(`Successfully streamed round ${i} completion`);
+          } catch (streamError) {
+            console.error(`Failed to stream round ${i} completion:`, streamError);
+          }
           
           // If interactive mode, wait for human input after first round
           if (config.isInteractive && i === 1 && userId) {

@@ -175,9 +175,11 @@ export function DebateInterface({ config, onComplete }: DebateInterfaceProps) {
         
         for (const line of lines) {
           if (line.startsWith('data: ')) {
+            console.log('Received SSE line length:', line.length, 'Preview:', line.substring(0, 100) + '...');
             let data;
             try {
               data = JSON.parse(line.slice(6));
+              console.log('Successfully parsed SSE data type:', data.type);
             } catch (parseError) {
               console.error('JSON parse error:', parseError);
               console.error('Failed to parse line:', line);
@@ -300,9 +302,11 @@ export function DebateInterface({ config, onComplete }: DebateInterfaceProps) {
         
         for (const line of lines) {
           if (line.startsWith('data: ')) {
+            console.log('Received SSE line length:', line.length, 'Preview:', line.substring(0, 100) + '...');
             let data;
             try {
               data = JSON.parse(line.slice(6));
+              console.log('Successfully parsed SSE data type:', data.type);
             } catch (parseError) {
               console.error('JSON parse error:', parseError);
               console.error('Failed to parse line:', line);
