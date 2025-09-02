@@ -19,7 +19,8 @@ export function ModelResponseCard({ response, isStreaming }: ModelResponseCardPr
   // Check if this is an error or context limit exceeded response
   const isContextError = response.content.includes('⚠️ Context limit exceeded');
   const isError = response.content.includes('❌ Error:') || response.content.includes('❌ Complete failure');
-  const isTruncated = response.content.includes('Truncated for streaming - full response available after debate completes');
+  const isTruncated = response.content.includes('Truncated for streaming - full response available after debate completes') ||
+                      response.content.includes('Response continues - see full version in download');
   const hasError = isContextError || isError;
   
   const handleCopy = async () => {

@@ -11,14 +11,14 @@ import { authOptions } from '@/auth';
 const prisma = new PrismaClient();
 
 // Helper function to safely encode JSON for SSE
-function safeSSEEncode(data: any): string {
+function safeSSEEncode(data: any, isStreamingUpdate: boolean = false): string {
   try {
     // Log what we're trying to encode
-    console.log(`Encoding SSE data of type: ${data.type}`);
+    console.log(`Encoding SSE data of type: ${data.type}, streaming: ${isStreamingUpdate}`);
     
-    // For very large responses, truncate the content to prevent parsing errors
-    const MAX_RESPONSE_LENGTH = 5000; // Further reduced limit for individual response content
-    const MAX_TOTAL_LENGTH = 15000; // Further reduced max total JSON size
+    // Different limits for streaming vs final completion
+    const MAX_RESPONSE_LENGTH = isStreamingUpdate ? 3000 : 2000; // Streaming: 3KB, Final: 2KB
+    const MAX_TOTAL_LENGTH = isStreamingUpdate ? 20000 : 15000; // Streaming: 20KB, Final: 15KB
     
     // Deep clone and truncate if needed
     const processedData = JSON.parse(JSON.stringify(data, (key, value) => {
@@ -31,8 +31,11 @@ function safeSSEEncode(data: any): string {
         
         // Then truncate if too long (but only for streaming, not storage)
         if (cleanValue.length > MAX_RESPONSE_LENGTH && key === 'content') {
-          console.warn(`Truncating large ${key} field from ${cleanValue.length} to ${MAX_RESPONSE_LENGTH} chars for streaming`);
-          return cleanValue.substring(0, MAX_RESPONSE_LENGTH) + `... [Truncated for streaming - full response available after debate completes]`;
+          const truncationMessage = isStreamingUpdate 
+            ? `... [Response continues - see full version in download]`
+            : `... [Truncated for streaming - full response available after debate completes]`;
+          console.warn(`Truncating large ${key} field from ${cleanValue.length} to ${MAX_RESPONSE_LENGTH} chars for ${isStreamingUpdate ? 'streaming update' : 'final completion'}`);
+          return cleanValue.substring(0, MAX_RESPONSE_LENGTH) + truncationMessage;
         }
         return cleanValue;
       }
@@ -211,7 +214,7 @@ export async function POST(req: NextRequest) {
               type: 'response',
               data: response,
             };
-            controller.enqueue(encoder.encode(safeSSEEncode(update)));
+            controller.enqueue(encoder.encode(safeSSEEncode(update, true))); // true = streaming update
           }
           
           // Stream round completion
@@ -219,7 +222,7 @@ export async function POST(req: NextRequest) {
             type: 'round-complete',
             data: round,
           };
-          controller.enqueue(encoder.encode(safeSSEEncode(roundUpdate)));
+          controller.enqueue(encoder.encode(safeSSEEncode(roundUpdate, true))); // true = streaming update
           
           // If interactive mode, wait for human input after first round
           if (config.isInteractive && i === 1 && userId) {
@@ -469,14 +472,14 @@ export async function POST(req: NextRequest) {
                 message: 'Full debate data follows...'
               }
             };
-            controller.enqueue(encoder.encode(safeSSEEncode(summaryUpdate)));
+            controller.enqueue(encoder.encode(safeSSEEncode(summaryUpdate))); // false = final completion (default)
           }
           
           const finalUpdate: DebateStreamUpdate = {
             type: 'debate-complete',
             data: debate,
           };
-          controller.enqueue(encoder.encode(safeSSEEncode(finalUpdate)));
+          controller.enqueue(encoder.encode(safeSSEEncode(finalUpdate))); // false = final completion (default)
           console.log('Final update streamed successfully');
         } catch (streamError) {
           console.error('Failed to stream final update:', streamError);
