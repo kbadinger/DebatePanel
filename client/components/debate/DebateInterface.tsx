@@ -398,6 +398,35 @@ export function DebateInterface({ config, onComplete }: DebateInterfaceProps) {
         <RatingsKey />
       </div>
       
+      {/* Loading States - Always at top after legend */}
+      {isRunning && allResponses.length === 0 && (
+        <div className="mb-6">
+          <div className="bg-white rounded-xl shadow-lg border border-slate-200 p-6 flex items-center justify-center gap-4">
+            <Loader2 className="animate-spin text-blue-600" size={28} />
+            <div>
+              <p className="text-lg font-semibold text-slate-800">Starting Debate</p>
+              <p className="text-sm text-slate-600">Initializing models...</p>
+              {initTimeout && (
+                <p className="text-sm text-amber-600 mt-2">
+                  ⏱️ Models are taking longer than usual to respond. This can happen with complex topics or when models are under high load. Please wait...
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {isRunning && allResponses.length > 0 && streamingResponses.length === 0 && !waitingForHuman && (
+        <div className="mb-6">
+          <div className="bg-white rounded-xl shadow-md border border-slate-200 p-4 flex items-center gap-3">
+            <Loader2 className="animate-spin text-blue-600" size={20} />
+            <span className="text-sm font-medium text-slate-700">
+              Waiting for next response...
+            </span>
+          </div>
+        </div>
+      )}
+      
       <div className="space-y-4">
         {allResponses.map((response, idx) => (
           <ModelResponseCard
@@ -407,15 +436,6 @@ export function DebateInterface({ config, onComplete }: DebateInterfaceProps) {
             debateId={debate?.id}
           />
         ))}
-        
-        {isRunning && allResponses.length > 0 && streamingResponses.length === 0 && !waitingForHuman && (
-          <div className="bg-white rounded-xl shadow-md border border-slate-200 p-4 flex items-center gap-3">
-            <Loader2 className="animate-spin text-blue-600" size={20} />
-            <span className="text-sm font-medium text-slate-700">
-              Waiting for next response...
-            </span>
-          </div>
-        )}
         
         {/* Human Input Panel */}
         {waitingForHuman && config.isInteractive && (
@@ -437,22 +457,7 @@ export function DebateInterface({ config, onComplete }: DebateInterfaceProps) {
         </div>
       )}
       
-      {isRunning && allResponses.length === 0 && (
-        <div className="col-span-full mb-6">
-          <div className="bg-white rounded-xl shadow-lg border border-slate-200 p-6 flex items-center justify-center gap-4">
-            <Loader2 className="animate-spin text-blue-600" size={28} />
-            <div>
-              <p className="text-lg font-semibold text-slate-800">Starting Debate</p>
-              <p className="text-sm text-slate-600">Initializing models...</p>
-              {initTimeout && (
-                <p className="text-sm text-amber-600 mt-2">
-                  ⏱️ Models are taking longer than usual to respond. This can happen with complex topics or when models are under high load. Please wait...
-                </p>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
+
       
       {/* Debug: Check debate state */}
       {(() => {
