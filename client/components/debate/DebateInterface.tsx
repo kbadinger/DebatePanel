@@ -7,8 +7,9 @@ import { RatingsKey } from './RatingsKey';
 import { HumanInputPanel } from './HumanInputPanel';
 import { WinnerDisplay } from './WinnerDisplay';
 import { Button } from '@/components/ui/button';
-import { Loader2, Users } from 'lucide-react';
+import { Loader2, Users, Copy, Check } from 'lucide-react';
 import { useSession } from 'next-auth/react';
+import { useState as useStateCopy } from 'react';
 
 interface DebateInterfaceProps {
   config: DebateConfig;
@@ -18,11 +19,36 @@ interface DebateInterfaceProps {
 export function DebateInterface({ config, onComplete }: DebateInterfaceProps) {
   const { data: session } = useSession();
   const [debate, setDebate] = useState<Debate | null>(null);
+  const [copiedSynthesis, setCopiedSynthesis] = useStateCopy(false);
+  const [copiedJudge, setCopiedJudge] = useStateCopy(false);
   const [isRunning, setIsRunning] = useState(false);
   const [currentRound, setCurrentRound] = useState(0);
   const [streamingResponses, setStreamingResponses] = useState<ModelResponse[]>([]);
   const [waitingForHuman, setWaitingForHuman] = useState(false);
   const [isSubmittingHuman, setIsSubmittingHuman] = useState(false);
+  
+  const handleCopySynthesis = async () => {
+    if (debate?.finalSynthesis) {
+      const plainText = debate.finalSynthesis
+        .replace(/<[^>]*>/g, '')
+        .replace(/\*\*(.*?)\*\*/g, '$1')
+        .replace(/^##+ /gm, '');
+      await navigator.clipboard.writeText(plainText);
+      setCopiedSynthesis(true);
+      setTimeout(() => setCopiedSynthesis(false), 2000);
+    }
+  };
+  
+  const handleCopyJudge = async () => {
+    if (debate?.judgeAnalysis) {
+      const plainText = debate.judgeAnalysis
+        .replace(/<[^>]*>/g, '')
+        .replace(/\*\*(.*?)\*\*/g, '$1');
+      await navigator.clipboard.writeText(plainText);
+      setCopiedJudge(true);
+      setTimeout(() => setCopiedJudge(false), 2000);
+    }
+  };
   const [participants, setParticipants] = useState<Array<{ userId: string; userName: string }>>([]);
   
   // Auto-start debate when component mounts
@@ -293,7 +319,20 @@ export function DebateInterface({ config, onComplete }: DebateInterfaceProps) {
           {/* Judge's Verdict */}
           {debate.judgeAnalysis && (
             <div className="mt-8 p-8 bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl border-2 border-purple-200 shadow-xl">
-              <h2 className="text-2xl font-bold mb-4 text-purple-900">⚖️ Judge&apos;s Verdict</h2>
+              <div className="flex justify-between items-start mb-4">
+                <h2 className="text-2xl font-bold text-purple-900">⚖️ Judge&apos;s Verdict</h2>
+                <button
+                  onClick={handleCopyJudge}
+                  className="p-2 hover:bg-white/50 rounded-lg transition-colors"
+                  title="Copy judge's verdict"
+                >
+                  {copiedJudge ? (
+                    <Check className="w-5 h-5 text-green-600" />
+                  ) : (
+                    <Copy className="w-5 h-5 text-purple-600" />
+                  )}
+                </button>
+              </div>
               <div className="prose prose-slate max-w-none">
                 <div 
                   className="text-slate-800 text-lg leading-relaxed"
@@ -311,7 +350,20 @@ export function DebateInterface({ config, onComplete }: DebateInterfaceProps) {
           {/* Statistical Analysis - Always Second */}
           {debate.finalSynthesis && (
             <div className="p-8 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl border-2 border-blue-200 shadow-xl">
-              <h2 className="text-2xl font-bold mb-4 text-blue-900">📊 {debate.judgeAnalysis ? 'Statistical Analysis' : 'Debate Results'}</h2>
+              <div className="flex justify-between items-start mb-4">
+                <h2 className="text-2xl font-bold text-blue-900">📊 {debate.judgeAnalysis ? 'Statistical Analysis' : 'Debate Results'}</h2>
+                <button
+                  onClick={handleCopySynthesis}
+                  className="p-2 hover:bg-white/50 rounded-lg transition-colors"
+                  title="Copy synthesis"
+                >
+                  {copiedSynthesis ? (
+                    <Check className="w-5 h-5 text-green-600" />
+                  ) : (
+                    <Copy className="w-5 h-5 text-blue-600" />
+                  )}
+                </button>
+              </div>
               <div className="prose prose-slate max-w-none">
                 <div 
                   className="text-slate-800"

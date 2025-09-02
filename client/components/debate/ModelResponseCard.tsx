@@ -3,7 +3,8 @@
 import { ModelResponse } from '@/types/debate';
 import { AVAILABLE_MODELS } from '@/lib/models/config';
 import { clsx } from 'clsx';
-import { User, Sparkles } from 'lucide-react';
+import { User, Sparkles, Copy, Check } from 'lucide-react';
+import { useState } from 'react';
 
 interface ModelResponseCardProps {
   response: ModelResponse;
@@ -13,11 +14,19 @@ interface ModelResponseCardProps {
 export function ModelResponseCard({ response, isStreaming }: ModelResponseCardProps) {
   const model = AVAILABLE_MODELS.find(m => m.id === response.modelId);
   const isHuman = response.isHuman || response.modelId.startsWith('human-');
+  const [copied, setCopied] = useState(false);
   
   // Check if this is an error or context limit exceeded response
   const isContextError = response.content.includes('⚠️ Context limit exceeded');
   const isError = response.content.includes('❌ Error:') || response.content.includes('❌ Complete failure');
   const hasError = isContextError || isError;
+  
+  const handleCopy = async () => {
+    const textToCopy = `${model?.displayName || response.modelId} - Round ${response.round}\n\n${response.content}\n\nPosition: ${response.position}\nConfidence: ${response.confidence}%`;
+    await navigator.clipboard.writeText(textToCopy);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
   
   // For round 1, show stance. For round 2+, show consensus alignment
   const showConsensus = response.round > 1 && response.consensusAlignment && !hasError;
@@ -79,7 +88,7 @@ export function ModelResponseCard({ response, isStreaming }: ModelResponseCardPr
       isStreaming && 'animate-pulse'
     )}>
       <div className="flex justify-between items-start mb-4">
-        <div>
+        <div className="flex-1">
           <h3 className="font-bold text-xl text-slate-800 flex items-center gap-2">
             {isHuman ? (
               <>
@@ -113,8 +122,21 @@ export function ModelResponseCard({ response, isStreaming }: ModelResponseCardPr
             )}
           </div>
         </div>
-        <div className="text-xs text-slate-500">
-          Round {response.round}
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleCopy}
+            className="p-2 hover:bg-white/50 rounded-lg transition-colors"
+            title="Copy response"
+          >
+            {copied ? (
+              <Check className="w-4 h-4 text-green-600" />
+            ) : (
+              <Copy className="w-4 h-4 text-slate-500" />
+            )}
+          </button>
+          <div className="text-xs text-slate-500">
+            Round {response.round}
+          </div>
         </div>
       </div>
       
