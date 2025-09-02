@@ -74,6 +74,16 @@ export const MODEL_PRICING: Record<string, ModelPricing> = {
     providerBaseCost: 0.050,
     platformMarkup: 0.3
   },
+  'gpt-5-2025-08-07': {
+    modelId: 'gpt-5-2025-08-07',
+    costPer1kTokens: {
+      input: 0.010,  // Same as GPT-5 base model
+      output: 0.040
+    },
+    costCategory: 'flagship',
+    providerBaseCost: 0.050,
+    platformMarkup: 0.3
+  },
   'o1': {
     modelId: 'o1',
     costPer1kTokens: {
@@ -127,7 +137,17 @@ export const MODEL_PRICING: Record<string, ModelPricing> = {
     platformMarkup: 0.3
   },
   
-  // Anthropic Models - Claude 3.5 Series (Real Models)
+  // Anthropic Models - Claude 4.1 and 3.5 Series (Real Models)
+  'claude-opus-4-1-20250805': {
+    modelId: 'claude-opus-4-1-20250805',
+    costPer1kTokens: {
+      input: 0.025,  // Premium flagship Anthropic model
+      output: 0.125
+    },
+    costCategory: 'flagship',
+    providerBaseCost: 0.150,
+    platformMarkup: 0.3
+  },
   'claude-3-5-sonnet-20241022': {
     modelId: 'claude-3-5-sonnet-20241022',
     costPer1kTokens: {

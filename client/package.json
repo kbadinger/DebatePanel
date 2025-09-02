@@ -15,6 +15,8 @@
     "update-model": "tsx scripts/quick-model-update.ts",
     "fetch-models": "node scripts/fetch-all-models.js",
     "test-model": "tsx scripts/test-single-model.ts",
+    "discover-models": "tsx scripts/discover-models.ts",
+    "update-models": "tsx scripts/update-curated-models.ts",
     "deploy": "./scripts/deploy.sh"
   },
   "dependencies": {

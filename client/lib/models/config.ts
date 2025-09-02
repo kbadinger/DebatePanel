@@ -2,71 +2,11 @@ import { Model, ModelStrength } from '@/types/debate';
 import { MODEL_PRICING, getCostEmoji } from './pricing';
 
 // Context limits for different model families (in tokens) - Updated September 2025
-const MODEL_CONTEXT_LIMITS: Record<string, number> = {
-  // OpenAI Models - Current Generation
-  'gpt-4o': 128000,
-  'gpt-4o-mini': 128000,
-  'gpt-4.1': 1000000, // 1M context
-  'gpt-4.1-mini': 1000000,
-  'gpt-4.1-nano': 1000000,
-  'gpt-5': 200000, // Latest GPT with extended context
-  'o4-mini': 128000,
-  
-  // OpenAI - Secondary Tier
-  'o1': 128000,
-  'o1-mini': 128000,
-  'o3': 128000,
-  'o3-mini': 128000,
-  
-  // Anthropic Models - Claude 3.5 Series (Claude 4 not yet available)
+export const MODEL_CONTEXT_LIMITS = {
+  'gpt-5-2025-08-07': 200000,
+  'gpt-5': 200000,
+  'claude-opus-4-1-20250805': 200000,
   'claude-3-5-sonnet-20241022': 200000,
-  'claude-3-5-sonnet-20240620': 200000,
-  'claude-3-opus-20240229': 200000,
-  
-  // Google Models - Current and Legacy
-  'gemini-2.5-pro': 2000000,
-  'gemini-2.5-flash': 1000000,
-  'gemini-2.5-flash-lite': 1000000,
-  'gemini-2.0-flash': 1000000,
-  'gemini-1.5-pro': 2000000,
-  'gemini-1.5-flash': 1000000,
-  'gemini-1.5-flash-8b': 1000000,
-  
-  // X.AI Grok Models
-  'grok-4': 256000, // Enhanced context for latest model
-  'grok-3': 128000,
-  'grok-2': 128000,
-  'grok-2-1212': 128000,
-  
-  // Perplexity Models
-  'sonar-pro': 127000,
-  'sonar-deep-research': 127000,
-  'sonar-reasoning-pro': 127000,
-  'sonar': 127000,
-  
-  // DeepSeek Models
-  'deepseek-v3.1': 128000,
-  'deepseek-r1-0528': 128000,
-  'deepseek-chat': 128000,
-  'deepseek-reasoner': 128000,
-  
-  // Meta Llama Models
-  'llama-4-scout': 128000,
-  'llama-4-maverick': 128000,
-  'llama-3.3-70b': 128000,
-  'llama-3.1-405b': 128000,
-  
-  // Mistral Models
-  'mistral-large-latest': 128000,
-  'mistral-medium-3': 128000,
-  'pixtral-large': 128000,
-  
-  // Other Models
-  'command-a-03-2025': 256000,
-  'jamba-large-1-7': 256000,
-  'kimi-k1.5': 200000,
-  'qwen-3-235b': 128000,
-  'flux-1.1': 128000,
 };
 
 // Model strengths and suggested roles - Updated for September 2025
@@ -78,6 +18,7 @@ const MODEL_ROLES: Record<string, { strengths: ModelStrength[], role: string }> 
   'gpt-4.1-mini': { strengths: ['business', 'general'], role: 'Practical business analysis' },
   'gpt-4.1-nano': { strengths: ['business'], role: 'Quick business insights' },
   'gpt-5': { strengths: ['business', 'analytical', 'creative'], role: 'Advanced flagship analysis across all domains' },
+  'gpt-5-2025-08-07': { strengths: ['business', 'analytical', 'creative'], role: 'Latest GPT-5 model with enhanced capabilities' },
   'o4-mini': { strengths: ['analytical'], role: 'Efficient reasoning and analysis' },
   
   // OpenAI - Secondary Tier
@@ -86,7 +27,8 @@ const MODEL_ROLES: Record<string, { strengths: ModelStrength[], role: string }> 
   'o3': { strengths: ['analytical', 'technical'], role: 'Advanced problem-solving and technical analysis' },
   'o3-mini': { strengths: ['analytical'], role: 'Efficient reasoning and problem-solving' },
   
-  // Anthropic - Claude 3.5 Series
+  // Anthropic - Claude 4.1 and 3.5 Series
+  'claude-opus-4-1-20250805': { strengths: ['ethical', 'analytical', 'general'], role: 'Most advanced Claude model with superior reasoning and ethical analysis' },
   'claude-3-5-sonnet-20241022': { strengths: ['general', 'ethical', 'analytical'], role: 'Balanced perspective with ethical considerations' },
   'claude-3-5-sonnet-20240620': { strengths: ['general', 'ethical', 'analytical'], role: 'Ethical reasoning and nuanced analysis' },
   'claude-3-opus-20240229': { strengths: ['ethical', 'analytical', 'general'], role: 'Deep ethical implications and comprehensive analysis' },
@@ -150,15 +92,13 @@ const MODEL_ROLES: Record<string, { strengths: ModelStrength[], role: string }> 
 // Helper to add cost info and context info to models
 function withModelInfo(model: Omit<Model, 'costInfo' | 'contextInfo'>): Model {
   const pricing = MODEL_PRICING[model.id];
-  const contextLimit = MODEL_CONTEXT_LIMITS[model.id] || 128000; // Default to 128K
-  const roleInfo = MODEL_ROLES[model.id] || MODEL_ROLES['default'];
-  
-  const result: Model = {
+  let result: Model = {
     ...model,
+    costInfo: undefined,
     contextInfo: {
-      maxTokens: contextLimit,
-      strengths: roleInfo.strengths,
-      suggestedRole: roleInfo.role
+      maxTokens: MODEL_CONTEXT_LIMITS[model.id] || 128000,
+      strengths: MODEL_ROLES[model.id]?.strengths || ['general'],
+      suggestedRole: MODEL_ROLES[model.id]?.role || 'General analysis and balanced perspective'
     }
   };
   
@@ -187,13 +127,7 @@ export interface ProviderExpansion {
 
 // FEATURED MODELS (always visible in primary tier)
 const FEATURED_MODELS: Model[] = [
-  // OpenAI - Featured Models Only
-  withModelInfo({
-    id: 'gpt-4o',
-    provider: 'openai',
-    name: 'gpt-4o',
-    displayName: 'GPT-4o'
-  }),
+  // OpenAI - Flagship Models (Curated via Model Discovery System)
   withModelInfo({
     id: 'gpt-5',
     provider: 'openai',
@@ -201,82 +135,25 @@ const FEATURED_MODELS: Model[] = [
     displayName: 'GPT-5'
   }),
   withModelInfo({
-    id: 'o1',
+    id: 'gpt-5-2025-08-07',
     provider: 'openai',
-    name: 'o1',
-    displayName: 'o1'
+    name: 'gpt-5-2025-08-07',
+    displayName: 'GPT-5 (Aug 2025)'
   }),
   
-  // Anthropic - Featured Model Only  
+  // Anthropic - Flagship Models (Curated via Model Discovery System)
+  withModelInfo({
+    id: 'claude-opus-4-1-20250805',
+    provider: 'anthropic',
+    name: 'claude-opus-4-1-20250805',
+    displayName: 'Claude Opus 4.1 (Aug 2025)'
+  }),
   withModelInfo({
     id: 'claude-3-5-sonnet-20241022',
     provider: 'anthropic',
     name: 'claude-3-5-sonnet-20241022',
-    displayName: 'Claude 3.5 Sonnet'
-  }),
-  
-  // Google - Featured Models Only
-  withModelInfo({
-    id: 'gemini-2.5-pro',
-    provider: 'google',
-    name: 'gemini-2.5-pro',
-    displayName: 'Gemini 2.5 Pro'
-  }),
-  withModelInfo({
-    id: 'gemini-2.5-flash',
-    provider: 'google',
-    name: 'gemini-2.5-flash',
-    displayName: 'Gemini 2.5 Flash'
-  }),
-  
-  // X.AI - Featured Model Only
-  withModelInfo({
-    id: 'grok-4',
-    provider: 'xai',
-    name: 'grok-4',
-    displayName: 'Grok 4'
-  }),
-  
-  // Perplexity - Featured Model Only
-  withModelInfo({
-    id: 'sonar-pro',
-    provider: 'perplexity',
-    name: 'sonar-pro',
-    displayName: 'Sonar Pro'
-  }),
-  
-  // DeepSeek - Featured Model Only
-  withModelInfo({
-    id: 'deepseek-v3.1',
-    provider: 'deepseek',
-    name: 'deepseek-v3.1',
-    displayName: 'DeepSeek V3.1 Hybrid'
-  }),
-  
-  // Meta - Featured Model Only
-  withModelInfo({
-    id: 'llama-4-scout',
-    provider: 'meta',
-    name: 'llama-4-scout',
-    displayName: 'Llama 4 Scout'
-  }),
-  
-  // Mistral - Featured Model Only
-  withModelInfo({
-    id: 'mistral-large-latest',
-    provider: 'mistral',
-    name: 'mistral-large-latest',
-    displayName: 'Mistral Large'
-  }),
-  
-  // Cohere - Featured Model Only
-  withModelInfo({
-    id: 'command-a-03-2025',
-    provider: 'cohere',
-    name: 'command-a-03-2025',
-    displayName: 'Command A 03-2025'
-  }),
-  
+    displayName: 'Claude 3.5 Sonnet (Oct 2024)'
+  })
 ];
 
 // EXPANDABLE MODELS (shown when provider is expanded)
