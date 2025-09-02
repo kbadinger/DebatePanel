@@ -191,19 +191,25 @@ export function DebateInterface({ config, onComplete }: DebateInterfaceProps) {
               }, 100);
               
               onComplete?.(completedDebate);
-              eventSource.close(); // Close the stream explicitly
+              // Cancel the reader to close the stream
+              reader.cancel();
+              return; // Exit the function completely
             } else if (data.type === 'error') {
               console.error('Debate error:', data.data);
               alert(`Debate Error: ${data.data.message}\n\nPlease ensure all required API keys are configured.`);
               setIsRunning(false);
-              break;
+              reader.cancel();
+              return; // Exit the function completely
             }
           }
         }
       }
     } catch (error) {
       console.error('Debate error:', error);
-      alert(`Failed to start debate: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      // Only show alert if it's not a normal closure
+      if (error instanceof Error && !error.message.includes('eventSource')) {
+        alert(`Failed to start debate: ${error.message}`);
+      }
       setIsRunning(false);
       setDebate(null);
     }
