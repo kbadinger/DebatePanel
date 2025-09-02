@@ -74,8 +74,20 @@ Format your response as a clear argument with supporting points.`;
     
     let result: { text: string; usage?: { promptTokens?: number; completionTokens?: number } };
     
-    try {
-      switch (model.provider) {
+    // Retry logic with exponential backoff for overloaded errors
+    const maxRetries = 3;
+    let lastError: unknown;
+    
+    for (let attempt = 0; attempt < maxRetries; attempt++) {
+      try {
+        // Add delay with exponential backoff for retries
+        if (attempt > 0) {
+          const delay = Math.min(1000 * Math.pow(2, attempt), 10000); // Max 10 seconds
+          await new Promise(resolve => setTimeout(resolve, delay));
+          this.logger.log(`Retry attempt ${attempt + 1} for ${model.displayName} after ${delay}ms delay`);
+        }
+        
+        switch (model.provider) {
         case 'openai':
           // GPT-5 models only support default temperature (1.0)
           const temperature = model.name.startsWith('gpt-5') ? 1.0 : 0.7;
@@ -87,8 +99,14 @@ Format your response as a clear argument with supporting points.`;
           });
           break;
         case 'anthropic':
+          // If Claude Opus is overloaded and this is a retry, try falling back to Sonnet
+          let modelToUse = model.name;
+          if (attempt > 0 && model.name.includes('opus')) {
+            modelToUse = 'claude-3-5-sonnet-20241022';
+            this.logger.log(`Falling back from ${model.name} to ${modelToUse} due to overload`);
+          }
           result = await generateText({
-            model: anthropic(model.name),
+            model: anthropic(modelToUse),
             system: systemPrompt,
             prompt,
             temperature: 0.7,
@@ -136,33 +154,61 @@ Format your response as a clear argument with supporting points.`;
           break;
         default:
           throw new Error(`Unsupported provider: ${model.provider}`);
-      }
-    } catch (error: unknown) {
-      // Handle context window exceeded errors gracefully
-      if ((error instanceof Error && (error.message?.includes('context') || error.message?.includes('token'))) || 
-          (error as { status?: number })?.status === 400 || (error as { code?: string })?.code === 'context_length_exceeded') {
+        }
         
-        this.logger.logError(`Context limit exceeded for ${model.displayName}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        // If we get here, the request succeeded
+        break;
         
-        return {
-          modelId: model.id,
-          round: previousResponses.length > 0 ? Math.max(...previousResponses.map(r => r.round)) + 1 : 1,
-          content: `⚠️ Context limit exceeded for ${model.displayName}. This model could not participate in this round due to the conversation length exceeding its context window.`,
-          position: 'neutral',
-          confidence: 0,
-          timestamp: new Date(),
-          stance: 'Context Limit Exceeded',
-          consensusAlignment: 'independent'
-        };
+      } catch (error: unknown) {
+        lastError = error;
+        
+        // Check if this is a context window error (don't retry these)
+        if ((error instanceof Error && (error.message?.includes('context') || error.message?.includes('token'))) || 
+            (error as { status?: number })?.status === 400 || (error as { code?: string })?.code === 'context_length_exceeded') {
+          
+          this.logger.logError(`Context limit exceeded for ${model.displayName}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+          
+          return {
+            modelId: model.id,
+            round: previousResponses.length > 0 ? Math.max(...previousResponses.map(r => r.round)) + 1 : 1,
+            content: `⚠️ Context limit exceeded for ${model.displayName}. This model could not participate in this round due to the conversation length exceeding its context window.`,
+            position: 'neutral',
+            confidence: 0,
+            timestamp: new Date(),
+            stance: 'Context Limit Exceeded',
+            consensusAlignment: 'independent'
+          };
+        }
+        
+        // Check if this is an overloaded error (retry these)
+        const errorMessage = error instanceof Error ? error.message.toLowerCase() : String(error).toLowerCase();
+        const isOverloaded = errorMessage.includes('overloaded') || 
+                           errorMessage.includes('rate limit') || 
+                           errorMessage.includes('too many requests') ||
+                           errorMessage.includes('capacity') ||
+                           (error as { status?: number })?.status === 429 ||
+                           (error as { status?: number })?.status === 503;
+        
+        if (isOverloaded && attempt < maxRetries - 1) {
+          this.logger.log(`${model.displayName} is overloaded, will retry (attempt ${attempt + 1}/${maxRetries})`);
+          continue; // Try again
+        }
+        
+        // If this is the last attempt or not retryable, break
+        if (attempt === maxRetries - 1) {
+          this.logger.logError(`Failed after ${maxRetries} attempts. Last error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+          break;
+        }
       }
-      
-      // For other errors, log and create error response
-      this.logger.logError(`Error getting response from ${model.displayName}: ${error instanceof Error ? error.message : 'Unknown error'}`);
-      
+    }
+    
+    // If we exhausted all retries, return error response
+    if (!result!) {
+      const errorMessage = lastError instanceof Error ? lastError.message : 'Unknown error';
       return {
         modelId: model.id,
         round: previousResponses.length > 0 ? Math.max(...previousResponses.map(r => r.round)) + 1 : 1,
-        content: `❌ Error: ${model.displayName} encountered an error: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        content: `❌ Error: ${model.displayName} encountered an error: Failed after ${maxRetries} attempts. Last error: ${errorMessage}`,
         position: 'neutral',
         confidence: 0,
         timestamp: new Date(),
