@@ -146,9 +146,19 @@ export function DebateInterface({ config, onComplete }: DebateInterfaceProps) {
               console.log('Synthesis content:', data.data.finalSynthesis?.substring(0, 200));
               console.log('Has judgeAnalysis:', !!data.data.judgeAnalysis);
               console.log('Current debate state before update:', debate);
-              setDebate(data.data);
+              
+              // Force update with completed debate
+              const completedDebate = { ...data.data };
+              setDebate(completedDebate);
               setIsRunning(false);
-              onComplete?.(data.data);
+              
+              // Add a small delay to ensure state updates
+              setTimeout(() => {
+                console.log('After state update - debate status:', completedDebate.status);
+                console.log('After state update - has synthesis:', !!completedDebate.finalSynthesis);
+              }, 100);
+              
+              onComplete?.(completedDebate);
             } else if (data.type === 'error') {
               console.error('Debate error:', data.data);
               alert(`Debate Error: ${data.data.message}\n\nPlease ensure all required API keys are configured.`);
@@ -319,9 +329,16 @@ export function DebateInterface({ config, onComplete }: DebateInterfaceProps) {
         </div>
       )}
       
-      {console.log('Rendering check - debate status:', debate?.status, 'isRunning:', isRunning)}
-      {debate?.status === 'completed' && (
+      {console.log('Rendering check - debate:', {
+        status: debate?.status,
+        isRunning,
+        hasSynthesis: !!debate?.finalSynthesis,
+        synthesisLength: debate?.finalSynthesis?.length,
+        rounds: debate?.rounds?.length
+      })}
+      {(debate?.status === 'completed' || debate?.status === 'converged') && (
         <div className="space-y-8">
+          {console.log('Rendering synthesis section')}
           {/* Winner Display */}
           <WinnerDisplay debate={debate} />
           
