@@ -10,7 +10,6 @@ const MODEL_CONTEXT_LIMITS: Record<string, number> = {
   'gpt-4.1-mini': 1000000,
   'gpt-4.1-nano': 1000000,
   'gpt-5': 200000, // Latest GPT with extended context
-  'o1-preview': 128000,
   'o4-mini': 128000,
   
   // OpenAI - Secondary Tier
@@ -58,14 +57,13 @@ const MODEL_CONTEXT_LIMITS: Record<string, number> = {
   'llama-3.1-405b': 128000,
   
   // Mistral Models
-  'mistral-large-24-11': 128000,
+  'mistral-large-latest': 128000,
   'mistral-medium-3': 128000,
   'pixtral-large': 128000,
   
   // Other Models
   'command-a-03-2025': 256000,
   'jamba-large-1-7': 256000,
-  'kimi-k2-instruct': 200000,
   'kimi-k1.5': 200000,
   'qwen-3-235b': 128000,
   'flux-1.1': 128000,
@@ -80,7 +78,6 @@ const MODEL_ROLES: Record<string, { strengths: ModelStrength[], role: string }> 
   'gpt-4.1-mini': { strengths: ['business', 'general'], role: 'Practical business analysis' },
   'gpt-4.1-nano': { strengths: ['business'], role: 'Quick business insights' },
   'gpt-5': { strengths: ['business', 'analytical', 'creative'], role: 'Advanced flagship analysis across all domains' },
-  'o1-preview': { strengths: ['analytical', 'technical'], role: 'Advanced reasoning and problem-solving' },
   'o4-mini': { strengths: ['analytical'], role: 'Efficient reasoning and analysis' },
   
   // OpenAI - Secondary Tier
@@ -204,10 +201,10 @@ const FEATURED_MODELS: Model[] = [
     displayName: 'GPT-5'
   }),
   withModelInfo({
-    id: 'o1-preview',
+    id: 'o1',
     provider: 'openai',
-    name: 'o1-preview',
-    displayName: 'o1 Preview'
+    name: 'o1',
+    displayName: 'o1'
   }),
   
   // Anthropic - Featured Model Only  
@@ -266,10 +263,10 @@ const FEATURED_MODELS: Model[] = [
   
   // Mistral - Featured Model Only
   withModelInfo({
-    id: 'mistral-large-24-11',
+    id: 'mistral-large-latest',
     provider: 'mistral',
-    name: 'mistral-large-24-11',
-    displayName: 'Mistral Large 24.11'
+    name: 'mistral-large-latest',
+    displayName: 'Mistral Large'
   }),
   
   // Cohere - Featured Model Only
@@ -280,13 +277,6 @@ const FEATURED_MODELS: Model[] = [
     displayName: 'Command A 03-2025'
   }),
   
-  // Moonshot - Featured Model Only
-  withModelInfo({
-    id: 'kimi-k2-instruct',
-    provider: 'kimi',
-    name: 'kimi-k2-instruct',
-    displayName: 'Kimi K2 Instruct'
-  })
 ];
 
 // EXPANDABLE MODELS (shown when provider is expanded)

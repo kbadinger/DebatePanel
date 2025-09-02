@@ -1165,9 +1165,13 @@ BE DECISIVE. The whole point of this debate was to get an answer, not to admire 
     else if (model.provider === 'anthropic') {
       baseTimeout = 35000; // 35 seconds
     }
-    // Gemini is usually fast
+    // Gemini models - Pro versions need more time
     else if (model.provider === 'google') {
-      baseTimeout = 30000; // 30 seconds
+      if (model.name.includes('pro')) {
+        baseTimeout = 60000; // 60 seconds for Pro models
+      } else {
+        baseTimeout = 40000; // 40 seconds for Flash models
+      }
     }
     
     // Increase timeout for later rounds (more context to process)
