@@ -903,16 +903,16 @@ Option 3 - Hybrid Model:
         </form>
         )}
       </div>
+      
+      {/* Model Limit Dialog */}
+      <ModelLimitDialog
+        isOpen={limitDialog.isOpen}
+        onClose={() => setLimitDialog({ ...limitDialog, isOpen: false })}
+        type={limitDialog.type}
+        providerName={limitDialog.providerName}
+        currentCount={selectedModels.length}
+        maxCount={6}
+      />
     </div>
-
-    {/* Model Limit Dialog */}
-    <ModelLimitDialog
-      isOpen={limitDialog.isOpen}
-      onClose={() => setLimitDialog({ ...limitDialog, isOpen: false })}
-      type={limitDialog.type}
-      providerName={limitDialog.providerName}
-      currentCount={selectedModels.length}
-      maxCount={6}
-    />
   );
 }
