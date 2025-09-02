@@ -231,31 +231,30 @@ export function DebateInterface({ config, onComplete }: DebateInterfaceProps) {
               console.log('Has judgeAnalysis:', !!data.data.judgeAnalysis);
               console.log('Current debate state before update:', debate);
               
-              // Force update with completed debate
-              const completedDebate = { ...data.data };
-              console.log('Setting completed debate state');
-              console.log('Complete debate object:', completedDebate);
-              
-              // Use functional update to ensure state is set
-              setDebate(() => completedDebate);
+              // Merge completed debate with existing rounds data
+              setDebate(prevDebate => {
+                const completedDebate = {
+                  ...prevDebate,  // Keep existing rounds and config
+                  ...data.data,   // Add final synthesis and judge analysis
+                  status: data.data.status || 'completed'
+                };
+                console.log('Setting completed debate state');
+                console.log('Preserved rounds:', completedDebate.rounds?.length);
+                console.log('Has synthesis:', !!completedDebate.finalSynthesis);
+                console.log('Has judge:', !!completedDebate.judgeAnalysis);
+                return completedDebate;
+              });
               setIsRunning(false);
               
               // Add a small delay to ensure state updates and prevent race conditions
               setTimeout(() => {
-                console.log('After state update - debate status:', completedDebate.status);
-                console.log('After state update - has synthesis:', !!completedDebate.finalSynthesis);
-                // Force another update in case of race condition
                 setDebate(prev => {
-                  console.log('Force update check - prev debate:', prev?.status);
-                  if (!prev || prev.status !== 'completed') {
-                    console.log('Forcing debate update again');
-                    return completedDebate;
-                  }
-                  return prev;
+                  console.log('Final verification - debate status:', prev?.status, 'rounds:', prev?.rounds?.length);
+                  return prev; // Just verify, don't overwrite
                 });
               }, 100);
               
-              onComplete?.(completedDebate);
+              onComplete?.(data.data);
               // Cancel the reader to close the stream
               reader.cancel();
               return; // Exit the function completely
