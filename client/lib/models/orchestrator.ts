@@ -68,6 +68,7 @@ Format your response as a clear argument with supporting points.`;
     previousResponses: ModelResponse[] = [],
     config?: DebateConfig
   ): Promise<ModelResponse> {
+    this.logger.log(`getModelResponse called for ${model.displayName} (${model.provider}/${model.name})`);
     const systemPrompt = config 
       ? this.buildSystemPrompt(model, previousResponses, config)
       : this.buildSystemPrompt(model, previousResponses, { style: 'consensus-seeking' } as DebateConfig);
@@ -274,11 +275,16 @@ Format your response as a clear argument with supporting points.`;
     // Run all models in parallel with timeout, but handle failures gracefully
     const responsePromises = config.models.map(async (model) => {
       try {
+        this.logger.log(`Starting response generation for ${model.displayName} (${model.provider}/${model.name})`);
+        
         // Create a timeout promise - give more time for certain models
         const timeoutMs = model.provider === 'xai' ? 90000 : 
                          model.name === 'gpt-5' ? 90000 : 60000; // 90s for X.AI and GPT-5, 60s for others
         const timeoutPromise = new Promise<never>((_, reject) => {
-          setTimeout(() => reject(new Error(`Timeout after ${timeoutMs/1000} seconds`)), timeoutMs);
+          const timeoutId = setTimeout(() => {
+            this.logger.log(`Timeout reached for ${model.displayName} after ${timeoutMs/1000} seconds`);
+            reject(new Error(`Timeout after ${timeoutMs/1000} seconds`));
+          }, timeoutMs);
         });
         
         // Race between the actual response and the timeout
@@ -289,7 +295,9 @@ Format your response as a clear argument with supporting points.`;
           config
         );
         
-        return await Promise.race([responsePromise, timeoutPromise]);
+        const result = await Promise.race([responsePromise, timeoutPromise]);
+        this.logger.log(`Successfully received response from ${model.displayName}`);
+        return result;
       } catch (error: unknown) {
         // If individual model fails completely or times out, log and create error response
         const errorMessage = error instanceof Error ? error.message : 'Unknown error';
