@@ -76,7 +76,7 @@ Format your response as a clear argument with supporting points.`;
     let result: { text: string; usage?: { promptTokens?: number; completionTokens?: number } };
     
     // Retry logic with exponential backoff for overloaded errors
-    const maxRetries = 3;
+    const maxRetries = 5; // Increased from 3 to 5 for better recovery
     let lastError: unknown;
     
     for (let attempt = 0; attempt < maxRetries; attempt++) {
@@ -103,11 +103,10 @@ Format your response as a clear argument with supporting points.`;
         this.logger.log(`OpenAI (${model.name}) responded in ${Date.now() - openaiStartTime}ms`);
         break;
         case 'anthropic':
-          // If Claude Opus is overloaded and this is a retry, try falling back to Sonnet
-          let modelToUse = model.name;
-          if (attempt > 0 && model.name.includes('opus')) {
-            modelToUse = 'claude-3-5-sonnet-20241022';
-            this.logger.log(`Falling back from ${model.name} to ${modelToUse} due to overload`);
+          // Smart fallback for Anthropic models on retries
+          let modelToUse = this.getFallbackModel(model, attempt);
+          if (modelToUse !== model.name) {
+            this.logger.log(`Falling back from ${model.name} to ${modelToUse} (attempt ${attempt + 1})`);
           }
           result = await generateText({
             model: anthropic(modelToUse),
@@ -187,18 +186,27 @@ Format your response as a clear argument with supporting points.`;
           };
         }
         
-        // Check if this is an overloaded error (retry these)
+        // Check if this is a retryable error (overloaded, network, or temporary issues)
         const errorMessage = error instanceof Error ? error.message.toLowerCase() : String(error).toLowerCase();
-        const isOverloaded = errorMessage.includes('overloaded') || 
+        const isRetryable = errorMessage.includes('overloaded') || 
                            errorMessage.includes('rate limit') || 
                            errorMessage.includes('too many requests') ||
                            errorMessage.includes('capacity') ||
+                           errorMessage.includes('timeout') ||
+                           errorMessage.includes('network') ||
+                           errorMessage.includes('connection') ||
+                           errorMessage.includes('server') ||
+                           // Claude-specific errors
+                           errorMessage.includes('model:') ||
+                           errorMessage.includes('service unavailable') ||
                            (error as { status?: number })?.status === 429 ||
-                           (error as { status?: number })?.status === 503;
+                           (error as { status?: number })?.status === 503 ||
+                           (error as { status?: number })?.status === 502 ||
+                           (error as { status?: number })?.status === 504;
         
-        if (isOverloaded && attempt < maxRetries - 1) {
-          this.logger.log(`${model.displayName} is overloaded, will retry (attempt ${attempt + 1}/${maxRetries})`);
-          continue; // Try again
+        if (isRetryable && attempt < maxRetries - 1) {
+          this.logger.log(`${model.displayName} has retryable error, will retry (attempt ${attempt + 1}/${maxRetries}): ${errorMessage}`);
+          continue; // Try again with exponential backoff
         }
         
         // If this is the last attempt or not retryable, break
@@ -289,9 +297,9 @@ Format your response as a clear argument with supporting points.`;
       try {
         this.logger.log(`Starting response generation for ${model.displayName} (${model.provider}/${model.name})`);
         
-        // Create a timeout promise - give more time for certain models
-        const timeoutMs = model.provider === 'xai' ? 90000 : 
-                         model.name === 'gpt-5' ? 90000 : 60000; // 90s for X.AI and GPT-5, 60s for others
+        // Dynamic timeout calculation based on model type and context
+        const baseTimeout = this.calculateTimeout(model, roundNumber, previousRounds.length);
+        const timeoutMs = baseTimeout;
         const timeoutPromise = new Promise<never>((_, reject) => {
           const timeoutId = setTimeout(() => {
             this.logger.log(`Timeout reached for ${model.displayName} after ${timeoutMs/1000} seconds`);
@@ -336,7 +344,11 @@ Format your response as a clear argument with supporting points.`;
     const validResponses = responses.filter(r => 
       !r.content.includes('⚠️ Context limit exceeded') && 
       !r.content.includes('❌ Error:') &&
-      !r.content.includes('❌ Complete failure')
+      !r.content.includes('❌ Timeout:') &&
+      !r.content.includes('❌ Complete failure') &&
+      r.stance !== 'Context Limit Exceeded' &&
+      r.stance !== 'Complete Failure' &&
+      r.stance !== 'Timeout'
     );
     
     if (validResponses.length === 0) {
@@ -1135,5 +1147,77 @@ BE DECISIVE. The whole point of this debate was to get an answer, not to admire 
       case 'deepseek': return deepseek(model.name);
       default: return anthropic('claude-3-5-sonnet-20241022');
     }
+  }
+
+  private calculateTimeout(model: Model, roundNumber: number, totalRounds: number): number {
+    // Base timeouts by model type
+    let baseTimeout = 45000; // 45 seconds default
+    
+    // Reasoning models need more time
+    if (model.name.includes('o1') || model.name.includes('o3') || model.name.includes('deepseek-r1')) {
+      baseTimeout = 90000; // 90 seconds for reasoning models
+    }
+    // X.AI and GPT-5 are historically slow
+    else if (model.provider === 'xai' || model.name === 'gpt-5') {
+      baseTimeout = 75000; // 75 seconds
+    }
+    // Claude models are generally fast
+    else if (model.provider === 'anthropic') {
+      baseTimeout = 35000; // 35 seconds
+    }
+    // Gemini is usually fast
+    else if (model.provider === 'google') {
+      baseTimeout = 30000; // 30 seconds
+    }
+    
+    // Increase timeout for later rounds (more context to process)
+    const roundMultiplier = 1 + (roundNumber - 1) * 0.15; // 15% increase per round
+    
+    // Increase timeout for longer debates (accumulated context)
+    const contextMultiplier = 1 + (totalRounds) * 0.1; // 10% increase per previous round
+    
+    const finalTimeout = Math.min(
+      baseTimeout * roundMultiplier * contextMultiplier,
+      150000 // Cap at 2.5 minutes max
+    );
+    
+    return Math.round(finalTimeout);
+  }
+
+  private getFallbackModel(model: Model, attempt: number): string {
+    // Only use fallbacks on retries (attempt > 0)
+    if (attempt === 0) return model.name;
+    
+    // Define fallback chains for different models
+    const fallbackChains: Record<string, string[]> = {
+      // Anthropic fallbacks
+      'claude-3-opus-20240229': ['claude-3-5-sonnet-20241022', 'claude-3-5-sonnet-20240620'],
+      'claude-3-5-sonnet-20241022': ['claude-3-5-sonnet-20240620'],
+      
+      // OpenAI fallbacks
+      'gpt-5': ['gpt-4o', 'gpt-4o-mini'],
+      'o1-preview': ['gpt-4o', 'gpt-4o-mini'],
+      'o3': ['o1-preview', 'gpt-4o'],
+      
+      // X.AI fallbacks  
+      'grok-4': ['grok-3', 'grok-2'],
+      'grok-3': ['grok-2'],
+      
+      // Google fallbacks
+      'gemini-2.5-pro': ['gemini-2.5-flash', 'gemini-2.0-flash'],
+      'gemini-2.5-flash': ['gemini-2.0-flash'],
+      
+      // DeepSeek fallbacks
+      'deepseek-v3.1': ['deepseek-chat', 'deepseek-reasoner'],
+      'deepseek-r1-0528': ['deepseek-chat', 'deepseek-v3.1']
+    };
+    
+    const chain = fallbackChains[model.name];
+    if (chain && attempt - 1 < chain.length) {
+      return chain[attempt - 1];
+    }
+    
+    // Return original model if no fallback available
+    return model.name;
   }
 }
