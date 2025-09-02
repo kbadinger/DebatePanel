@@ -400,8 +400,25 @@ export async function POST(req: NextRequest) {
             
             console.log(`Judge will analyze ${fullDebateData.debateRounds.length} rounds with full content`);
             
+            // Transform database objects to match DebateRound interface
+            const transformedRounds = fullDebateData.debateRounds.map(dbRound => ({
+              roundNumber: dbRound.roundNumber,
+              responses: dbRound.responses.map(dbResponse => ({
+                modelId: dbResponse.modelId,
+                round: dbRound.roundNumber,
+                content: dbResponse.content,
+                position: dbResponse.position as any,
+                confidence: dbResponse.confidence,
+                timestamp: dbResponse.createdAt,
+                isHuman: dbResponse.isHuman,
+                stance: dbResponse.position // Use position as stance fallback
+              })),
+              consensus: dbRound.consensus,
+              keyDisagreements: dbRound.keyDisagreements,
+            }));
+            
             const judgeResult = await orchestrator.generateJudgeAnalysis(
-              fullDebateData.debateRounds, // Use full database content
+              transformedRounds,
               debate.config.topic,
               judgeModel,
               debate.config.style === 'consensus-seeking'
