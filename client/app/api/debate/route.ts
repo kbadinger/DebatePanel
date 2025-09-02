@@ -444,10 +444,25 @@ export async function POST(req: NextRequest) {
             
             // Store scores if available
             if (judgeResult.scores && judgeResult.scores.length > 0) {
-              // Calculate and store scores in database
+              // Calculate and store scores in database using upsert to handle duplicates
               for (const score of judgeResult.scores) {
-                await prisma.debateScore.create({
-                  data: {
+                await prisma.debateScore.upsert({
+                  where: {
+                    debateId_participantId: {
+                      debateId: dbDebate.id,
+                      participantId: score.id,
+                    }
+                  },
+                  update: {
+                    participantName: score.name,
+                    totalScore: score.score,
+                    argumentQuality: score.score * 0.9,
+                    persuasiveness: score.score * 0.85,
+                    evidenceScore: score.score * 0.8,
+                    logicalScore: score.score * 0.95,
+                    influenceScore: score.score * 0.7,
+                  },
+                  create: {
                     debateId: dbDebate.id,
                     participantId: score.id,
                     participantName: score.name,
