@@ -141,7 +141,11 @@ export function DebateInterface({ config, onComplete }: DebateInterfaceProps) {
               setParticipants(prev => [...prev, participant]);
             } else if (data.type === 'debate-complete') {
               console.log('Debate completed:', data.data);
+              console.log('Debate status:', data.data.status);
+              console.log('Has finalSynthesis:', !!data.data.finalSynthesis);
+              console.log('Has judgeAnalysis:', !!data.data.judgeAnalysis);
               setDebate(data.data);
+              setIsRunning(false);
               onComplete?.(data.data);
             } else if (data.type === 'error') {
               console.error('Debate error:', data.data);
@@ -208,7 +212,9 @@ export function DebateInterface({ config, onComplete }: DebateInterfaceProps) {
               setWaitingForHuman(true);
               setStreamingResponses([]);
             } else if (data.type === 'debate-complete') {
+              console.log('Debate completed (2nd handler):', data.data);
               setDebate(data.data);
+              setIsRunning(false);
               onComplete?.(data.data);
             }
           }
