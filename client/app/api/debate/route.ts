@@ -129,6 +129,16 @@ export async function POST(req: NextRequest) {
       );
       
       try {
+        // Add a global timeout for the entire debate (5 minutes per round)
+        const debateTimeout = setTimeout(() => {
+          console.error('Debate timeout - taking too long');
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify({
+            type: 'error',
+            data: { message: 'Debate timeout - the debate took too long to complete' }
+          })}\n\n`));
+          controller.close();
+        }, config.rounds * 5 * 60 * 1000);
+        
         for (let i = 1; i <= config.rounds; i++) {
           const round = await orchestrator.runDebateRound(config, i, debate.rounds, dbDebate.id);
           debate.rounds.push(round);
@@ -189,6 +199,9 @@ export async function POST(req: NextRequest) {
             }
           }
         }
+        
+        // Clear the timeout since we're done
+        clearTimeout(debateTimeout);
         
         // Generate final synthesis (even if some models failed)
         debate.status = 'completed';

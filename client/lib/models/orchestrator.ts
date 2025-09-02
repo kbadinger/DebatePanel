@@ -265,27 +265,38 @@ Format your response as a clear argument with supporting points.`;
     // Log the round start
     this.logger.logRound(roundNumber, prompt);
     
-    // Run all models in parallel, but handle failures gracefully
+    // Run all models in parallel with timeout, but handle failures gracefully
     const responsePromises = config.models.map(async (model) => {
       try {
-        return await this.getModelResponse(
+        // Create a timeout promise that rejects after 60 seconds
+        const timeoutPromise = new Promise<never>((_, reject) => {
+          setTimeout(() => reject(new Error(`Timeout after 60 seconds`)), 60000);
+        });
+        
+        // Race between the actual response and the timeout
+        const responsePromise = this.getModelResponse(
           model, 
           prompt, 
           previousRounds.flatMap(r => r.responses),
           config
         );
+        
+        return await Promise.race([responsePromise, timeoutPromise]);
       } catch (error: unknown) {
-        // If individual model fails completely, log and create error response
-        this.logger.logError(`Complete failure for ${model.displayName}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        // If individual model fails completely or times out, log and create error response
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        const isTimeout = errorMessage.includes('Timeout');
+        
+        this.logger.logError(`${isTimeout ? 'Timeout' : 'Complete failure'} for ${model.displayName}: ${errorMessage}`);
         
         return {
           modelId: model.id,
           round: roundNumber,
-          content: `❌ Complete failure: ${model.displayName} could not participate in this round.`,
+          content: `❌ ${isTimeout ? 'Timeout' : 'Error'}: ${model.displayName} ${isTimeout ? 'took too long to respond' : 'could not participate'} in this round.`,
           position: 'neutral' as const,
           confidence: 0,
           timestamp: new Date(),
-          stance: 'Complete Failure',
+          stance: isTimeout ? 'Timeout' : 'Complete Failure',
           consensusAlignment: 'independent' as const
         };
       }
