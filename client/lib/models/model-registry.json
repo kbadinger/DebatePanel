@@ -109,14 +109,14 @@
           "verified": true
         },
         {
-          "id": "claude-opus-4-1-20250805",
-          "apiName": "claude-opus-4-1-20250805",
-          "displayName": "Claude Opus 4.1",
-          "category": "flagship",
+          "id": "claude-3-5-sonnet-20241022",
+          "apiName": "claude-3-5-sonnet-20241022",
+          "displayName": "Claude 3.5 Sonnet (Latest)",
+          "category": "standard",
           "deprecated": false,
-          "releaseDate": "2025-08",
+          "releaseDate": "2024-10",
           "verified": true,
-          "notes": "Latest Claude Opus model with enhanced capabilities"
+          "notes": "Latest Claude 3.5 Sonnet model with enhanced capabilities"
         }
       ]
     },

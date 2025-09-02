@@ -52,7 +52,7 @@ export default function Home() {
     description: '',
     models: [
       availableModels.find(m => m.id === 'gpt-4o'),
-      availableModels.find(m => m.id === 'claude-opus-4-1-20250805'),
+      availableModels.find(m => m.id === 'claude-3-5-sonnet-20241022'),
       availableModels.find(m => m.id === 'gemini-2.5-pro')
     ].filter(Boolean) as Model[], // Default to top primary tier models
     rounds: 3, // Ensure this is always a valid number

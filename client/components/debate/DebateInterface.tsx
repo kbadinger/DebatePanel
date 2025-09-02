@@ -508,12 +508,12 @@ export function DebateInterface({ config, onComplete }: DebateInterfaceProps) {
         </div>
       )}
 
-      {/* Ratings Key - Show during debate */}
-      {!debate?.status || debate?.status === 'running' ? (
+      {/* Ratings Key - Always show if we have rounds */}
+      {(debate?.rounds && debate.rounds.length > 0) && (
         <div className="mb-6">
           <RatingsKey />
         </div>
-      ) : null}
+      )}
       
       {/* Loading States - Always at top after legend */}
       {isRunning && allResponses.length === 0 && (

@@ -30,11 +30,11 @@ export default function TestSynthesis() {
           category: "frontier"
         },
         { 
-          id: "claude-opus-4-1-20250805", 
+          id: "claude-3-5-sonnet-20241022", 
           provider: "anthropic", 
-          name: "claude-opus-4-1-20250805", 
-          displayName: "Claude Opus 4.1",
-          category: "frontier"
+          name: "claude-3-5-sonnet-20241022", 
+          displayName: "Claude 3.5 Sonnet",
+          category: "standard"
         }
       ],
       rounds: 1,

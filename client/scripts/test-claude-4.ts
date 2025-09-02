@@ -29,17 +29,12 @@ async function testClaude4Models() {
 
   console.log('🔄 Testing Claude 4 models from your screenshot...\n');
   
-  // Exact model names from the screenshot
+  // Verified working Claude models
   const modelsToTest = [
-    'claude-opus-4-1-20250805',
-    'claude-sonnet-4-20250514',
-    'claude-opus-4-20250514',
-    'claude-3-7-sonnet-20250219',
-    'claude-3-5-haiku-20241022',
     'claude-3-5-sonnet-20241022',
-    'claude-3-5-sonnet-20240620',
-    'claude-3-haiku-20240307',
-    'claude-3-opus-20240229'
+    'claude-3-5-haiku-20241022',
+    'claude-3-opus-20240229',
+    'claude-3-haiku-20240307'
   ];
   
   const results: any = {};

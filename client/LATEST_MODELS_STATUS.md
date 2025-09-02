@@ -22,10 +22,9 @@
 - ✅ `gpt-4-turbo` - Turbo variant
 
 ### Anthropic
-**Claude 4 Series (LATEST!)**
-- ✅ `claude-opus-4-1-20250805` - Claude Opus 4.1 (August 2025)
-- ✅ `claude-sonnet-4-20250514` - Claude Sonnet 4 (May 2025)
-- ✅ `claude-opus-4-20250514` - Claude Opus 4 (May 2025)
+**Claude 3.5 Series (CURRENT VERIFIED)**
+- ✅ `claude-3-5-sonnet-20241022` - Claude 3.5 Sonnet (October 2024)
+- ✅ `claude-3-5-haiku-20241022` - Claude 3.5 Haiku (October 2024)
 
 **Claude 3.7 Series**
 - ✅ `claude-3-7-sonnet-20250219` - Claude 3.7 (February 2025)
