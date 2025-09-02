@@ -22,23 +22,45 @@ export default function TestSynthesis() {
       topic: "Test Debate",
       description: "Should AI prioritize safety over innovation?",
       models: [
-        { id: "gpt-5", provider: "openai", name: "gpt-5", displayName: "GPT-5" },
-        { id: "claude-opus-4-1-20250805", provider: "anthropic", name: "claude-opus-4-1-20250805", displayName: "Claude Opus 4.1" }
+        { 
+          id: "gpt-5", 
+          provider: "openai", 
+          name: "gpt-5", 
+          displayName: "GPT-5",
+          category: "frontier"
+        },
+        { 
+          id: "claude-opus-4-1-20250805", 
+          provider: "anthropic", 
+          name: "claude-opus-4-1-20250805", 
+          displayName: "Claude Opus 4.1",
+          category: "frontier"
+        }
       ],
       rounds: 1,
       format: "structured",
       style: "consensus-seeking",
-      convergenceThreshold: 0.75
+      convergenceThreshold: 0.75,
+      isInteractive: false,
+      judge: {
+        enabled: false
+      }
     };
 
     try {
+      addLog(`Sending config: ${JSON.stringify(config, null, 2)}`);
+      
       const response = await fetch('/api/debate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(config),
+        body: JSON.stringify({ config }),  // Wrap config in an object
       });
 
+      addLog(`Response status: ${response.status}`);
+      
       if (!response.ok) {
+        const errorText = await response.text();
+        addLog(`Error response: ${errorText}`);
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
