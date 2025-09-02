@@ -261,8 +261,16 @@ export async function POST(req: NextRequest) {
         });
         
         // Generate judge analysis FIRST if enabled (always run for decisive answer)
-        if (debate.config.judge?.enabled && debate.rounds.length >= 2) {
-          const judgeModel = debate.config.judge.model || {
+        console.log('Judge check:', {
+          judgeEnabled: debate.config.judge?.enabled,
+          judgeModel: debate.config.judge?.model,
+          roundsLength: debate.rounds.length,
+          willRunJudge: debate.config.judge?.enabled && debate.rounds.length >= 2
+        });
+        
+        // Always run judge for completed debates with 2+ rounds to get a decisive answer
+        if (debate.rounds.length >= 2) {
+          const judgeModel = debate.config.judge?.model || {
             id: 'claude-3-5-sonnet',
             provider: 'anthropic' as const,
             name: 'claude-3-5-sonnet-20241022',
