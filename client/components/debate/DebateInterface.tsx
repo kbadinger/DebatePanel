@@ -27,7 +27,7 @@ export function DebateInterface({ config, onComplete }: DebateInterfaceProps) {
   const [streamingResponses, setStreamingResponses] = useState<ModelResponse[]>([]);
   const [waitingForHuman, setWaitingForHuman] = useState(false);
   const [isSubmittingHuman, setIsSubmittingHuman] = useState(false);
-  const [autoScroll, setAutoScroll] = useState(true);
+
   
   const handleCopySynthesis = async () => {
     if (debate?.finalSynthesis) {
@@ -75,17 +75,7 @@ export function DebateInterface({ config, onComplete }: DebateInterfaceProps) {
   };
   const [participants, setParticipants] = useState<Array<{ userId: string; userName: string }>>([]);
   
-  // Auto-scroll effect
-  useEffect(() => {
-    if (autoScroll && (streamingResponses.length > 0 || debate?.rounds?.length)) {
-      setTimeout(() => {
-        window.scrollTo({
-          top: document.documentElement.scrollHeight,
-          behavior: 'smooth'
-        });
-      }, 100);
-    }
-  }, [streamingResponses.length, debate?.rounds?.length, autoScroll]);
+
 
   // Auto-start debate when component mounts
   useEffect(() => {
@@ -372,7 +362,7 @@ export function DebateInterface({ config, onComplete }: DebateInterfaceProps) {
   const allResponses = [
     ...(debate?.rounds?.flatMap(r => r?.responses || []) || []),
     ...streamingResponses
-  ];
+  ].reverse(); // Newest responses at top
   
   return (
     <div className="max-w-7xl mx-auto p-6">
