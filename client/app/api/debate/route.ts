@@ -13,9 +13,12 @@ const prisma = new PrismaClient();
 // Helper function to safely encode JSON for SSE
 function safeSSEEncode(data: any): string {
   try {
+    // Log what we're trying to encode
+    console.log(`Encoding SSE data of type: ${data.type}`);
+    
     // For very large responses, truncate the content to prevent parsing errors
-    const MAX_RESPONSE_LENGTH = 10000; // Reduced limit for individual response content
-    const MAX_TOTAL_LENGTH = 25000; // Max total JSON size
+    const MAX_RESPONSE_LENGTH = 5000; // Further reduced limit for individual response content
+    const MAX_TOTAL_LENGTH = 15000; // Further reduced max total JSON size
     
     // Deep clone and truncate if needed
     const processedData = JSON.parse(JSON.stringify(data, (key, value) => {
@@ -41,7 +44,7 @@ function safeSSEEncode(data: any): string {
     
     // If still too large, truncate the whole thing
     if (jsonString.length > MAX_TOTAL_LENGTH) {
-      console.warn(`Total JSON too large (${jsonString.length}), sending summary only`);
+      console.warn(`Total JSON too large (${jsonString.length} chars), sending summary only`);
       // Send a minimal version
       const minimalData = {
         type: data.type,
