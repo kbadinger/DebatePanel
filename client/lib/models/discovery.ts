@@ -190,7 +190,7 @@ export class ModelDiscovery {
 
     try {
       // Google has a models endpoint - use v1beta as suggested
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${process.env.GOOGLE_API_KEY}`);
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${process.env.GOOGLE_AI_API_KEY}`);
       
       if (!response.ok) {
         throw new Error(`Google API error: ${response.status}`);
