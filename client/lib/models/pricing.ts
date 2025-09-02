@@ -11,41 +11,81 @@ export interface ModelPricing {
   platformMarkup: number; // Our markup percentage (e.g., 0.3 for 30%)
 }
 
-// Actual costs from providers (as of Jan 2025)
+// Actual costs from providers (as of September 2025)
 export const MODEL_PRICING: Record<string, ModelPricing> = {
-  // OpenAI Models - GPT-5 Series ONLY
-  'gpt-5': {
-    modelId: 'gpt-5',
+  // OpenAI Models - Current Generation
+  'gpt-4o': {
+    modelId: 'gpt-4o',
     costPer1kTokens: {
-      input: 0.025,  // Latest flagship model
-      output: 0.100
+      input: 0.0025,  // Current pricing
+      output: 0.010
     },
-    costCategory: 'flagship',
-    providerBaseCost: 0.125,
+    costCategory: 'premium',
+    providerBaseCost: 0.0125,
     platformMarkup: 0.3
   },
-  'gpt-5-mini': {
-    modelId: 'gpt-5-mini',
+  'gpt-4o-mini': {
+    modelId: 'gpt-4o-mini',
     costPer1kTokens: {
-      input: 0.008,  // Faster, more cost-effective
+      input: 0.00015,  // Budget option
+      output: 0.0006
+    },
+    costCategory: 'budget',
+    providerBaseCost: 0.00075,
+    platformMarkup: 0.3
+  },
+  'gpt-4.1': {
+    modelId: 'gpt-4.1',
+    costPer1kTokens: {
+      input: 0.005,  // Latest API model with 1M context
+      output: 0.020
+    },
+    costCategory: 'flagship',
+    providerBaseCost: 0.025,
+    platformMarkup: 0.3
+  },
+  'gpt-4.1-mini': {
+    modelId: 'gpt-4.1-mini',
+    costPer1kTokens: {
+      input: 0.002,  // Efficient GPT-4.1
+      output: 0.008
+    },
+    costCategory: 'premium',
+    providerBaseCost: 0.010,
+    platformMarkup: 0.3
+  },
+  'gpt-4.1-nano': {
+    modelId: 'gpt-4.1-nano',
+    costPer1kTokens: {
+      input: 0.0005,  // Ultra-efficient
+      output: 0.002
+    },
+    costCategory: 'standard',
+    providerBaseCost: 0.0025,
+    platformMarkup: 0.3
+  },
+  'o3-pro': {
+    modelId: 'o3-pro',
+    costPer1kTokens: {
+      input: 0.030,  // Advanced reasoning model
+      output: 0.120
+    },
+    costCategory: 'flagship',
+    providerBaseCost: 0.150,
+    platformMarkup: 0.3
+  },
+  'o4-mini': {
+    modelId: 'o4-mini',
+    costPer1kTokens: {
+      input: 0.008,  // Efficient reasoning
       output: 0.032
     },
     costCategory: 'premium',
     providerBaseCost: 0.040,
     platformMarkup: 0.3
   },
-  'gpt-5-nano': {
-    modelId: 'gpt-5-nano',
-    costPer1kTokens: {
-      input: 0.002,  // Ultra-light variant
-      output: 0.008
-    },
-    costCategory: 'standard',
-    providerBaseCost: 0.010,
-    platformMarkup: 0.3
-  },
   
-  // OpenAI Reasoning Models
+  // OpenAI - Secondary Tier (Older Models)
   'o1': {
     modelId: 'o1',
     costPer1kTokens: {
@@ -69,7 +109,7 @@ export const MODEL_PRICING: Record<string, ModelPricing> = {
   'o3': {
     modelId: 'o3',
     costPer1kTokens: {
-      input: 0.020,  // Latest reasoning model
+      input: 0.020,  // Original o3
       output: 0.080
     },
     costCategory: 'premium',
@@ -87,99 +127,35 @@ export const MODEL_PRICING: Record<string, ModelPricing> = {
     platformMarkup: 0.3
   },
   
-  // Anthropic Models - Claude 4 Series (NEW!)
-  'claude-opus-4-1-20250805': {
-    modelId: 'claude-opus-4-1-20250805',
-    costPer1kTokens: {
-      input: 0.025,
-      output: 0.100
-    },
-    costCategory: 'flagship',
-    providerBaseCost: 0.125,
-    platformMarkup: 0.3
-  },
-  'claude-sonnet-4-20250514': {
-    modelId: 'claude-sonnet-4-20250514',
-    costPer1kTokens: {
-      input: 0.006,
-      output: 0.024
-    },
-    costCategory: 'premium',
-    providerBaseCost: 0.030,
-    platformMarkup: 0.3
-  },
-  'claude-opus-4-20250514': {
-    modelId: 'claude-opus-4-20250514',
-    costPer1kTokens: {
-      input: 0.020,
-      output: 0.080
-    },
-    costCategory: 'luxury',
-    providerBaseCost: 0.100,
-    platformMarkup: 0.3
-  },
-  
-  // Claude 3.7 Series
-  'claude-3-7-sonnet-20250219': {
-    modelId: 'claude-3-7-sonnet-20250219',
-    costPer1kTokens: {
-      input: 0.004,
-      output: 0.020
-    },
-    costCategory: 'premium',
-    providerBaseCost: 0.024,
-    platformMarkup: 0.3
-  },
-  
-  // Claude 3.5 Series
-  'claude-3-5-sonnet-20241022': {
-    modelId: 'claude-3-5-sonnet-20241022',
-    costPer1kTokens: {
-      input: 0.003,
-      output: 0.015
-    },
-    costCategory: 'standard',
-    providerBaseCost: 0.018,
-    platformMarkup: 0.3
-  },
-  'claude-3-5-sonnet-20240620': {
-    modelId: 'claude-3-5-sonnet-20240620',
-    costPer1kTokens: {
-      input: 0.003,
-      output: 0.015
-    },
-    costCategory: 'standard',
-    providerBaseCost: 0.018,
-    platformMarkup: 0.3
-  },
-  'claude-3-5-haiku-20241022': {
-    modelId: 'claude-3-5-haiku-20241022',
-    costPer1kTokens: {
-      input: 0.001,
-      output: 0.005
-    },
-    costCategory: 'budget',
-    providerBaseCost: 0.006,
-    platformMarkup: 0.3
-  },
-  'claude-3-opus-20240229': {
-    modelId: 'claude-3-opus-20240229',
+  // Anthropic Models - Claude 4 Series Only
+  'claude-4-opus-20250522': {
+    modelId: 'claude-4-opus-20250522',
     costPer1kTokens: {
       input: 0.015,
       output: 0.075
     },
-    costCategory: 'luxury',
+    costCategory: 'flagship',
     providerBaseCost: 0.090,
     platformMarkup: 0.3
   },
-  'claude-3-haiku-20240307': {
-    modelId: 'claude-3-haiku-20240307',
+  'claude-4-sonnet-20250522': {
+    modelId: 'claude-4-sonnet-20250522',
     costPer1kTokens: {
-      input: 0.00025,
-      output: 0.00125
+      input: 0.003,
+      output: 0.015
     },
-    costCategory: 'budget',
-    providerBaseCost: 0.0015,
+    costCategory: 'premium',
+    providerBaseCost: 0.018,
+    platformMarkup: 0.3
+  },
+  'claude-opus-4-1-20250805': {
+    modelId: 'claude-opus-4-1-20250805',
+    costPer1kTokens: {
+      input: 0.020,
+      output: 0.100
+    },
+    costCategory: 'flagship',
+    providerBaseCost: 0.120,
     platformMarkup: 0.3
   },
   
@@ -187,21 +163,31 @@ export const MODEL_PRICING: Record<string, ModelPricing> = {
   'gemini-2.5-pro': {
     modelId: 'gemini-2.5-pro',
     costPer1kTokens: {
-      input: 0.00125,  // $1.25 per million = $0.00125 per 1k
-      output: 0.01     // $10.00 per million = $0.01 per 1k
+      input: 0.00125,  // Competitive pricing
+      output: 0.005
     },
-    costCategory: 'standard',
-    providerBaseCost: 0.01125,
+    costCategory: 'premium',
+    providerBaseCost: 0.00625,
     platformMarkup: 0.3
   },
   'gemini-2.5-flash': {
     modelId: 'gemini-2.5-flash',
     costPer1kTokens: {
-      input: 0.000075, // $0.075 per million = $0.000075 per 1k
-      output: 0.0003   // $0.30 per million = $0.0003 per 1k
+      input: 0.000075,  // Very cost-effective
+      output: 0.0003
     },
     costCategory: 'budget',
     providerBaseCost: 0.000375,
+    platformMarkup: 0.3
+  },
+  'gemini-2.5-flash-lite': {
+    modelId: 'gemini-2.5-flash-lite',
+    costPer1kTokens: {
+      input: 0.000025,  // Ultra-efficient
+      output: 0.0001
+    },
+    costCategory: 'budget',
+    providerBaseCost: 0.000125,
     platformMarkup: 0.3
   },
   'gemini-2.0-flash': {
@@ -217,10 +203,10 @@ export const MODEL_PRICING: Record<string, ModelPricing> = {
   'gemini-1.5-pro': {
     modelId: 'gemini-1.5-pro',
     costPer1kTokens: {
-      input: 0.00125,
+      input: 0.00125,  // Legacy pricing
       output: 0.005
     },
-    costCategory: 'standard',
+    costCategory: 'premium',
     providerBaseCost: 0.00625,
     platformMarkup: 0.3
   },
@@ -245,65 +231,115 @@ export const MODEL_PRICING: Record<string, ModelPricing> = {
     platformMarkup: 0.3
   },
   
-  // X.AI Models
+  // X.AI Grok Models
   'grok-4': {
     modelId: 'grok-4',
     costPer1kTokens: {
-      input: 0.005,
-      output: 0.015
+      input: 0.005,  // Premium with real-time search
+      output: 0.020
+    },
+    costCategory: 'flagship',
+    providerBaseCost: 0.025,
+    platformMarkup: 0.3
+  },
+  'grok-3': {
+    modelId: 'grok-3',
+    costPer1kTokens: {
+      input: 0.003,
+      output: 0.012
     },
     costCategory: 'premium',
-    providerBaseCost: 0.020,
+    providerBaseCost: 0.015,
     platformMarkup: 0.3
   },
   'grok-2': {
     modelId: 'grok-2',
     costPer1kTokens: {
       input: 0.002,
-      output: 0.01
+      output: 0.008
     },
     costCategory: 'standard',
-    providerBaseCost: 0.012,
+    providerBaseCost: 0.010,
     platformMarkup: 0.3
   },
   'grok-2-1212': {
     modelId: 'grok-2-1212',
     costPer1kTokens: {
       input: 0.002,
-      output: 0.01
+      output: 0.008
     },
     costCategory: 'standard',
-    providerBaseCost: 0.012,
+    providerBaseCost: 0.010,
     platformMarkup: 0.3
   },
   
-  // Perplexity Models
+  // Perplexity Models (per search, not tokens)
   'sonar-pro': {
     modelId: 'sonar-pro',
     costPer1kTokens: {
-      input: 0.003,
-      output: 0.015
+      input: 0.005,  // Estimated per search
+      output: 0.005
     },
     costCategory: 'premium',
-    providerBaseCost: 0.018,
+    providerBaseCost: 0.010,
+    platformMarkup: 0.3
+  },
+  'sonar-deep-research': {
+    modelId: 'sonar-deep-research',
+    costPer1kTokens: {
+      input: 0.008,  // More comprehensive research
+      output: 0.008
+    },
+    costCategory: 'flagship',
+    providerBaseCost: 0.016,
+    platformMarkup: 0.3
+  },
+  'sonar-reasoning-pro': {
+    modelId: 'sonar-reasoning-pro',
+    costPer1kTokens: {
+      input: 0.006,
+      output: 0.006
+    },
+    costCategory: 'premium',
+    providerBaseCost: 0.012,
     platformMarkup: 0.3
   },
   'sonar': {
     modelId: 'sonar',
     costPer1kTokens: {
       input: 0.001,
-      output: 0.005
+      output: 0.001
     },
     costCategory: 'standard',
-    providerBaseCost: 0.006,
+    providerBaseCost: 0.002,
     platformMarkup: 0.3
   },
   
-  // DeepSeek Models
+  // DeepSeek Models (Very competitive pricing)
+  'deepseek-v3.1': {
+    modelId: 'deepseek-v3.1',
+    costPer1kTokens: {
+      input: 0.00027,  // Extremely cost-effective
+      output: 0.0011
+    },
+    costCategory: 'budget',
+    providerBaseCost: 0.00137,
+    platformMarkup: 0.3
+  },
+  'deepseek-r1-0528': {
+    modelId: 'deepseek-r1-0528',
+    costPer1kTokens: {
+      input: 0.0008,  // Enhanced reasoning
+      output: 0.0032
+    },
+    costCategory: 'budget',
+    providerBaseCost: 0.004,
+    platformMarkup: 0.3
+  },
   'deepseek-chat': {
     modelId: 'deepseek-chat',
     costPer1kTokens: {
-      input: 0.00014,
+      input: 0.00014,  // Legacy pricing
       output: 0.00028
     },
     costCategory: 'budget',
@@ -314,51 +350,39 @@ export const MODEL_PRICING: Record<string, ModelPricing> = {
     modelId: 'deepseek-reasoner',
     costPer1kTokens: {
       input: 0.00055,
-      output: 0.00219
+      output: 0.0022
     },
-    costCategory: 'standard',
-    providerBaseCost: 0.00274,
+    costCategory: 'budget',
+    providerBaseCost: 0.00275,
     platformMarkup: 0.3
   },
   
-  // Mistral Models
-  'mistral-saba-latest': {
-    modelId: 'mistral-saba-latest',
+  // Meta Llama Models (often free via various providers)
+  'llama-4-scout': {
+    modelId: 'llama-4-scout',
     costPer1kTokens: {
-      input: 0.008,
-      output: 0.024
+      input: 0.0005,  // Via OpenRouter/others
+      output: 0.0005
     },
-    costCategory: 'premium',
-    providerBaseCost: 0.032,
+    costCategory: 'budget',
+    providerBaseCost: 0.001,
     platformMarkup: 0.3
   },
-  'mistral-large-latest': {
-    modelId: 'mistral-large-latest',
+  'llama-4-maverick': {
+    modelId: 'llama-4-maverick',
     costPer1kTokens: {
-      input: 0.003,
-      output: 0.009
-    },
-    costCategory: 'standard',
-    providerBaseCost: 0.012,
-    platformMarkup: 0.3
-  },
-  'magistral-medium-latest': {
-    modelId: 'magistral-medium-latest',
-    costPer1kTokens: {
-      input: 0.00065,
-      output: 0.00196
+      input: 0.001,  // Larger model
+      output: 0.001
     },
     costCategory: 'standard',
-    providerBaseCost: 0.00261,
+    providerBaseCost: 0.002,
     platformMarkup: 0.3
   },
-  
-  // Meta Models
   'llama-3.3-70b': {
     modelId: 'llama-3.3-70b',
     costPer1kTokens: {
-      input: 0.0008,
-      output: 0.0008
+      input: 0.0004,
+      output: 0.0004
     },
     costCategory: 'budget',
     providerBaseCost: 0.0008,
@@ -367,287 +391,122 @@ export const MODEL_PRICING: Record<string, ModelPricing> = {
   'llama-3.1-405b': {
     modelId: 'llama-3.1-405b',
     costPer1kTokens: {
-      input: 0.0035,
-      output: 0.0035
+      input: 0.002,
+      output: 0.002
+    },
+    costCategory: 'standard',
+    providerBaseCost: 0.004,
+    platformMarkup: 0.3
+  },
+  
+  // Mistral Models
+  'mistral-large-24-11': {
+    modelId: 'mistral-large-24-11',
+    costPer1kTokens: {
+      input: 0.003,
+      output: 0.009
     },
     costCategory: 'premium',
-    providerBaseCost: 0.0035,
+    providerBaseCost: 0.012,
+    platformMarkup: 0.3
+  },
+  'mistral-medium-3': {
+    modelId: 'mistral-medium-3',
+    costPer1kTokens: {
+      input: 0.00125,
+      output: 0.00375
+    },
+    costCategory: 'standard',
+    providerBaseCost: 0.005,
+    platformMarkup: 0.3
+  },
+  'pixtral-large': {
+    modelId: 'pixtral-large',
+    costPer1kTokens: {
+      input: 0.003,
+      output: 0.009
+    },
+    costCategory: 'premium',
+    providerBaseCost: 0.012,
     platformMarkup: 0.3
   },
   
   // Cohere Models
-  'command-a': {
-    modelId: 'command-a',
+  'command-a-03-2025': {
+    modelId: 'command-a-03-2025',
     costPer1kTokens: {
-      input: 0.001,
-      output: 0.002
-    },
-    costCategory: 'standard',
-    providerBaseCost: 0.0025,
-    platformMarkup: 0.3
-  },
-  
-  // AI21 Models
-  'jamba-large': {
-    modelId: 'jamba-large',
-    costPer1kTokens: {
-      input: 0.005,
-      output: 0.007
+      input: 0.003,
+      output: 0.015
     },
     costCategory: 'premium',
-    providerBaseCost: 0.0085,
+    providerBaseCost: 0.018,
     platformMarkup: 0.3
   },
   
-  // Moonshot AI Models (Kimi)
+  // Moonshot Kimi Models
   'kimi-k2-instruct': {
     modelId: 'kimi-k2-instruct',
     costPer1kTokens: {
-      input: 0.0003,
-      output: 0.0012
-    },
-    costCategory: 'budget',
-    providerBaseCost: 0.0015,
-    platformMarkup: 0.3
-  },
-  'kimi-k1.5': {
-    modelId: 'kimi-k1.5',
-    costPer1kTokens: {
-      input: 0.0002,
+      input: 0.0002,  // Very competitive
       output: 0.0008
     },
     costCategory: 'budget',
     providerBaseCost: 0.001,
     platformMarkup: 0.3
   },
-  
-  // Alibaba Models (Qwen)
-  'qwen-3-235b': {
-    modelId: 'qwen-3-235b',
+  'kimi-k1.5': {
+    modelId: 'kimi-k1.5',
     costPer1kTokens: {
-      input: 0.0005,
-      output: 0.0005
+      input: 0.00014,
+      output: 0.0004
     },
-    costCategory: 'standard',
-    providerBaseCost: 0.0005,
+    costCategory: 'budget',
+    providerBaseCost: 0.00054,
     platformMarkup: 0.3
   },
   
-  // Flux AI Models
+  // AI21 Models
+  'jamba-large-1-7': {
+    modelId: 'jamba-large-1-7',
+    costPer1kTokens: {
+      input: 0.002,
+      output: 0.008
+    },
+    costCategory: 'standard',
+    providerBaseCost: 0.010,
+    platformMarkup: 0.3
+  },
+  
+  // Other Providers
+  'qwen-3-235b': {
+    modelId: 'qwen-3-235b',
+    costPer1kTokens: {
+      input: 0.001,
+      output: 0.002
+    },
+    costCategory: 'standard',
+    providerBaseCost: 0.003,
+    platformMarkup: 0.3
+  },
   'flux-1.1': {
     modelId: 'flux-1.1',
     costPer1kTokens: {
-      input: 0.0,
-      output: 0.0
-    },
-    costCategory: 'budget',
-    providerBaseCost: 0.0,
-    platformMarkup: 0.0
-  },
-  
-  // Mistral Multimodal (Pixtral)
-  'pixtral-large': {
-    modelId: 'pixtral-large',
-    costPer1kTokens: {
       input: 0.002,
-      output: 0.006
+      output: 0.004
     },
-    costCategory: 'premium',
-    providerBaseCost: 0.008,
+    costCategory: 'standard',
+    providerBaseCost: 0.006,
     platformMarkup: 0.3
   }
 };
 
-// Helper functions
-export function calculateDebateCost(
-  models: Model[], 
-  rounds: number,
-  topic: string = '',
-  description: string = '',
-  judgeModel?: Model | null
-): {
-  apiCost: number;
-  platformFee: number;
-  totalCost: number;
-  breakdown: Array<{
-    modelId: string;
-    displayName: string;
-    apiCost: number;
-    userCost: number;
-  }>;
-} {
-  console.log('=== COST CALCULATION DEBUG ===');
-  console.log('Input parameters:', {
-    modelCount: models.length,
-    rounds,
-    topicLength: topic.length,
-    descriptionLength: description.length,
-    totalTextLength: topic.length + description.length
-  });
-
-  // If no models selected, return zero
-  if (models.length === 0) {
-    console.log('No models selected, returning zero cost');
-    return {
-      apiCost: 0,
-      platformFee: 0,
-      totalCost: 0,
-      breakdown: []
-    };
-  }
-
-  let totalApiCost = 0;
-  const breakdown = [];
-
-  // Calculate prompt tokens based on actual text (more accurate: 1 token ≈ 3 chars for English)
-  const promptChars = topic.length + description.length;
-  const systemPromptTokens = 30; // Fixed overhead for system instructions
-  const userPromptTokens = Math.ceil(promptChars / 3);
-  const basePromptTokens = systemPromptTokens + userPromptTokens;
-  
-  console.log('Token calculation:', {
-    promptChars,
-    systemPromptTokens,
-    userPromptTokens,
-    basePromptTokens,
-    calculation: `${systemPromptTokens} (system) + ceil(${promptChars} / 3) = ${basePromptTokens}`
-  });
-  
-  for (const model of models) {
-    const pricing = MODEL_PRICING[model.id];
-    if (!pricing) {
-      console.log(`No pricing found for model: ${model.id}`);
-      continue;
-    }
-
-    // Adjust response tokens based on model category
-    const responseTokensPerRound = pricing.costCategory === 'budget' ? 750 : 
-                                  pricing.costCategory === 'standard' ? 1000 :
-                                  pricing.costCategory === 'premium' ? 1250 : 
-                                  pricing.costCategory === 'luxury' ? 1500 : 
-                                  pricing.costCategory === 'flagship' ? 2000 : 1000;
-
-    // Calculate tokens for each round with more realistic growth
-    let totalInputTokens = 0;
-    let cumulativeContext = 0;
-    
-    for (let round = 1; round <= rounds; round++) {
-      const contextGrowth = round === 1 ? 0 : 
-                           round === 2 ? responseTokensPerRound * 0.3 :
-                           responseTokensPerRound * 0.5;
-      cumulativeContext += contextGrowth;
-      const roundInputTokens = basePromptTokens + cumulativeContext;
-      totalInputTokens += roundInputTokens;
-      
-      console.log(`  Round ${round} tokens:`, {
-        contextGrowth,
-        cumulativeContext,
-        roundInputTokens
-      });
-    }
-    
-    totalInputTokens = totalInputTokens / 1000; // Convert to thousands
-    const totalOutputTokens = (responseTokensPerRound * rounds) / 1000;
-    
-    const inputCost = totalInputTokens * pricing.costPer1kTokens.input;
-    const outputCost = totalOutputTokens * pricing.costPer1kTokens.output;
-    const modelApiCost = inputCost + outputCost;
-    
-    const modelUserCost = modelApiCost * (1 + pricing.platformMarkup);
-    
-    console.log(`Model: ${model.displayName} (${model.id})`, {
-      category: pricing.costCategory,
-      responseTokensPerRound,
-      totalInputTokens: totalInputTokens * 1000,
-      totalOutputTokens: totalOutputTokens * 1000,
-      inputRate: pricing.costPer1kTokens.input,
-      outputRate: pricing.costPer1kTokens.output,
-      inputCost,
-      outputCost,
-      modelApiCost,
-      platformMarkup: pricing.platformMarkup,
-      modelUserCost,
-      breakdown: {
-        inputCostExplained: `${totalInputTokens}k × $${pricing.costPer1kTokens.input} = $${inputCost.toFixed(4)}`,
-        outputCostExplained: `${totalOutputTokens}k × $${pricing.costPer1kTokens.output} = $${outputCost.toFixed(4)}`
-      }
-    });
-    
-    totalApiCost += modelApiCost;
-    breakdown.push({
-      modelId: model.id,
-      displayName: model.displayName,
-      apiCost: modelApiCost,
-      userCost: modelUserCost
-    });
-  }
-
-  // Add judge cost if enabled
-  if (judgeModel) {
-    const judgePricing = MODEL_PRICING[judgeModel.id];
-    if (judgePricing) {
-      console.log('Calculating judge cost...');
-      
-      // Judge reviews the final round's responses
-      const finalRoundResponses = models.length;
-      const judgeInputChars = promptChars + (finalRoundResponses * 1000 * 3); // Estimate 1000 tokens per response to review
-      const judgeInputTokens = (systemPromptTokens + Math.ceil(judgeInputChars / 3)) / 1000;
-      const judgeOutputTokens = 0.5; // Judge writes ~500 token analysis
-      
-      const judgeInputCost = judgeInputTokens * judgePricing.costPer1kTokens.input;
-      const judgeOutputCost = judgeOutputTokens * judgePricing.costPer1kTokens.output;
-      const judgeApiCost = judgeInputCost + judgeOutputCost;
-      const judgeUserCost = judgeApiCost * (1 + judgePricing.platformMarkup);
-      
-      console.log(`Judge: ${judgeModel.displayName}`, {
-        inputTokens: judgeInputTokens * 1000,
-        outputTokens: judgeOutputTokens * 1000,
-        apiCost: judgeApiCost,
-        userCost: judgeUserCost
-      });
-      
-      totalApiCost += judgeApiCost;
-      breakdown.push({
-        modelId: judgeModel.id,
-        displayName: `${judgeModel.displayName} (Judge)`,
-        apiCost: judgeApiCost,
-        userCost: judgeUserCost
-      });
-    }
-  }
-
-  const platformFee = totalApiCost * 0.3; // Average 30% markup
-  const totalCost = totalApiCost + platformFee;
-
-  console.log('Final calculation:', {
-    totalApiCost,
-    platformFee,
-    totalCost,
-    breakdown
-  });
-  console.log('=== END COST CALCULATION ===');
-
-  return {
-    apiCost: totalApiCost,
-    platformFee,
-    totalCost,
-    breakdown
-  };
-}
-
-export function getCostEmoji(category: ModelPricing['costCategory']): string {
+export function getCostEmoji(category: string): string {
   switch (category) {
-    case 'budget': return '🟢';
-    case 'standard': return '🔵';
-    case 'premium': return '🟣';
-    case 'luxury': return '⚫';
+    case 'budget': return '💰';
+    case 'standard': return '📊';
+    case 'premium': return '⭐';
+    case 'luxury': return '💎';
     case 'flagship': return '🚀';
+    default: return '📊';
   }
-}
-
-export function formatCost(cost: number | null | undefined): string {
-  if (cost === null || cost === undefined) return '$0.00';
-  if (cost === 0) return 'Free';
-  if (cost < 0.01) return `$${(cost * 100).toFixed(2)}¢`;
-  return `$${cost.toFixed(3)}`;
 }

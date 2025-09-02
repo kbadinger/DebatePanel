@@ -5,7 +5,7 @@ import { useSession } from 'next-auth/react';
 import { DebateConfig, Model, ModelProvider } from '@/types/debate';
 import { DebateInterface } from '@/components/debate/DebateInterface';
 import { ExampleDebateResult } from '@/components/debate/ExampleDebateResult';
-import { AVAILABLE_MODELS } from '@/lib/models/config';
+import { AVAILABLE_MODELS, MODEL_TIERS } from '@/lib/models/config';
 import { calculateDebateCost, formatCost } from '@/lib/models/pricing';
 import { calculateContextRequirements, analyzePanelDiversity, getSmartRecommendations } from '@/lib/context-analysis';
 import { analyzeTopicSafety, getTopicSuggestions } from '@/lib/topic-filter';
@@ -35,48 +35,35 @@ export default function Home() {
       });
   }, []);
   
-  // Filter models based on configured providers
+  // Filter models based on configured providers and tier them
   const availableModels = AVAILABLE_MODELS.filter(model => 
     configuredProviders.includes(model.provider)
   );
   
-  // Define recommended models (filtered by available)
-  const recommendedModelIds = [
-    'gpt-5',
-    'o3',
-    'gpt-5-mini',
-    'claude-opus-4-1-20250805',
-    'gemini-2.5-pro',
-    'o1',
-    'claude-sonnet-4-20250514',
-    'o3-mini',
-    'gemini-2.5-flash',
-    'grok-4',
-    'o1-mini',
-    'gpt-5-nano',
-    'gemini-1.5-pro',
-    'deepseek-chat'
-  ];
+  // Separate into tiers based on availability
+  const availablePrimaryModels = MODEL_TIERS.primary.filter(model => 
+    configuredProviders.includes(model.provider)
+  );
   
-  const recommendedModels = recommendedModelIds
-    .map(id => availableModels.find(m => m.id === id))
-    .filter(Boolean) as Model[];
+  const availableSecondaryModels = MODEL_TIERS.secondary.filter(model => 
+    configuredProviders.includes(model.provider)
+  );
     
   const [config, setConfig] = useState<DebateConfig>({
     topic: '',
     description: '',
     models: [
-      availableModels.find(m => m.id === 'o3'),
+      availableModels.find(m => m.id === 'gpt-4o'),
       availableModels.find(m => m.id === 'claude-opus-4-1-20250805'),
       availableModels.find(m => m.id === 'gemini-2.5-pro')
-    ].filter(Boolean) as Model[], // Default to top model from each major provider
+    ].filter(Boolean) as Model[], // Default to top primary tier models
     rounds: 3, // Ensure this is always a valid number
     format: 'structured',
     style: 'consensus-seeking', // Default to consensus-seeking
     convergenceThreshold: 0.75,
     judge: {
       enabled: true,
-      model: availableModels.find(m => m.id === 'claude-sonnet-4-20250514') || availableModels[0]
+      model: availableModels.find(m => m.id === 'claude-4-sonnet-20250522') || availableModels[0]
     }
   });
 
@@ -407,19 +394,19 @@ Option 3 - Hybrid Model:
               </div>
             ) : (
               <>
-            {/* Recommended Models */}
+            {/* Primary Tier Models */}
             <div className="mb-4">
               <div className="flex items-center justify-between mb-2">
-                <div className="text-xs font-medium text-slate-600 uppercase tracking-wide">Popular Choices</div>
+                <div className="text-xs font-medium text-slate-600 uppercase tracking-wide">Latest Models (September 2025)</div>
                 <div className="flex items-center gap-3 text-xs text-slate-500">
-                  <span className="flex items-center gap-1">🟢 Budget</span>
-                  <span className="flex items-center gap-1">🔵 Standard</span>
-                  <span className="flex items-center gap-1">🟣 Premium</span>
-                  <span className="flex items-center gap-1">⚫ Luxury</span>
+                  <span className="flex items-center gap-1">💰 Budget</span>
+                  <span className="flex items-center gap-1">📊 Standard</span>
+                  <span className="flex items-center gap-1">⭐ Premium</span>
+                  <span className="flex items-center gap-1">🚀 Flagship</span>
                 </div>
               </div>
               <div className="space-y-1 bg-blue-50 rounded-lg p-2">
-                {recommendedModels.map((model) => (
+                {availablePrimaryModels.map((model) => (
                   <label key={model.id} className="block p-2 rounded hover:bg-blue-100 cursor-pointer transition-colors">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center">
