@@ -38,10 +38,10 @@ export function ModelResponseCard({ response, isStreaming, debateId }: ModelResp
     }
     
     try {
-      const response = await fetch(`/api/debate/${debateId}/download-response?modelId=${response.modelId}&round=${response.round}`);
-      if (!response.ok) throw new Error('Download failed');
+      const downloadResponse = await fetch(`/api/debate/${debateId}/download-response?modelId=${response.modelId}&round=${response.round}`);
+      if (!downloadResponse.ok) throw new Error('Download failed');
       
-      const blob = await response.blob();
+      const blob = await downloadResponse.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
