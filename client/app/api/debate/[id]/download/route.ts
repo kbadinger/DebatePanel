@@ -38,6 +38,17 @@ export async function GET(
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
+    // Debug: Log the debate structure
+    console.log('Debate structure for download:', {
+      id: debate.id,
+      hasConfig: !!debate.config,
+      config: debate.config,
+      topic: debate.topic,
+      description: debate.description,
+      status: debate.status,
+      roundsCount: debate.debateRounds?.length
+    });
+
     // Generate markdown content
     const markdown = generateDebateMarkdown(debate);
 
@@ -60,23 +71,29 @@ export async function GET(
 function generateDebateMarkdown(debate: any): string {
   const createdAt = new Date(debate.createdAt).toLocaleString();
   
-  let markdown = `# ${debate.config.topic}\n\n`;
-  markdown += `**Description:** ${debate.config.description}\n\n`;
+  // Safely access config properties
+  const config = debate.config || {};
+  const topic = config.topic || debate.topic || 'Debate Topic';
+  const description = config.description || debate.description || 'No description available';
+  const models = config.models || [];
+  
+  let markdown = `# ${topic}\n\n`;
+  markdown += `**Description:** ${description}\n\n`;
   markdown += `**Date:** ${createdAt}\n\n`;
   markdown += `**Status:** ${debate.status}\n\n`;
-  markdown += `**Models:** ${debate.config.models.map((m: any) => m.displayName).join(', ')}\n\n`;
+  markdown += `**Models:** ${models.map((m: any) => m.displayName || m.name || m.id).join(', ')}\n\n`;
   markdown += `---\n\n`;
 
   // Add each round
-  for (const round of debate.debateRounds) {
+  for (const round of debate.debateRounds || []) {
     markdown += `## Round ${round.roundNumber}\n\n`;
     
-    for (const response of round.responses) {
-      const model = debate.config.models.find((m: any) => m.id === response.modelId);
-      markdown += `### ${model?.displayName || response.modelId}\n\n`;
-      markdown += `**Position:** ${response.position}\n\n`;
-      markdown += `**Confidence:** ${response.confidence}%\n\n`;
-      markdown += `${response.content}\n\n`;
+    for (const response of round.responses || []) {
+      const model = models.find((m: any) => m.id === response.modelId);
+      markdown += `### ${model?.displayName || model?.name || response.modelId}\n\n`;
+      markdown += `**Position:** ${response.position || 'Unknown'}\n\n`;
+      markdown += `**Confidence:** ${response.confidence || 0}%\n\n`;
+      markdown += `${response.content || 'No content available'}\n\n`;
       markdown += `---\n\n`;
     }
   }
