@@ -10,6 +10,23 @@ import { authOptions } from '@/auth';
 
 const prisma = new PrismaClient();
 
+// Helper function to safely encode JSON for SSE
+function safeSSEEncode(data: any): string {
+  try {
+    // First stringify to handle any special characters
+    let jsonString = JSON.stringify(data);
+    
+    // Extra safety: ensure no raw newlines that could break SSE format
+    jsonString = jsonString.replace(/\n/g, '\\n').replace(/\r/g, '\\r');
+    
+    return `data: ${jsonString}\n\n`;
+  } catch (error) {
+    console.error('Failed to encode SSE data:', error);
+    // Return a safe error message
+    return `data: ${JSON.stringify({ type: 'error', message: 'Encoding error' })}\n\n`;
+  }
+}
+
 export async function POST(req: NextRequest) {
   // Apply rate limiting for debates
   const rateLimitResult = RATE_LIMITS.debate(req);
@@ -48,10 +65,10 @@ export async function POST(req: NextRequest) {
             });
             
             if (!user) {
-              controller.enqueue(encoder.encode(`data: ${JSON.stringify({
+              controller.enqueue(encoder.encode(safeSSEEncode({
                 type: 'error',
                 error: 'User not found.'
-              })}\n\n`));
+              })));
               controller.close();
               return;
             }
@@ -59,10 +76,10 @@ export async function POST(req: NextRequest) {
             // Skip balance check for admin users
             if (!user.isAdmin) {
               if (!user.subscription) {
-                controller.enqueue(encoder.encode(`data: ${JSON.stringify({
+                controller.enqueue(encoder.encode(safeSSEEncode({
                   type: 'error',
                   error: 'No subscription found. Please sign up for a plan.'
-                })}\n\n`));
+                })));
                 controller.close();
                 return;
               }
@@ -75,10 +92,10 @@ export async function POST(req: NextRequest) {
               }, 0) * 1.3; // Add 30% platform fee
               
               if (user.subscription.currentBalance < estimatedCost) {
-                controller.enqueue(encoder.encode(`data: ${JSON.stringify({
+                controller.enqueue(encoder.encode(safeSSEEncode({
                   type: 'error',
                   error: `Insufficient credits. Estimated cost: $${estimatedCost.toFixed(2)}, Available: $${user.subscription.currentBalance.toFixed(2)}`
-                })}\n\n`));
+                })));
                 controller.close();
                 return;
               }
@@ -132,10 +149,10 @@ export async function POST(req: NextRequest) {
         // Add a global timeout for the entire debate (5 minutes per round)
         const debateTimeout = setTimeout(() => {
           console.error('Debate timeout - taking too long');
-          controller.enqueue(encoder.encode(`data: ${JSON.stringify({
+          controller.enqueue(encoder.encode(safeSSEEncode({
             type: 'error',
             data: { message: 'Debate timeout - the debate took too long to complete' }
-          })}\n\n`));
+          })));
           controller.close();
         }, config.rounds * 5 * 60 * 1000);
         
@@ -151,9 +168,7 @@ export async function POST(req: NextRequest) {
               type: 'response',
               data: response,
             };
-            // Properly escape JSON to prevent parsing errors
-          const jsonString = JSON.stringify(update);
-          controller.enqueue(encoder.encode(`data: ${jsonString}\n\n`));
+            controller.enqueue(encoder.encode(safeSSEEncode(update)));
           }
           
           // Stream round completion
@@ -161,7 +176,7 @@ export async function POST(req: NextRequest) {
             type: 'round-complete',
             data: round,
           };
-          controller.enqueue(encoder.encode(`data: ${JSON.stringify(roundUpdate)}\n\n`));
+          controller.enqueue(encoder.encode(safeSSEEncode(roundUpdate)));
           
           // If interactive mode, wait for human input after first round
           if (config.isInteractive && i === 1 && userId) {
@@ -175,10 +190,10 @@ export async function POST(req: NextRequest) {
             });
             
             // Signal that we're waiting for human input
-            controller.enqueue(encoder.encode(`data: ${JSON.stringify({
+            controller.enqueue(encoder.encode(safeSSEEncode({
               type: 'waiting-for-human',
               data: {}
-            })}\n\n`));
+            })));
             
             // Close this stream - human input will continue via separate endpoint
             debate.status = 'waiting-for-human';
@@ -375,7 +390,7 @@ export async function POST(req: NextRequest) {
           type: 'debate-complete',
           data: debate,
         };
-        controller.enqueue(encoder.encode(`data: ${JSON.stringify(finalUpdate)}\n\n`));
+        controller.enqueue(encoder.encode(safeSSEEncode(finalUpdate)));
         console.log('Final update streamed successfully');
         
         } catch (error) {
@@ -390,7 +405,7 @@ export async function POST(req: NextRequest) {
               code: error instanceof Error && 'code' in error ? (error as Error & { code?: string }).code : 'UNKNOWN_ERROR'
             }
           };
-          controller.enqueue(encoder.encode(`data: ${JSON.stringify(errorUpdate)}\n\n`));
+          controller.enqueue(encoder.encode(safeSSEEncode(errorUpdate)));
         } finally {
           logger?.endDebate();
           controller.close();
