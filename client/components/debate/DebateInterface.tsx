@@ -187,10 +187,28 @@ export function DebateInterface({ config, onComplete }: DebateInterfaceProps) {
             }
             
             if (data.type === 'response') {
+              console.log('Adding streaming response from:', data.data.modelId, 'round:', data.data.round);
               setStreamingResponses(prev => [...prev, data.data]);
             } else if (data.type === 'round-complete') {
+              console.log('Round complete:', data.data.roundNumber, 'Adding to debate state');
               setCurrentRound(data.data.roundNumber);
               setStreamingResponses([]);
+              
+              // Update the debate object with the completed round
+              setDebate(prevDebate => {
+                const updatedDebate = {
+                  ...prevDebate,
+                  id: prevDebate?.id || `temp-${Date.now()}`,
+                  status: 'running',
+                  config: prevDebate?.config || config,
+                  rounds: [
+                    ...(prevDebate?.rounds || []),
+                    data.data
+                  ]
+                };
+                console.log('Updated debate with round:', data.data.roundNumber, 'Total rounds:', updatedDebate.rounds.length);
+                return updatedDebate;
+              });
             } else if (data.type === 'waiting-for-human') {
               setWaitingForHuman(true);
               setStreamingResponses([]);
