@@ -139,7 +139,9 @@ export async function POST(req: NextRequest) {
           controller.close();
         }, config.rounds * 5 * 60 * 1000);
         
+        console.log(`Starting debate with ${config.rounds} rounds`);
         for (let i = 1; i <= config.rounds; i++) {
+          console.log(`Beginning round ${i} of ${config.rounds}`);
           const round = await orchestrator.runDebateRound(config, i, debate.rounds, dbDebate.id);
           debate.rounds.push(round);
           
@@ -193,17 +195,23 @@ export async function POST(req: NextRequest) {
               r.position === 'agree' || r.position === 'strongly-agree'
             ).length / round.responses.length;
             
+            console.log(`Round ${i} convergence check: ${agreementRate} vs threshold ${config.convergenceThreshold}`);
+            
             if (agreementRate >= config.convergenceThreshold) {
+              console.log('Debate converged early!');
               debate.status = 'converged';
               break;
             }
           }
+          
+          console.log(`Completed round ${i} of ${config.rounds}. Continuing: ${i < config.rounds}`);
         }
         
         // Clear the timeout since we're done
         clearTimeout(debateTimeout);
         
         // Generate final synthesis (even if some models failed)
+        console.log('Marking debate as completed. Total rounds:', debate.rounds.length, 'Expected:', config.rounds);
         debate.status = 'completed';
         debate.completedAt = new Date();
         
@@ -295,7 +303,8 @@ export async function POST(req: NextRequest) {
         // Then generate the statistical synthesis
         debate.finalSynthesis = generateSynthesis(debate);
         
-        console.log('Generated synthesis:', debate.finalSynthesis);
+        console.log('Generated synthesis length:', debate.finalSynthesis?.length || 0);
+        console.log('First 500 chars of synthesis:', debate.finalSynthesis?.substring(0, 500));
         
         // Log final synthesis
         logger.logFinalSynthesis(debate.finalSynthesis, debate.status);
@@ -344,11 +353,20 @@ export async function POST(req: NextRequest) {
         }
         
         // Stream final debate
+        console.log('Streaming final debate update with:', {
+          status: debate.status,
+          hasSynthesis: !!debate.finalSynthesis,
+          hasJudgeAnalysis: !!debate.judgeAnalysis,
+          synthesisLength: debate.finalSynthesis?.length,
+          rounds: debate.rounds.length
+        });
+        
         const finalUpdate: DebateStreamUpdate = {
           type: 'debate-complete',
           data: debate,
         };
         controller.enqueue(encoder.encode(`data: ${JSON.stringify(finalUpdate)}\n\n`));
+        console.log('Final update streamed successfully');
         
         } catch (error) {
           console.error('Debate stream error:', error);
