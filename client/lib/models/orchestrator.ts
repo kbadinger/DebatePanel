@@ -763,9 +763,9 @@ Confidence: [0-100]% confident in this stance`;
     const lastRound = previousRounds[previousRounds.length - 1];
     
     if (roundNumber === config.rounds) {
-      // Final round - force a conclusion
+      // Final round - force a conclusion  
       return `${basePrompt}\n\nFINAL ROUND - DECISIVE CONCLUSION REQUIRED\n\nPrevious arguments:\n${
-        lastRound.responses.map(r => `- ${r.modelId}: ${r.content.substring(0, 200)}...`).join('\n\n')
+        lastRound.responses.map(r => `- ${r.modelId}: ${r.content}`).join('\n\n')
       }\n\nThis is the FINAL round. You MUST:
 1. Weigh all arguments presented
 2. Declare which position is STRONGEST based on evidence
@@ -775,7 +775,7 @@ Confidence: [0-100]% confident in this stance`;
     }
     
     return `${basePrompt}\n\nRound ${roundNumber}: PUSH TOWARD CONCLUSION\n\nPrevious arguments:\n${
-      lastRound.responses.map(r => `- ${r.modelId}: ${r.content.substring(0, 200)}...`).join('\n\n')
+      lastRound.responses.map(r => `- ${r.modelId}: ${r.content}`).join('\n\n')
     }\n\nYour task:
 1. Identify the STRONGEST and WEAKEST arguments so far
 2. Challenge vague "balanced" positions - demand specifics
@@ -946,7 +946,7 @@ Confidence: [0-100]% confident in this stance`;
       position: r.position,
       stance: r.stance || 'Not specified',
       confidence: r.confidence,
-      keyPoint: r.content.substring(0, 200),
+      keyPoint: r.content, // CRITICAL FIX: Use full content, not truncated
       isHuman: r.isHuman || false
     }));
 
@@ -960,7 +960,7 @@ ${p.model}:
 - Position: ${p.position}
 - Stance: ${p.stance}
 - Confidence: ${p.confidence}%
-- Key argument: ${p.keyPoint}...
+- Full Argument: ${p.keyPoint}
 `).join('\n')}
 
 Your PRIMARY task is to provide THE ANSWER:

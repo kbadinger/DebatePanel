@@ -343,8 +343,29 @@ export async function POST(req: NextRequest) {
           console.log('Generating judge analysis with:', judgeModel.displayName);
           
           try {
+            // CRITICAL FIX: Get FULL responses from database for judge analysis
+            // instead of using truncated in-memory data
+            console.log('Fetching full debate responses from database for judge analysis');
+            const fullDebateData = await prisma.debate.findUnique({
+              where: { id: dbDebate.id },
+              include: {
+                debateRounds: {
+                  include: {
+                    responses: true
+                  },
+                  orderBy: { roundNumber: 'asc' }
+                }
+              }
+            });
+            
+            if (!fullDebateData) {
+              throw new Error('Could not fetch full debate data for judge analysis');
+            }
+            
+            console.log(`Judge will analyze ${fullDebateData.debateRounds.length} rounds with full content`);
+            
             const judgeResult = await orchestrator.generateJudgeAnalysis(
-              debate.rounds,
+              fullDebateData.debateRounds, // Use full database content
               debate.config.topic,
               judgeModel,
               debate.config.style === 'consensus-seeking'
