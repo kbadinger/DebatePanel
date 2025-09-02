@@ -181,7 +181,7 @@ const FEATURED_MODELS: Model[] = [
     displayName: 'Claude Sonnet 3.7 (Feb 2025)'
   }),
   
-  // Google - Flagship Gemini Models (Discovered via API)
+  // Google - Flagship Gemini 2.5 Series (Latest Generation)
   withModelInfo({
     id: 'gemini-2.5-pro',
     provider: 'google',
@@ -193,12 +193,6 @@ const FEATURED_MODELS: Model[] = [
     provider: 'google',
     name: 'gemini-2.5-flash',
     displayName: 'Gemini 2.5 Flash'
-  }),
-  withModelInfo({
-    id: 'gemini-2.0-flash',
-    provider: 'google',
-    name: 'gemini-2.0-flash',
-    displayName: 'Gemini 2.0 Flash'
   }),
   
   // xAI - Flagship Grok Models (Discovered via API)
@@ -357,7 +351,13 @@ const SECONDARY_MODELS: Model[] = [
     displayName: 'o3 Mini'
   }),
   
-  // Google - Older Gemini
+  // Google - Legacy Gemini Models  
+  withModelInfo({
+    id: 'gemini-2.0-flash',
+    provider: 'google',
+    name: 'gemini-2.0-flash',
+    displayName: 'Gemini 2.0 Flash'
+  }),
   withModelInfo({
     id: 'gemini-1.5-pro',
     provider: 'google',
