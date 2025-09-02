@@ -207,7 +207,8 @@ export async function POST(req: NextRequest) {
           }
           
           // Check for convergence (only for agree/strongly-agree positions, not neutral)
-          if (round.consensus && config.convergenceThreshold) {
+          // But always complete at least the minimum rounds for a decisive answer
+          if (round.consensus && config.convergenceThreshold && i >= Math.min(3, config.rounds)) {
             const agreeCount = round.responses.filter(r => 
               r.position === 'agree' || r.position === 'strongly-agree'
             ).length;
@@ -218,12 +219,13 @@ export async function POST(req: NextRequest) {
               totalResponses: round.responses.length,
               agreementRate,
               threshold: config.convergenceThreshold,
-              willConverge: agreementRate >= config.convergenceThreshold
+              willConverge: agreementRate >= config.convergenceThreshold,
+              minRoundsReached: i >= Math.min(3, config.rounds)
             });
             
-            // Only converge if models actually agree, not if they're all neutral
+            // Only converge if models actually agree AND we've done enough rounds
             if (agreementRate >= config.convergenceThreshold) {
-              console.log('Debate converged early due to agreement consensus!');
+              console.log('Debate converged after sufficient rounds!');
               debate.status = 'converged';
               break;
             }
@@ -258,8 +260,8 @@ export async function POST(req: NextRequest) {
           totalResponses: debate.rounds.flatMap(r => r.responses).length
         });
         
-        // Generate judge analysis FIRST if enabled
-        if (debate.config.judge?.enabled) {
+        // Generate judge analysis FIRST if enabled (always run for decisive answer)
+        if (debate.config.judge?.enabled && debate.rounds.length >= 2) {
           const judgeModel = debate.config.judge.model || {
             id: 'claude-3-5-sonnet',
             provider: 'anthropic' as const,
