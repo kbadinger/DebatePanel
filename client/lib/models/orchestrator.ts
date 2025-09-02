@@ -73,6 +73,30 @@ Format your response as a clear argument with supporting points.`;
       ? this.buildSystemPrompt(model, previousResponses, config)
       : this.buildSystemPrompt(model, previousResponses, { style: 'consensus-seeking' } as DebateConfig);
     
+    // Check context limits before sending request
+    const contextCheck = this.checkContextLimits(model, prompt, systemPrompt);
+    
+    if (contextCheck.warningLevel === 'critical') {
+      this.logger.logError(`${model.displayName}: Critical context usage (${contextCheck.tokenUsage}/${contextCheck.contextLimit} tokens, ${Math.round(contextCheck.tokenUsage/contextCheck.contextLimit*100)}%)`);
+    } else if (contextCheck.warningLevel === 'warning') {
+      this.logger.log(`${model.displayName}: High context usage (${contextCheck.tokenUsage}/${contextCheck.contextLimit} tokens, ${Math.round(contextCheck.tokenUsage/contextCheck.contextLimit*100)}%)`);
+    }
+    
+    if (contextCheck.willExceed) {
+      this.logger.logError(`${model.displayName}: Estimated token usage (${contextCheck.tokenUsage}) exceeds context limit (${contextCheck.contextLimit})`);
+      
+      return {
+        modelId: model.id,
+        round: previousResponses.length > 0 ? Math.max(...previousResponses.map(r => r.round)) + 1 : 1,
+        content: `⚠️ Context limit exceeded for ${model.displayName}. Estimated token usage (${contextCheck.tokenUsage}) exceeds context limit (${contextCheck.contextLimit}). This model cannot participate in this round.`,
+        position: 'neutral',
+        confidence: 0,
+        timestamp: new Date(),
+        stance: 'Context Limit Exceeded',
+        consensusAlignment: 'independent'
+      };
+    }
+    
     let result: { text: string; usage?: { promptTokens?: number; completionTokens?: number } };
     
     // Retry logic with exponential backoff for overloaded errors
@@ -442,14 +466,9 @@ Format your response as a clear argument with supporting points.`;
         : basePrompt;
     }
     
-    // Round 2+ - different approaches based on style
-    const previousDebate = `\n\nPrevious debate points:\n${previousResponses
-      .filter(r => r.round === roundNumber - 1)
-      .map(r => {
-        const speaker = r.isHuman ? 'Human Participant' : r.modelId;
-        return `${speaker}: ${r.stance || 'No clear stance'} - ${r.content.substring(0, 200)}...`;
-      })
-      .join('\n\n')}`;
+    // Round 2+ - different approaches based on style with compressed context
+    const lastRoundResponses = previousResponses.filter(r => r.round === roundNumber - 1);
+    const previousDebate = `\n\nPrevious debate points:\n${this.compressPreviousResponses(lastRoundResponses, roundNumber)}`;
     
     let basePrompt = isAdversarial 
       ? this.buildAdversarialLaterRoundPrompt(roundNumber, hasHumanParticipant, previousDebate)
@@ -775,9 +794,9 @@ Confidence: [0-100]% confident in this stance`;
     const lastRound = previousRounds[previousRounds.length - 1];
     
     if (roundNumber === config.rounds) {
-      // Final round - force a conclusion  
+      // Final round - force a conclusion with compressed context to reduce tokens
       return `${basePrompt}\n\nFINAL ROUND - DECISIVE CONCLUSION REQUIRED\n\nPrevious arguments:\n${
-        lastRound.responses.map(r => `- ${r.modelId}: ${r.content}`).join('\n\n')
+        this.compressPreviousResponses(lastRound.responses, roundNumber)
       }\n\nThis is the FINAL round. You MUST:
 1. Weigh all arguments presented
 2. Declare which position is STRONGEST based on evidence
@@ -787,7 +806,7 @@ Confidence: [0-100]% confident in this stance`;
     }
     
     return `${basePrompt}\n\nRound ${roundNumber}: PUSH TOWARD CONCLUSION\n\nPrevious arguments:\n${
-      lastRound.responses.map(r => `- ${r.modelId}: ${r.content}`).join('\n\n')
+      this.compressPreviousResponses(lastRound.responses, roundNumber)
     }\n\nYour task:
 1. Identify the STRONGEST and WEAKEST arguments so far
 2. Challenge vague "balanced" positions - demand specifics
@@ -1094,11 +1113,60 @@ BE DECISIVE. The whole point of this debate was to get an answer, not to admire 
         const name = match[1].trim();
         const score = parseInt(match[2]);
         
-        // Find matching participant
-        const participant = participants.find(p => 
-          p.model.toLowerCase().includes(name.toLowerCase()) ||
-          name.toLowerCase().includes(p.model.toLowerCase())
-        );
+        // Find matching participant with improved model name matching
+        const participant = participants.find(p => {
+          const modelName = p.model.toLowerCase();
+          const scoreName = name.toLowerCase().trim();
+          
+          // Direct match
+          if (modelName === scoreName || modelName.includes(scoreName) || scoreName.includes(modelName)) {
+            return true;
+          }
+          
+          // Handle common model name variations
+          const normalizeModelName = (name: string) => {
+            return name
+              .replace(/[-.]/g, '') // Remove dashes and dots
+              .replace(/\s+/g, '') // Remove spaces
+              .replace(/mini$/, '') // Remove 'mini' suffix for matching
+              .replace(/\d{4}-\d{2}-\d{2}$/, '') // Remove date suffixes like 2025-08-07
+              .replace(/20\d{6}$/, '') // Remove date suffixes like 20241022
+              .toLowerCase();
+          };
+          
+          const normalizedModel = normalizeModelName(modelName);
+          const normalizedScore = normalizeModelName(scoreName);
+          
+          // Try normalized matching
+          if (normalizedModel === normalizedScore || 
+              normalizedModel.includes(normalizedScore) || 
+              normalizedScore.includes(normalizedModel)) {
+            return true;
+          }
+          
+          // Special handling for common model aliases
+          const aliases: Record<string, string[]> = {
+            'gpt5': ['gpt-5', 'gpt5', 'chatgpt5'],
+            'gpt4': ['gpt-4o', 'gpt4o', 'chatgpt4'],
+            'claude': ['claude-3', 'claude-4', 'claude-opus', 'claude-sonnet', 'claude-haiku'],
+            'gemini': ['gemini-1.5', 'gemini-2.0', 'gemini-2.5'],
+            'grok': ['grok-2', 'grok-3', 'grok-4'],
+            'o1': ['o1-preview', 'o1-mini'],
+            'o3': ['o3-mini'],
+            'deepseek': ['deepseek-v3', 'deepseek-r1', 'deepseek-chat', 'deepseek-reasoner']
+          };
+          
+          for (const [alias, models] of Object.entries(aliases)) {
+            if (normalizedScore.includes(alias)) {
+              return models.some(model => normalizedModel.includes(model));
+            }
+            if (normalizedModel.includes(alias)) {
+              return models.some(model => normalizedScore.includes(model));
+            }
+          }
+          
+          return false;
+        });
         
         if (participant && score >= 0 && score <= 100) {
           scores.push({
@@ -1150,42 +1218,256 @@ BE DECISIVE. The whole point of this debate was to get an answer, not to admire 
   }
 
   private calculateTimeout(model: Model, roundNumber: number, totalRounds: number): number {
-    // Base timeouts by model type
-    let baseTimeout = 45000; // 45 seconds default
+    // Increased base timeouts by ~50% to prevent Round 2+ timeouts
+    let baseTimeout = 70000; // 70 seconds default (was 45s)
     
-    // Reasoning models need more time
+    // Reasoning models need significantly more time
     if (model.name.includes('o1') || model.name.includes('o3') || model.name.includes('deepseek-r1')) {
-      baseTimeout = 90000; // 90 seconds for reasoning models
+      baseTimeout = 120000; // 120 seconds for reasoning models (was 90s)
     }
     // X.AI and GPT-5 are historically slow
     else if (model.provider === 'xai' || model.name === 'gpt-5') {
-      baseTimeout = 75000; // 75 seconds
+      baseTimeout = 100000; // 100 seconds (was 75s)
     }
-    // Claude models are generally fast
+    // Claude models are generally fast but need more time for complex rounds
     else if (model.provider === 'anthropic') {
-      baseTimeout = 35000; // 35 seconds
+      baseTimeout = 60000; // 60 seconds (was 35s)
     }
     // Gemini models - Pro versions need more time
     else if (model.provider === 'google') {
       if (model.name.includes('pro')) {
-        baseTimeout = 60000; // 60 seconds for Pro models
+        baseTimeout = 90000; // 90 seconds for Pro models (was 60s)
       } else {
-        baseTimeout = 40000; // 40 seconds for Flash models
+        baseTimeout = 60000; // 60 seconds for Flash models (was 40s)
       }
     }
     
-    // Increase timeout for later rounds (more context to process)
-    const roundMultiplier = 1 + (roundNumber - 1) * 0.15; // 15% increase per round
+    // More aggressive timeout scaling for later rounds (25% vs 15%)
+    const roundMultiplier = 1 + (roundNumber - 1) * 0.25; // 25% increase per round
     
-    // Increase timeout for longer debates (accumulated context)
-    const contextMultiplier = 1 + (totalRounds) * 0.1; // 10% increase per previous round
+    // Increased context multiplier for accumulated context (20% vs 10%)
+    const contextMultiplier = 1 + (totalRounds) * 0.2; // 20% increase per previous round
+    
+    // Special handling for Round 2 - known bottleneck gets extra buffer
+    let round2Buffer = 1.0;
+    if (roundNumber === 2) {
+      round2Buffer = 1.3; // 30% extra time for Round 2
+    }
     
     const finalTimeout = Math.min(
-      baseTimeout * roundMultiplier * contextMultiplier,
-      150000 // Cap at 2.5 minutes max
+      baseTimeout * roundMultiplier * contextMultiplier * round2Buffer,
+      240000 // Increased cap to 4 minutes max (was 2.5 minutes)
     );
     
     return Math.round(finalTimeout);
+  }
+
+  /**
+   * Extract key points from a model response for compressed context
+   * Significantly reduces token usage while preserving essential information
+   */
+  private extractKeyPoints(content: string, maxTokens: number = 100): string {
+    // If content is already short enough, return as-is
+    if (content.length <= maxTokens * 3) { // Rough 3 chars per token
+      return content;
+    }
+
+    // Split into sentences
+    const sentences = content.split(/[.!?]+/).filter(s => s.trim().length > 10);
+    
+    // Priority phrases that indicate important points
+    const importantIndicators = [
+      'my position is', 'i believe', 'the key issue', 'most important',
+      'critical factor', 'main concern', 'primary risk', 'fundamental problem',
+      'evidence shows', 'data suggests', 'research indicates', 'studies show',
+      'therefore', 'conclude', 'recommend', 'propose', 'solution',
+      'disagree with', 'agree with', 'strongly', 'absolutely', 'clearly'
+    ];
+    
+    // Score sentences by importance
+    const scoredSentences = sentences.map(sentence => {
+      let score = 0;
+      const lower = sentence.toLowerCase();
+      
+      // Boost for important indicators
+      for (const indicator of importantIndicators) {
+        if (lower.includes(indicator)) {
+          score += 10;
+        }
+      }
+      
+      // Boost for being near the end (conclusions)
+      const position = sentences.indexOf(sentence) / sentences.length;
+      if (position > 0.7) score += 5;
+      
+      // Boost for length (substantial sentences)
+      if (sentence.length > 50) score += 2;
+      
+      // Penalty for very long sentences (may be rambling)
+      if (sentence.length > 200) score -= 3;
+      
+      return { sentence: sentence.trim(), score };
+    });
+    
+    // Sort by score and take top sentences that fit within token limit
+    scoredSentences.sort((a, b) => b.score - a.score);
+    
+    let result = '';
+    let tokenCount = 0;
+    const targetTokens = maxTokens * 3; // Convert to characters
+    
+    for (const { sentence } of scoredSentences) {
+      const sentenceWithSpace = sentence + '. ';
+      if (tokenCount + sentenceWithSpace.length <= targetTokens) {
+        result += sentenceWithSpace;
+        tokenCount += sentenceWithSpace.length;
+      }
+    }
+    
+    // If we got nothing (unlikely), take first sentence
+    if (!result && sentences.length > 0) {
+      result = sentences[0].substring(0, targetTokens - 3) + '...';
+    }
+    
+    return result.trim();
+  }
+
+  /**
+   * Improved token estimation for better cost/context tracking
+   */
+  private estimateTokens(text: string): number {
+    // More accurate estimation based on GPT tokenizer patterns
+    // Average: ~4 characters per token for English text
+    // Adjust for code, punctuation, and special chars
+    let baseTokens = Math.ceil(text.length / 4);
+    
+    // Adjust for token-heavy content
+    const codePatterns = text.match(/```[\s\S]*?```/g) || [];
+    const punctuationCount = (text.match(/[.,;:!?()[\]{}]/g) || []).length;
+    const numberCount = (text.match(/\d+/g) || []).length;
+    
+    // Code blocks are typically more token-dense
+    baseTokens += codePatterns.length * 10;
+    
+    // Punctuation and numbers add token overhead
+    baseTokens += Math.ceil(punctuationCount * 0.3);
+    baseTokens += Math.ceil(numberCount * 0.2);
+    
+    return Math.max(baseTokens, Math.ceil(text.length / 6)); // Minimum realistic estimate
+  }
+
+  /**
+   * Check if prompt will exceed model context limits
+   */
+  private checkContextLimits(model: Model, prompt: string, systemPrompt: string): {
+    willExceed: boolean;
+    tokenUsage: number;
+    contextLimit: number;
+    warningLevel: 'safe' | 'warning' | 'critical';
+  } {
+    const totalPromptTokens = this.estimateTokens(prompt + systemPrompt);
+    const contextLimit = this.getModelContextLimit(model);
+    const usagePercent = totalPromptTokens / contextLimit;
+    
+    let warningLevel: 'safe' | 'warning' | 'critical' = 'safe';
+    if (usagePercent > 0.9) {
+      warningLevel = 'critical';
+    } else if (usagePercent > 0.7) {
+      warningLevel = 'warning';
+    }
+    
+    return {
+      willExceed: totalPromptTokens > contextLimit * 0.95, // 95% threshold
+      tokenUsage: totalPromptTokens,
+      contextLimit,
+      warningLevel
+    };
+  }
+
+  /**
+   * Get context limit for a specific model
+   */
+  private getModelContextLimit(model: Model): number {
+    // Model context limits (input tokens)
+    const limits: Record<string, number> = {
+      // OpenAI
+      'gpt-4o': 128000,
+      'gpt-4o-mini': 128000,
+      'gpt-5': 1000000, // 1M context
+      'gpt-5-2025-08-07': 1000000,
+      'o1': 200000,
+      'o1-mini': 128000,
+      'o3': 1000000,
+      'o3-mini': 200000,
+      'o4-mini': 200000,
+      
+      // Anthropic
+      'claude-3-5-sonnet-20241022': 200000,
+      'claude-3-5-haiku-20241022': 200000,
+      'claude-3-opus-20240229': 200000,
+      'claude-opus-4-1-20250805': 200000,
+      'claude-sonnet-4-20250514': 200000,
+      
+      // Google
+      'gemini-1.5-pro': 2000000, // 2M context
+      'gemini-1.5-flash': 1000000,
+      'gemini-2.0-flash': 1000000,
+      'gemini-2.5-pro': 2000000,
+      'gemini-2.5-flash': 1000000,
+      
+      // xAI
+      'grok-2': 131072,
+      'grok-3': 131072,
+      'grok-4': 200000,
+      
+      // DeepSeek
+      'deepseek-v3.1': 128000,
+      'deepseek-r1-0528': 200000,
+      'deepseek-chat': 128000,
+      'deepseek-reasoner': 200000,
+      
+      // Mistral
+      'mistral-large-latest': 32768,
+      'mistral-small-latest': 32768,
+      
+      // Perplexity
+      'sonar-pro': 28000,
+      'sonar-reasoning-pro': 28000,
+      
+      // AIML
+      'kimi-k2-preview': 200000,
+      'kimi-k1.5': 200000,
+    };
+    
+    return limits[model.name] || 32000; // Default fallback
+  }
+
+  /**
+   * Compress previous round responses based on round number
+   * Round 1: Full responses (baseline context)
+   * Round 2: Compressed to key points (50% reduction)
+   * Round 3+: Stance + top arguments only (75% reduction)
+   */
+  private compressPreviousResponses(responses: ModelResponse[], roundNumber: number): string {
+    if (roundNumber === 1 || responses.length === 0) {
+      // First round or no responses - return full context
+      return responses.map(r => `- ${r.modelId}: ${r.content}`).join('\n\n');
+    }
+    
+    if (roundNumber === 2) {
+      // Second round - compress to key points (50% token reduction target)
+      return responses.map(r => {
+        const compressed = this.extractKeyPoints(r.content, 150); // ~150 tokens
+        return `- ${r.modelId} (${r.position}, ${r.confidence}% confident): ${compressed}`;
+      }).join('\n\n');
+    }
+    
+    // Round 3+ - aggressive compression (75% token reduction target)
+    return responses.map(r => {
+      const keyPoint = this.extractKeyPoints(r.content, 50); // ~50 tokens max
+      const stance = r.stance || 'No clear stance';
+      return `- ${r.modelId}: ${stance} | ${keyPoint}`;
+    }).join('\n');
   }
 
   private getFallbackModel(model: Model, attempt: number): string {

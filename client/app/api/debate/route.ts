@@ -92,6 +92,42 @@ export async function POST(req: NextRequest) {
     
     console.log('Received debate config:', JSON.stringify(config, null, 2));
     
+    // Validate model count to prevent system overload
+    const maxModels = 6; // Focused limit for optimal performance
+    const maxPerProvider = 2; // Prevent rate limiting from single provider
+    
+    if (config.models && config.models.length > maxModels) {
+      return new Response(JSON.stringify({
+        error: `Too many models selected. Maximum allowed: ${maxModels}, selected: ${config.models.length}`,
+        details: 'Focus on 4-6 diverse models for best performance. Too many models cause rate limiting, timeouts, and excessive costs.'
+      }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+    
+    // Check per-provider limits to prevent rate limiting
+    if (config.models) {
+      const providerCounts = config.models.reduce((acc, model) => {
+        acc[model.provider] = (acc[model.provider] || 0) + 1;
+        return acc;
+      }, {} as Record<string, number>);
+      
+      const overLimitProviders = Object.entries(providerCounts)
+        .filter(([_, count]) => count > maxPerProvider)
+        .map(([provider, count]) => `${provider} (${count})`);
+        
+      if (overLimitProviders.length > 0) {
+        return new Response(JSON.stringify({
+          error: `Too many models from same provider(s): ${overLimitProviders.join(', ')}`,
+          details: `Maximum ${maxPerProvider} models per provider to avoid rate limiting. Diversify across providers for better perspectives.`
+        }), {
+          status: 400,
+          headers: { 'Content-Type': 'application/json' }
+        });
+      }
+    }
+    
     const encoder = new TextEncoder();
     let logger: DebateLogger | null = null;
     

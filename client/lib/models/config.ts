@@ -264,21 +264,11 @@ const EXPANDABLE_MODELS: Record<string, Model[]> = {
       provider: 'google',
       name: 'gemini-2.5-flash-lite',
       displayName: 'Gemini 2.5 Flash Lite'
-    }),
-    withModelInfo({
-      id: 'gemini-2.0-flash',
-      provider: 'google',
-      name: 'gemini-2.0-flash',
-      displayName: 'Gemini 2.0 Flash'
     })
+    // gemini-2.0-flash is in FEATURED_MODELS - don't duplicate here
   ],
   xai: [
-    withModelInfo({
-      id: 'grok-3',
-      provider: 'xai',
-      name: 'grok-3',
-      displayName: 'Grok 3'
-    })
+    // Grok 3 is already in FEATURED_MODELS - additional models would go here
   ],
   perplexity: [
     withModelInfo({
@@ -352,12 +342,6 @@ const SECONDARY_MODELS: Model[] = [
   }),
   
   // Google - Legacy Gemini Models  
-  withModelInfo({
-    id: 'gemini-2.0-flash',
-    provider: 'google',
-    name: 'gemini-2.0-flash',
-    displayName: 'Gemini 2.0 Flash'
-  }),
   withModelInfo({
     id: 'gemini-1.5-pro',
     provider: 'google',

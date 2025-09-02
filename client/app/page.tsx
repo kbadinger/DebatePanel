@@ -383,7 +383,14 @@ Option 3 - Hybrid Model:
           
           <div className="mb-4">
             <label className="block text-sm font-semibold text-slate-700 mb-2">
-              Select Models ({config.models.length} selected)
+              Select Models ({config.models.length}/6 selected, max 2 per provider)
+              {config.models.length >= 5 && (
+                <span className={`ml-2 text-xs font-medium ${
+                  config.models.length >= 6 ? 'text-red-600' : 'text-amber-600'
+                }`}>
+                  {config.models.length >= 6 ? '⚠️ Maximum reached' : '⚠️ Approaching limit'}
+                </span>
+              )}
             </label>
             
             {availableModels.length === 0 ? (
@@ -413,6 +420,18 @@ Option 3 - Hybrid Model:
                           checked={config.models.some(m => m.id === model.id)}
                           onChange={(e) => {
                             if (e.target.checked) {
+                              if (config.models.length >= 6) {
+                                alert('Maximum 6 models allowed. Focus on diverse models across different providers for best performance.');
+                                return;
+                              }
+                              
+                              // Check provider limit (max 2 per provider)
+                              const providerCount = config.models.filter(m => m.provider === model.provider).length;
+                              if (providerCount >= 2) {
+                                alert(`Maximum 2 models per provider (${model.provider}). Try selecting from different providers for diverse perspectives.`);
+                                return;
+                              }
+                              
                               setConfig({ ...config, models: [...config.models, model] });
                             } else {
                               setConfig({ ...config, models: config.models.filter(m => m.id !== model.id) });
@@ -484,6 +503,18 @@ Option 3 - Hybrid Model:
                                   checked={config.models.some(m => m.id === model.id)}
                                   onChange={(e) => {
                                     if (e.target.checked) {
+                                      if (config.models.length >= 6) {
+                                        alert('Maximum 6 models allowed. Focus on diverse models across different providers for best performance.');
+                                        return;
+                                      }
+                                      
+                                      // Check provider limit (max 2 per provider)
+                                      const providerCount = config.models.filter(m => m.provider === model.provider).length;
+                                      if (providerCount >= 2) {
+                                        alert(`Maximum 2 models per provider (${model.provider}). Try selecting from different providers for diverse perspectives.`);
+                                        return;
+                                      }
+                                      
                                       setConfig({ ...config, models: [...config.models, model] });
                                     } else {
                                       setConfig({ ...config, models: config.models.filter(m => m.id !== model.id) });
