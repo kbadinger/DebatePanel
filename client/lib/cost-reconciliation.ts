@@ -128,8 +128,24 @@ export class CostReconciliation {
         throw new Error(`OpenAI Usage API error: ${response.status} ${response.statusText}`);
       }
 
-      const data: OpenAIUsageResponse[] = await response.json();
-      console.log(`[COST FETCH] OpenAI returned ${data.length} usage buckets`);
+      const data = await response.json();
+      console.log(`[COST FETCH] OpenAI response structure:`, JSON.stringify(data, null, 2));
+
+      // Handle different possible response formats
+      let buckets: OpenAIUsageResponse[] = [];
+      if (Array.isArray(data)) {
+        buckets = data;
+      } else if (data.data && Array.isArray(data.data)) {
+        buckets = data.data;
+      } else if (data.object && data.results) {
+        // Single bucket response
+        buckets = [data];
+      } else {
+        console.error('[COST FETCH] Unexpected OpenAI response format:', data);
+        throw new Error('Unexpected OpenAI API response format');
+      }
+
+      console.log(`[COST FETCH] OpenAI returned ${buckets.length} usage buckets`);
 
       // OpenAI model pricing (as of Jan 2025) - cost per 1K tokens
       const pricing: OpenAIModelPricing = {
@@ -162,7 +178,7 @@ export class CostReconciliation {
 
       let totalCost = 0;
 
-      for (const bucket of data) {
+      for (const bucket of buckets) {
         for (const result of bucket.results) {
           const model = result.model || 'unknown';
           const modelPricing = pricing[model];
