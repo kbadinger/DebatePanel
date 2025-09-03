@@ -86,26 +86,76 @@ export class CostReconciliation {
   private openaiAdminKey: string;
   private openaiProjectId: string;
   private anthropicApiKey: string;
+  private anthropicAdminKey: string;
 
   constructor() {
     this.openaiAdminKey = process.env.OPENAI_ADMIN_API_KEY!;
     this.openaiProjectId = process.env.OPENAI_PROJECT_ID!;
     this.anthropicApiKey = process.env.ANTHROPIC_API_KEY!;
+    this.anthropicAdminKey = process.env.ANTHROPIC_ADMIN_API_KEY!;
 
     if (!this.openaiAdminKey) throw new Error('OPENAI_ADMIN_API_KEY not found');
     if (!this.openaiProjectId) throw new Error('OPENAI_PROJECT_ID not found');
-    if (!this.anthropicApiKey) throw new Error('ANTHROPIC_API_KEY not found');
+    if (!this.anthropicAdminKey) throw new Error('ANTHROPIC_ADMIN_API_KEY not found');
   }
 
   /**
    * Fetch usage data from OpenAI Usage API and calculate costs using pricing
    */
-  async fetchOpenAICosts(startDate: Date, endDate: Date): Promise<CostReconciliationResult> {
+  async fetchOpenAICosts(startDate: Date, endDate: Date, force = false): Promise<CostReconciliationResult> {
     try {
       const startTimestamp = Math.floor(startDate.getTime() / 1000);
       const endTimestamp = Math.floor(endDate.getTime() / 1000);
 
       console.log(`[COST FETCH] Fetching OpenAI usage data from ${startDate.toISOString()} to ${endDate.toISOString()}`);
+
+      // Check if we've already fetched data for this date range
+      const existingFetches = await prisma.usageRecord.findMany({
+        where: {
+          modelProvider: 'openai',
+          providerCostFetched: true,
+          providerCostFetchedAt: {
+            gte: startDate,
+            lte: endDate,
+          },
+        },
+        select: {
+          providerCostFetchedAt: true,
+          modelId: true,
+        },
+      });
+
+      // Check if we have comprehensive coverage for this date range
+      const daysCovered = new Set(
+        existingFetches.map(record => 
+          record.providerCostFetchedAt?.toISOString().split('T')[0]
+        ).filter(Boolean)
+      );
+
+      const totalDays = Math.ceil((endDate.getTime() - startDate.getTime()) / (24 * 60 * 60 * 1000));
+      const coveragePercentage = daysCovered.size / totalDays;
+
+      if (coveragePercentage > 0.8 && !force) {
+        console.log(`[COST FETCH] OpenAI data already exists for ${Math.round(coveragePercentage * 100)}% of date range (${daysCovered.size}/${totalDays} days)`);
+        console.log(`[COST FETCH] Skipping fetch to prevent duplicates. Use force=true to override.`);
+        
+        return {
+          provider: 'openai',
+          totalFetched: existingFetches.length,
+          totalCostUSD: 0,
+          matched: existingFetches.length,
+          unmatched: 0,
+          updated: 0,
+          costs: existingFetches.map(record => ({
+            timestamp: record.providerCostFetchedAt?.toISOString() || new Date().toISOString(),
+            model: record.modelId,
+            cost: 0,
+            tokens: { input: 0, output: 0 },
+            matched: true,
+            usageRecordId: 'existing'
+          })),
+        };
+      }
 
       // OpenAI Usage API endpoint - for detailed usage with model breakdown
       const url = `https://api.openai.com/v1/organization/usage/completions`;
@@ -309,9 +359,66 @@ export class CostReconciliation {
   /**
    * Fetch actual costs from Anthropic Cost API
    */
-  async fetchAnthropicCosts(startDate: Date, endDate: Date): Promise<CostReconciliationResult> {
+  async fetchAnthropicCosts(startDate: Date, endDate: Date, force = false): Promise<CostReconciliationResult> {
     try {
       console.log(`[COST FETCH] Fetching Anthropic costs from ${startDate.toISOString()} to ${endDate.toISOString()}`);
+      console.log(`[COST FETCH] Using Anthropic admin key: ${this.anthropicAdminKey?.substring(0, 20) || 'KEY_MISSING'}...`);
+      console.log(`[COST FETCH] Admin key full length: ${this.anthropicAdminKey?.length || 0}`);
+      console.log(`[COST FETCH] Admin key ends with: ...${this.anthropicAdminKey?.slice(-10) || 'MISSING'}`);
+      
+      // Will be defined later - just debug for now
+      console.log(`[COST FETCH] Request headers:`, {
+        'x-api-key': `${this.anthropicAdminKey?.substring(0, 10)}...${this.anthropicAdminKey?.slice(-10)}`,
+        'anthropic-version': '2023-06-01'
+      });
+
+      // Check if we've already fetched data for this date range
+      const existingFetches = await prisma.usageRecord.findMany({
+        where: {
+          modelProvider: 'anthropic',
+          providerCostFetched: true,
+          providerCostFetchedAt: {
+            gte: startDate,
+            lte: endDate,
+          },
+        },
+        select: {
+          providerCostFetchedAt: true,
+          modelId: true,
+        },
+      });
+
+      // Check if we have comprehensive coverage for this date range
+      const daysCovered = new Set(
+        existingFetches.map(record => 
+          record.providerCostFetchedAt?.toISOString().split('T')[0]
+        ).filter(Boolean)
+      );
+
+      const totalDays = Math.ceil((endDate.getTime() - startDate.getTime()) / (24 * 60 * 60 * 1000));
+      const coveragePercentage = daysCovered.size / totalDays;
+
+      if (coveragePercentage > 0.8 && !force) {
+        console.log(`[COST FETCH] Anthropic data already exists for ${Math.round(coveragePercentage * 100)}% of date range (${daysCovered.size}/${totalDays} days)`);
+        console.log(`[COST FETCH] Skipping fetch to prevent duplicates. Use force=true to override.`);
+        
+        return {
+          provider: 'anthropic',
+          totalFetched: existingFetches.length,
+          totalCostUSD: 0,
+          matched: existingFetches.length,
+          unmatched: 0,
+          updated: 0,
+          costs: existingFetches.map(record => ({
+            timestamp: record.providerCostFetchedAt?.toISOString() || new Date().toISOString(),
+            model: record.modelId,
+            cost: 0,
+            tokens: { input: 0, output: 0 },
+            matched: true,
+            usageRecordId: 'existing'
+          })),
+        };
+      }
 
       // Anthropic Cost API endpoint - GET request with query parameters
       const url = 'https://api.anthropic.com/v1/organizations/cost_report';
@@ -323,13 +430,20 @@ export class CostReconciliation {
       const response = await fetch(`${url}?${params}`, {
         method: 'GET',
         headers: {
-          'x-api-key': this.anthropicApiKey,
+          'x-api-key': this.anthropicAdminKey,
           'anthropic-version': '2023-06-01',
         },
       });
 
       if (!response.ok) {
-        throw new Error(`Anthropic Cost API error: ${response.status} ${response.statusText}`);
+        const errorText = await response.text();
+        console.error(`[COST FETCH] Anthropic API error details:`, {
+          status: response.status,
+          statusText: response.statusText,
+          body: errorText,
+          headers: Object.fromEntries(response.headers.entries())
+        });
+        throw new Error(`Anthropic Cost API error: ${response.status} ${response.statusText}. Body: ${errorText}`);
       }
 
       const data: AnthropicCostResponse = await response.json();
@@ -349,8 +463,8 @@ export class CostReconciliation {
 
       for (const bucket of data.data) {
         for (const result of bucket.results) {
-          // Parse cost from cents string to dollars
-          const costInDollars = parseFloat(result.amount) / 100;
+          // Parse cost - API returns values in dollars already
+          const costInDollars = parseFloat(result.amount);
           
           // Extract model from model field or description
           let model = result.model || 'unknown';
@@ -549,12 +663,12 @@ export class CostReconciliation {
   /**
    * Fetch costs from all providers for a date range
    */
-  async fetchAllProviderCosts(startDate: Date, endDate: Date): Promise<CostReconciliationResult[]> {
+  async fetchAllProviderCosts(startDate: Date, endDate: Date, force = false): Promise<CostReconciliationResult[]> {
     const results: CostReconciliationResult[] = [];
 
     try {
       // Fetch OpenAI costs
-      const openaiResult = await this.fetchOpenAICosts(startDate, endDate);
+      const openaiResult = await this.fetchOpenAICosts(startDate, endDate, force);
       results.push(openaiResult);
     } catch (error) {
       console.error('[COST FETCH] OpenAI fetch failed:', error);
@@ -571,7 +685,7 @@ export class CostReconciliation {
 
     try {
       // Fetch Anthropic costs
-      const anthropicResult = await this.fetchAnthropicCosts(startDate, endDate);
+      const anthropicResult = await this.fetchAnthropicCosts(startDate, endDate, force);
       results.push(anthropicResult);
     } catch (error) {
       console.error('[COST FETCH] Anthropic fetch failed:', error);
