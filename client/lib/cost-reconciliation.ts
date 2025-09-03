@@ -423,6 +423,11 @@ export class CostReconciliation {
         return { matched: 0, updated: 0 };
       }
 
+      // TEMPORARY: Skip database matching due to column errors until schema is fixed
+      console.log(`[COST MATCH] TEMPORARILY SKIPPING database matching due to column errors`);
+      console.log(`[COST MATCH] Found ${costs.length} ${provider} costs totaling $${costs.reduce((sum, c) => sum + c.cost, 0).toFixed(4)}`);
+      return { matched: 0, updated: 0 };
+
       // Get our UsageRecords for the same time period
       const ourRecords = await prisma.usageRecord.findMany({
         where: {
