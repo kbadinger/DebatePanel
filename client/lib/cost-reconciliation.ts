@@ -371,6 +371,12 @@ export class CostReconciliation {
     try {
       console.log(`[COST MATCH] Matching ${costs.length} ${provider} costs with our records`);
 
+      // Skip matching if there are no costs to process
+      if (costs.length === 0) {
+        console.log(`[COST MATCH] No costs to match, skipping database queries`);
+        return { matched: 0, updated: 0 };
+      }
+
       // Get our UsageRecords for the same time period
       const ourRecords = await prisma.usageRecord.findMany({
         where: {
