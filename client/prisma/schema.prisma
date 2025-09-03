@@ -130,7 +130,12 @@ model UsageRecord {
   costAccuracy       Float?   // Accuracy percentage (0-1)
   hasActualCost      Boolean  @default(false)
   providerCostData   Json?    // Raw cost data from provider
-  costSource         String?  // 'estimated', 'actual', 'manual'
+  costSource         String?  // 'estimated', 'actual', 'manual', 'api_fetch'
+  
+  // Reconciliation tracking
+  providerCostFetched   Boolean @default(false)
+  providerCostFetchedAt DateTime?
+  reconciliationNotes   String?  // Details about how cost was matched/updated
   
   user   User   @relation(fields: [userId], references: [id])
   debate Debate @relation(fields: [debateId], references: [id])

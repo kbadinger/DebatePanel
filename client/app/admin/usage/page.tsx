@@ -159,12 +159,20 @@ export default function AdminUsagePage() {
     <div className="space-y-8">
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold text-slate-900">Usage Analytics</h1>
-        <button
-          onClick={fetchUsageData}
-          className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-        >
-          Refresh
-        </button>
+        <div className="flex gap-3">
+          <a
+            href="/admin/usage/reconcile"
+            className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 font-medium"
+          >
+            Pull Real Costs
+          </a>
+          <button
+            onClick={fetchUsageData}
+            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+          >
+            Refresh
+          </button>
+        </div>
       </div>
 
       {/* Legacy Data Notice */}
