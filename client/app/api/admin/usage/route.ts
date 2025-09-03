@@ -108,7 +108,7 @@ export async function GET(req: NextRequest) {
           // With provider filter - EXCLUDE reconciliation records
           return await prisma.$queryRaw`
             SELECT 
-              DATE("createdAt") as date,
+              DATE("createdAt" AT TIME ZONE 'UTC') as date,
               SUM("apiCost")::DECIMAL as "totalApiCost", 
               COUNT(*)::INTEGER as "requestCount"
             FROM "UsageRecord"
@@ -116,23 +116,23 @@ export async function GET(req: NextRequest) {
               AND "createdAt" <= ${endDate}
               AND "modelProvider" = ${provider}
               AND "roundNumber" != 0
-            GROUP BY DATE("createdAt")
-            ORDER BY DATE("createdAt") DESC
+            GROUP BY DATE("createdAt" AT TIME ZONE 'UTC')
+            ORDER BY DATE("createdAt" AT TIME ZONE 'UTC') DESC
             LIMIT 30
           `;
         } else {
           // Without provider filter - EXCLUDE reconciliation records
           return await prisma.$queryRaw`
             SELECT 
-              DATE("createdAt") as date,
+              DATE("createdAt" AT TIME ZONE 'UTC') as date,
               SUM("apiCost")::DECIMAL as "totalApiCost",
               COUNT(*)::INTEGER as "requestCount" 
             FROM "UsageRecord"
             WHERE "createdAt" >= ${startDate}
               AND "createdAt" <= ${endDate}
               AND "roundNumber" != 0
-            GROUP BY DATE("createdAt")
-            ORDER BY DATE("createdAt") DESC
+            GROUP BY DATE("createdAt" AT TIME ZONE 'UTC')
+            ORDER BY DATE("createdAt" AT TIME ZONE 'UTC') DESC
             LIMIT 30
           `;
         }
