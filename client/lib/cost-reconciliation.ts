@@ -517,13 +517,18 @@ export class CostReconciliation {
           const costInDollars = parseFloat(result.amount) / 100;
           
           // Extract model from model field or description
-          let model = result.model || 'unknown';
+          let model = result.model || 'anthropic-aggregate';
           if (!result.model && result.description) {
             // Try to extract model from description like "Claude Sonnet 4 Usage - Input Tokens"
             const modelMatch = result.description.match(/(claude|sonnet|haiku|opus)[^-]*/i);
             if (modelMatch) {
               model = modelMatch[0].toLowerCase().replace(/\s+/g, '-');
             }
+          }
+          
+          // Ensure we have a valid model ID for database
+          if (!model || model === 'unknown') {
+            model = 'anthropic-aggregate';
           }
 
           const costData = {
@@ -587,200 +592,104 @@ export class CostReconciliation {
         return { matched: 0, updated: 0 };
       }
 
-      // Try to save to database using existing columns as fallback
+      // ALWAYS save cost data to database (main logic)
       console.log(`[COST MATCH] Found ${costs.length} ${provider} costs totaling $${costs.reduce((sum, c) => sum + c.cost, 0).toFixed(4)}`);
+      console.log(`[COST MATCH] Starting database save process for ${provider}`);
+      
+      // First, ensure we have system user and debate for cost tracking
+      let systemUserId: string;
+      let systemDebateId: string;
       
       try {
-        // Try with new columns first
-        const ourRecords = await prisma.usageRecord.findMany({
-          where: {
-            createdAt: {
-              gte: startDate,
-              lte: endDate,
-            },
-            modelProvider: provider,
-          },
+        // Try to find or create system user
+        let systemUser = await prisma.user.findFirst({
+          where: { email: 'system@cost-reconciliation.internal' }
         });
         
-        console.log(`[COST MATCH] Found ${ourRecords.length} existing records for ${provider}`);
-        // Continue with full matching logic...
-        return { matched: 0, updated: 0 }; // TODO: Implement full matching
-        
-      } catch (dbError: any) {
-        if (dbError.code === 'P2022') {
-          console.log(`[COST MATCH] New columns don't exist, creating summary records instead`);
-          
-          // First, ensure we have system user and debate for cost tracking
-          let systemUserId: string;
-          let systemDebateId: string;
-          
-          try {
-            // Try to find or create system user
-            let systemUser = await prisma.user.findFirst({
-              where: { email: 'system@cost-reconciliation.internal' }
-            });
-            
-            if (!systemUser) {
-              systemUser = await prisma.user.create({
-                data: {
-                  email: 'system@cost-reconciliation.internal',
-                  name: 'Cost Reconciliation System',
-                  isAdmin: true
-                }
-              });
-              console.log(`[COST MATCH] Created system user: ${systemUser.id}`);
+        if (!systemUser) {
+          systemUser = await prisma.user.create({
+            data: {
+              email: 'system@cost-reconciliation.internal',
+              name: 'Cost Reconciliation System',
+              isAdmin: true
             }
-            systemUserId = systemUser.id;
-            
-            // Try to find or create system debate
-            let systemDebate = await prisma.debate.findFirst({
-              where: { 
-                topic: 'Cost Reconciliation Data',
-                userId: systemUserId 
-              }
-            });
-            
-            if (!systemDebate) {
-              systemDebate = await prisma.debate.create({
-                data: {
-                  topic: 'Cost Reconciliation Data',
-                  description: 'System-generated debate for storing API cost reconciliation data',
-                  rounds: 1,
-                  status: 'completed',
-                  userId: systemUserId,
-                  completedAt: new Date()
-                }
-              });
-              console.log(`[COST MATCH] Created system debate: ${systemDebate.id}`);
-            }
-            systemDebateId = systemDebate.id;
-            
-          } catch (systemSetupError) {
-            console.error(`[COST MATCH] Failed to set up system records:`, systemSetupError);
-            return { matched: 0, updated: 0 };
-          }
-          
-          // Create summary records using existing schema with valid foreign keys
-          let created = 0;
-          for (const cost of costs.slice(0, 10)) { // Limit to avoid spam
-            try {
-              const record = await prisma.usageRecord.create({
-                data: {
-                  userId: systemUserId,
-                  debateId: systemDebateId,
-                  roundNumber: 0,
-                  modelId: cost.model,
-                  modelProvider: provider,
-                  inputTokens: cost.tokens.input,
-                  outputTokens: cost.tokens.output,
-                  apiCost: cost.cost,
-                  platformFee: 0,
-                  totalCost: cost.cost,
-                  createdAt: new Date(cost.timestamp),
-                },
-              });
-              console.log(`[COST MATCH] Created record ${record.id} for ${cost.model}: $${cost.cost}`);
-              created++;
-            } catch (createError) {
-              console.error(`[COST MATCH] Failed to create record for ${cost.model}:`, createError);
-              console.error(`[COST MATCH] Error details:`, {
-                code: (createError as any).code,
-                message: (createError as any).message
-              });
-            }
-          }
-          
-          console.log(`[COST MATCH] Successfully created ${created}/${costs.slice(0, 10).length} summary records for ${provider} costs`);
-          return { matched: created, updated: 0 };
-        } else {
-          console.error(`[COST MATCH] Unexpected database error:`, dbError);
-          throw dbError;
-        }
-      }
-
-      // Get our UsageRecords for the same time period
-      const ourRecords = await prisma.usageRecord.findMany({
-        where: {
-          createdAt: {
-            gte: startDate,
-            lte: endDate,
-          },
-          modelProvider: provider,
-        },
-        orderBy: {
-          createdAt: 'asc',
-        },
-      });
-
-      console.log(`[COST MATCH] Found ${ourRecords.length} ${provider} usage records to match`);
-
-      let matched = 0;
-      let updated = 0;
-
-      for (const cost of costs) {
-        // Try to match with our records
-        const costTime = new Date(cost.timestamp);
-
-        // Find records within 10 minutes of the cost timestamp
-        const matchingRecords = ourRecords.filter(record => {
-          const recordTime = new Date(record.createdAt);
-          const timeDiff = Math.abs(costTime.getTime() - recordTime.getTime());
-          const withinTimeWindow = timeDiff <= 10 * 60 * 1000; // 10 minutes
-          
-          // Also check if model names are similar
-          const modelMatch = this.modelsMatch(record.modelId, cost.model);
-          
-          // Check if token counts are reasonably close (within 20%)
-          const totalTokens = record.inputTokens + record.outputTokens;
-          const costTokens = cost.tokens.input + cost.tokens.output;
-          const tokenMatch = costTokens > 0 ? Math.abs(totalTokens - costTokens) / costTokens < 0.2 : true;
-
-          return withinTimeWindow && modelMatch && tokenMatch;
-        });
-
-        if (matchingRecords.length > 0) {
-          // Take the closest match by token count
-          const bestMatch = matchingRecords.reduce((best, current) => {
-            const bestTokenDiff = Math.abs((best.inputTokens + best.outputTokens) - (cost.tokens.input + cost.tokens.output));
-            const currentTokenDiff = Math.abs((current.inputTokens + current.outputTokens) - (cost.tokens.input + cost.tokens.output));
-            return currentTokenDiff < bestTokenDiff ? current : best;
           });
-
-          // Update the record with actual cost
-          // Use only existing columns since production DB doesn't have new columns yet
-          try {
-            await prisma.usageRecord.update({
-              where: { id: bestMatch.id },
-              data: {
-                apiCost: cost.cost, // Update existing apiCost field with actual cost
-                // Add reconciliation notes to existing fields if available
-                providerCostFetched: true,
-                providerCostFetchedAt: new Date(),
-                reconciliationNotes: `Matched actual cost $${cost.cost.toFixed(4)} by timestamp and model (${cost.model})`,
-              },
-            });
-            console.log(`[COST MATCH] Updated record ${bestMatch.id} with actual cost $${cost.cost.toFixed(4)}`);
-
-            cost.matched = true;
-            cost.usageRecordId = bestMatch.id;
-            matched++;
-            updated++;
-
-            console.log(`[COST MATCH] Matched ${provider} cost $${cost.cost.toFixed(4)} with record ${bestMatch.id}`);
-          } catch (updateError) {
-            console.error(`[COST MATCH] Failed to update record ${bestMatch.id}:`, updateError);
-          }
+          console.log(`[COST MATCH] Created system user: ${systemUser.id}`);
         } else {
-          console.log(`[COST MATCH] No match found for ${provider} cost at ${cost.timestamp} (${cost.model})`);
+          console.log(`[COST MATCH] Using existing system user: ${systemUser.id}`);
+        }
+        systemUserId = systemUser.id;
+        
+        // Try to find or create system debate
+        let systemDebate = await prisma.debate.findFirst({
+          where: { 
+            topic: 'Cost Reconciliation Data',
+            userId: systemUserId 
+          }
+        });
+        
+        if (!systemDebate) {
+          systemDebate = await prisma.debate.create({
+            data: {
+              topic: 'Cost Reconciliation Data',
+              description: 'System-generated debate for storing API cost reconciliation data',
+              rounds: 1,
+              status: 'completed',
+              userId: systemUserId,
+              completedAt: new Date()
+            }
+          });
+          console.log(`[COST MATCH] Created system debate: ${systemDebate.id}`);
+        } else {
+          console.log(`[COST MATCH] Using existing system debate: ${systemDebate.id}`);
+        }
+        systemDebateId = systemDebate.id;
+        
+      } catch (systemSetupError) {
+        console.error(`[COST MATCH] Failed to set up system records:`, systemSetupError);
+        return { matched: 0, updated: 0 };
+      }
+      
+      // Create records for cost data using existing schema 
+      let created = 0;
+      const costsToProcess = costs.slice(0, 20); // Increased limit
+      
+      console.log(`[COST MATCH] Attempting to create ${costsToProcess.length} records for ${provider}`);
+      
+      for (const cost of costsToProcess) {
+        try {
+          const record = await prisma.usageRecord.create({
+            data: {
+              userId: systemUserId,
+              debateId: systemDebateId,
+              roundNumber: 0, // Special marker for cost reconciliation data
+              modelId: cost.model,
+              modelProvider: provider,
+              inputTokens: cost.tokens.input,
+              outputTokens: cost.tokens.output,
+              apiCost: cost.cost, // Store real API cost here
+              platformFee: 0,
+              totalCost: cost.cost,
+              createdAt: new Date(cost.timestamp),
+            },
+          });
+          console.log(`[COST MATCH] ✅ Created record ${record.id} for ${cost.model}: $${cost.cost.toFixed(4)}`);
+          created++;
+        } catch (createError) {
+          console.error(`[COST MATCH] ❌ Failed to create record for ${cost.model}:`, createError);
+          console.error(`[COST MATCH] Error details:`, {
+            code: (createError as any).code,
+            message: (createError as any).message?.substring(0, 200) // Truncate long messages
+          });
         }
       }
-
-      console.log(`[COST MATCH] ${provider} matching complete: ${matched}/${costs.length} matched, ${updated} updated`);
-
-      return { matched, updated };
+      
+      console.log(`[COST MATCH] 🎯 Successfully created ${created}/${costsToProcess.length} summary records for ${provider} costs`);
+      return { matched: created, updated: 0 };
+      
     } catch (error) {
-      console.error(`[COST MATCH] Error matching ${provider} costs:`, error);
-      throw error;
+      console.error(`[COST MATCH] Error saving ${provider} costs to database:`, error);
+      return { matched: 0, updated: 0 };
     }
   }
 

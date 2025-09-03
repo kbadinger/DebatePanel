@@ -77,29 +77,54 @@ export class UsageTracker {
     const totalCost = billingApiCost + platformFee;
 
     try {
-      // Record the usage with dual cost tracking
-      await prisma.usageRecord.create({
-        data: {
-          userId: this.userId,
-          debateId: this.debateId,
-          roundNumber,
-          modelId: model.id,
-          modelProvider: model.provider,
-          inputTokens: usage.inputTokens,
-          outputTokens: usage.outputTokens,
-          apiCost: billingApiCost, // Legacy field - use actual if available
-          platformFee,
-          totalCost,
-          // Enhanced dual cost tracking
-          estimatedApiCost: estimatedApiCost,
-          actualApiCost: actualApiCost,
-          costDelta: costDelta,
-          costAccuracy: costAccuracy,
-          hasActualCost: hasActualCost,
-          providerCostData: providerUsage || null,
-          costSource: costSource,
-        },
-      });
+      // Record the usage - backward compatible with existing production schema
+      try {
+        await prisma.usageRecord.create({
+          data: {
+            userId: this.userId,
+            debateId: this.debateId,
+            roundNumber,
+            modelId: model.id,
+            modelProvider: model.provider,
+            inputTokens: usage.inputTokens,
+            outputTokens: usage.outputTokens,
+            apiCost: billingApiCost, // Legacy field - use actual if available
+            platformFee,
+            totalCost,
+            // Enhanced dual cost tracking - only include if columns exist
+            ...(hasActualCost && actualApiCost ? {
+              estimatedApiCost: estimatedApiCost,
+              actualApiCost: actualApiCost,
+              costDelta: costDelta,
+              costAccuracy: costAccuracy,
+              hasActualCost: hasActualCost,
+              providerCostData: providerUsage || null,
+              costSource: costSource,
+            } : {}),
+          },
+        });
+      } catch (schemaError: any) {
+        // Fallback for production schema without new columns
+        if (schemaError.code === 'P2022') {
+          console.log(`[COST DEBUG] New columns not available, using basic schema`);
+          await prisma.usageRecord.create({
+            data: {
+              userId: this.userId,
+              debateId: this.debateId,
+              roundNumber,
+              modelId: model.id,
+              modelProvider: model.provider,
+              inputTokens: usage.inputTokens,
+              outputTokens: usage.outputTokens,
+              apiCost: billingApiCost,
+              platformFee,
+              totalCost,
+            },
+          });
+        } else {
+          throw schemaError;
+        }
+      }
 
       console.log(`[COST DEBUG] ✅ Tracked usage for ${model.displayName}:`, {
         tokens: usage,
