@@ -98,7 +98,7 @@ export function TokenTracker({
         <div className="border rounded-lg p-4 bg-slate-50">
           <div className="flex items-center gap-2 mb-2">
             <Zap className="h-4 w-4 text-blue-600" />
-            <span className="font-medium text-sm">Token Usage</span>
+            <span className="font-medium text-sm">Token Usage Estimates</span>
           </div>
           <div className="space-y-1">
             <div className="flex justify-between text-sm">
@@ -120,7 +120,7 @@ export function TokenTracker({
         <div className="border rounded-lg p-4 bg-slate-50">
           <div className="flex items-center gap-2 mb-2">
             <DollarSign className="h-4 w-4 text-green-600" />
-            <span className="font-medium text-sm">Cost Tracking</span>
+            <span className="font-medium text-sm">Cost Estimates</span>
           </div>
           <div className="space-y-1">
             <div className="flex justify-between text-sm">
@@ -214,7 +214,7 @@ export function TokenTracker({
       {/* Efficiency Metrics */}
       {totalActualTokens > 0 && (
         <div className="border rounded-lg p-3 bg-blue-50">
-          <h4 className="font-medium text-sm mb-2">Accuracy</h4>
+          <h4 className="font-medium text-sm mb-2">Estimate Accuracy</h4>
           <div className="grid grid-cols-2 gap-4 text-xs">
             <div>
               <div className="text-gray-600">Token Estimation</div>

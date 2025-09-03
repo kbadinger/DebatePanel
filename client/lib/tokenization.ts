@@ -280,13 +280,13 @@ export function formatTokenCount(tokens: number): string {
   }
 }
 
-// Format cost for display
+// Format cost estimate for display
 export function formatTokenCost(cost: number): string {
   if (cost < 0.001) {
-    return `$${(cost * 1000).toFixed(2)}‰`; // Per mille symbol for very small costs
+    return `~$${(cost * 1000).toFixed(2)}‰`; // Per mille symbol for very small costs
   } else if (cost < 0.01) {
-    return `$${(cost * 100).toFixed(2)}¢`;
+    return `~$${(cost * 100).toFixed(2)}¢`;
   } else {
-    return `$${cost.toFixed(3)}`;
+    return `~$${cost.toFixed(3)}`;
   }
 }

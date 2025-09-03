@@ -807,7 +807,7 @@ Option 3 - Hybrid Model:
           
           <div className="mb-4">
             <label className="block text-sm font-semibold text-slate-700 mb-2">
-              Response Length & Cost Control
+              Response Length & Cost Estimates
             </label>
             <div className="space-y-2">
               {Object.entries(RESPONSE_LENGTH_OPTIONS).map(([key, option]) => {
@@ -859,7 +859,7 @@ Option 3 - Hybrid Model:
               })}
             </div>
             <div className="mt-2 text-xs text-slate-500">
-              💡 Longer responses provide more depth but cost more. Shorter responses are more focused and budget-friendly.
+              💡 Cost estimates are approximate. Longer responses provide more depth but cost more. Shorter responses are more focused and budget-friendly.
             </div>
           </div>
           
