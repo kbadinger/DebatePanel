@@ -109,52 +109,61 @@ export class CostReconciliation {
 
       console.log(`[COST FETCH] Fetching OpenAI usage data from ${startDate.toISOString()} to ${endDate.toISOString()}`);
 
-      // Check if we've already fetched data for this date range
-      const existingFetches = await prisma.usageRecord.findMany({
-        where: {
-          modelProvider: 'openai',
-          providerCostFetched: true,
-          providerCostFetchedAt: {
-            gte: startDate,
-            lte: endDate,
+      // Check if we've already fetched data for this date range (skip if columns don't exist)
+      let existingFetches: any[] = [];
+      try {
+        existingFetches = await prisma.usageRecord.findMany({
+          where: {
+            modelProvider: 'openai',
+            providerCostFetched: true,
+            providerCostFetchedAt: {
+              gte: startDate,
+              lte: endDate,
+            },
           },
-        },
-        select: {
-          providerCostFetchedAt: true,
-          modelId: true,
-        },
-      });
+          select: {
+            providerCostFetchedAt: true,
+            modelId: true,
+          },
+        });
 
-      // Check if we have comprehensive coverage for this date range
-      const daysCovered = new Set(
-        existingFetches.map(record => 
-          record.providerCostFetchedAt?.toISOString().split('T')[0]
-        ).filter(Boolean)
-      );
+        // Check if we have comprehensive coverage for this date range
+        const daysCovered = new Set(
+          existingFetches.map(record => 
+            record.providerCostFetchedAt?.toISOString().split('T')[0]
+          ).filter(Boolean)
+        );
 
-      const totalDays = Math.ceil((endDate.getTime() - startDate.getTime()) / (24 * 60 * 60 * 1000));
-      const coveragePercentage = daysCovered.size / totalDays;
+        const totalDays = Math.ceil((endDate.getTime() - startDate.getTime()) / (24 * 60 * 60 * 1000));
+        const coveragePercentage = daysCovered.size / totalDays;
 
-      if (coveragePercentage > 0.8 && !force) {
-        console.log(`[COST FETCH] OpenAI data already exists for ${Math.round(coveragePercentage * 100)}% of date range (${daysCovered.size}/${totalDays} days)`);
-        console.log(`[COST FETCH] Skipping fetch to prevent duplicates. Use force=true to override.`);
-        
-        return {
-          provider: 'openai',
-          totalFetched: existingFetches.length,
-          totalCostUSD: 0,
-          matched: existingFetches.length,
-          unmatched: 0,
-          updated: 0,
-          costs: existingFetches.map(record => ({
-            timestamp: record.providerCostFetchedAt?.toISOString() || new Date().toISOString(),
-            model: record.modelId,
-            cost: 0,
-            tokens: { input: 0, output: 0 },
-            matched: true,
-            usageRecordId: 'existing'
-          })),
-        };
+        if (coveragePercentage > 0.8 && !force) {
+          console.log(`[COST FETCH] OpenAI data already exists for ${Math.round(coveragePercentage * 100)}% of date range (${daysCovered.size}/${totalDays} days)`);
+          console.log(`[COST FETCH] Skipping fetch to prevent duplicates. Use force=true to override.`);
+          
+          return {
+            provider: 'openai',
+            totalFetched: existingFetches.length,
+            totalCostUSD: 0,
+            matched: existingFetches.length,
+            unmatched: 0,
+            updated: 0,
+            costs: existingFetches.map(record => ({
+              timestamp: record.providerCostFetchedAt?.toISOString() || new Date().toISOString(),
+              model: record.modelId,
+              cost: 0,
+              tokens: { input: 0, output: 0 },
+              matched: true,
+              usageRecordId: 'existing'
+            })),
+          };
+        }
+      } catch (dbError: any) {
+        if (dbError.code === 'P2022') {
+          console.log(`[COST FETCH] Database columns for duplicate prevention don't exist yet - proceeding with fetch`);
+        } else {
+          throw dbError;
+        }
       }
 
       // OpenAI Usage API endpoint - for detailed usage with model breakdown
@@ -372,52 +381,61 @@ export class CostReconciliation {
         'anthropic-version': '2023-06-01'
       });
 
-      // Check if we've already fetched data for this date range
-      const existingFetches = await prisma.usageRecord.findMany({
-        where: {
-          modelProvider: 'anthropic',
-          providerCostFetched: true,
-          providerCostFetchedAt: {
-            gte: startDate,
-            lte: endDate,
+      // Check if we've already fetched data for this date range (skip if columns don't exist)
+      let existingFetches: any[] = [];
+      try {
+        existingFetches = await prisma.usageRecord.findMany({
+          where: {
+            modelProvider: 'anthropic',
+            providerCostFetched: true,
+            providerCostFetchedAt: {
+              gte: startDate,
+              lte: endDate,
+            },
           },
-        },
-        select: {
-          providerCostFetchedAt: true,
-          modelId: true,
-        },
-      });
+          select: {
+            providerCostFetchedAt: true,
+            modelId: true,
+          },
+        });
 
-      // Check if we have comprehensive coverage for this date range
-      const daysCovered = new Set(
-        existingFetches.map(record => 
-          record.providerCostFetchedAt?.toISOString().split('T')[0]
-        ).filter(Boolean)
-      );
+        // Check if we have comprehensive coverage for this date range
+        const daysCovered = new Set(
+          existingFetches.map(record => 
+            record.providerCostFetchedAt?.toISOString().split('T')[0]
+          ).filter(Boolean)
+        );
 
-      const totalDays = Math.ceil((endDate.getTime() - startDate.getTime()) / (24 * 60 * 60 * 1000));
-      const coveragePercentage = daysCovered.size / totalDays;
+        const totalDays = Math.ceil((endDate.getTime() - startDate.getTime()) / (24 * 60 * 60 * 1000));
+        const coveragePercentage = daysCovered.size / totalDays;
 
-      if (coveragePercentage > 0.8 && !force) {
-        console.log(`[COST FETCH] Anthropic data already exists for ${Math.round(coveragePercentage * 100)}% of date range (${daysCovered.size}/${totalDays} days)`);
-        console.log(`[COST FETCH] Skipping fetch to prevent duplicates. Use force=true to override.`);
-        
-        return {
-          provider: 'anthropic',
-          totalFetched: existingFetches.length,
-          totalCostUSD: 0,
-          matched: existingFetches.length,
-          unmatched: 0,
-          updated: 0,
-          costs: existingFetches.map(record => ({
-            timestamp: record.providerCostFetchedAt?.toISOString() || new Date().toISOString(),
-            model: record.modelId,
-            cost: 0,
-            tokens: { input: 0, output: 0 },
-            matched: true,
-            usageRecordId: 'existing'
-          })),
-        };
+        if (coveragePercentage > 0.8 && !force) {
+          console.log(`[COST FETCH] Anthropic data already exists for ${Math.round(coveragePercentage * 100)}% of date range (${daysCovered.size}/${totalDays} days)`);
+          console.log(`[COST FETCH] Skipping fetch to prevent duplicates. Use force=true to override.`);
+          
+          return {
+            provider: 'anthropic',
+            totalFetched: existingFetches.length,
+            totalCostUSD: 0,
+            matched: existingFetches.length,
+            unmatched: 0,
+            updated: 0,
+            costs: existingFetches.map(record => ({
+              timestamp: record.providerCostFetchedAt?.toISOString() || new Date().toISOString(),
+              model: record.modelId,
+              cost: 0,
+              tokens: { input: 0, output: 0 },
+              matched: true,
+              usageRecordId: 'existing'
+            })),
+          };
+        }
+      } catch (dbError: any) {
+        if (dbError.code === 'P2022') {
+          console.log(`[COST FETCH] Database columns for duplicate prevention don't exist yet - proceeding with fetch`);
+        } else {
+          throw dbError;
+        }
       }
 
       // Anthropic Cost API endpoint - GET request with query parameters
