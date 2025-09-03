@@ -154,6 +154,7 @@ export class CostReconciliation {
       if (bucketsWithResults.length === 0) {
         console.log(`[COST FETCH] No usage data found for organization in time range ${startDate.toISOString()} to ${endDate.toISOString()}`);
         console.log(`[COST FETCH] This might mean: 1) No API usage in this period, or 2) Different time zone/date range needed`);
+        console.log(`[COST FETCH] Try a more recent date range (last 1-2 days) or check when you last used OpenAI API`);
       }
 
       // OpenAI model pricing (as of Jan 2025) - cost per 1K tokens
