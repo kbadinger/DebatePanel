@@ -2,21 +2,47 @@ import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
+interface OpenAICostsResponse {
+  object: string;
+  start_time: number;
+  end_time: number;
+  results: {
+    object: string;
+    amount: {
+      value: number;
+      currency: string;
+    };
+    line_item?: string | null;
+    project_id?: string | null;
+    organization_id: string;
+  }[];
+}[]
+
 interface OpenAIUsageResponse {
   object: string;
-  data: {
-    aggregated_by: string[];
-    costs: {
-      timestamp: number;
-      project_id?: string;
-      model?: string;
-      input_tokens: number;
-      output_tokens: number;
-      input_tokens_cost_usd: number;
-      output_tokens_cost_usd: number;
-      total_cost_usd: number;
-    }[];
+  start_time: number;
+  end_time: number;
+  results: {
+    object: string;
+    input_tokens: number;
+    output_tokens: number;
+    num_model_requests: number;
+    project_id?: string;
+    user_id?: string;
+    api_key_id?: string;
+    model?: string;
+    batch?: boolean;
+    input_cached_tokens: number;
+    input_audio_tokens: number;
+    output_audio_tokens: number;
   }[];
+}
+
+interface OpenAIModelPricing {
+  [model: string]: {
+    input: number; // cost per 1K tokens
+    output: number; // cost per 1K tokens
+  };
 }
 
 interface AnthropicCostResponse {
@@ -59,22 +85,22 @@ export class CostReconciliation {
   }
 
   /**
-   * Fetch actual costs from OpenAI Usage API
+   * Fetch usage data from OpenAI Usage API and calculate costs using pricing
    */
   async fetchOpenAICosts(startDate: Date, endDate: Date): Promise<CostReconciliationResult> {
     try {
       const startTimestamp = Math.floor(startDate.getTime() / 1000);
       const endTimestamp = Math.floor(endDate.getTime() / 1000);
 
-      console.log(`[COST FETCH] Fetching OpenAI costs from ${startDate.toISOString()} to ${endDate.toISOString()}`);
+      console.log(`[COST FETCH] Fetching OpenAI usage data from ${startDate.toISOString()} to ${endDate.toISOString()}`);
 
-      // OpenAI Usage API endpoint
-      const url = `https://api.openai.com/v1/organization/usage/costs`;
+      // OpenAI Usage API endpoint - for detailed usage with model breakdown
+      const url = `https://api.openai.com/v1/organization/usage/completions`;
       const params = new URLSearchParams({
         start_time: startTimestamp.toString(),
         end_time: endTimestamp.toString(),
-        bucket_width: '1h', // Group by hour for better matching
-        group_by: 'model', // Group by model to get model-specific costs
+        bucket_width: '1h', // Hourly buckets for better matching
+        group_by: 'model', // Group by model to get model-specific data
       });
 
       const response = await fetch(`${url}?${params}`, {
@@ -88,10 +114,29 @@ export class CostReconciliation {
         throw new Error(`OpenAI Usage API error: ${response.status} ${response.statusText}`);
       }
 
-      const data: OpenAIUsageResponse = await response.json();
-      console.log(`[COST FETCH] OpenAI returned ${data.data.length} data buckets`);
+      const data: OpenAIUsageResponse[] = await response.json();
+      console.log(`[COST FETCH] OpenAI returned ${data.length} usage buckets`);
 
-      // Process the response to extract costs
+      // OpenAI model pricing (as of Jan 2025) - cost per 1K tokens
+      const pricing: OpenAIModelPricing = {
+        'gpt-4o': { input: 0.005, output: 0.015 },
+        'gpt-4o-2024-11-20': { input: 0.005, output: 0.015 },
+        'gpt-4o-mini': { input: 0.00015, output: 0.0006 },
+        'gpt-4o-mini-2024-07-18': { input: 0.00015, output: 0.0006 },
+        'gpt-4': { input: 0.03, output: 0.06 },
+        'gpt-4-turbo': { input: 0.01, output: 0.03 },
+        'gpt-4-turbo-2024-04-09': { input: 0.01, output: 0.03 },
+        'gpt-3.5-turbo': { input: 0.0015, output: 0.002 },
+        'gpt-3.5-turbo-0125': { input: 0.0015, output: 0.002 },
+        'o1-preview': { input: 0.015, output: 0.06 },
+        'o1-preview-2024-09-12': { input: 0.015, output: 0.06 },
+        'o1-mini': { input: 0.003, output: 0.012 },
+        'o1-mini-2024-09-12': { input: 0.003, output: 0.012 },
+        'o3-mini': { input: 0.01, output: 0.04 },
+        // Add more models as needed
+      };
+
+      // Process the response to calculate costs from usage data
       const costs: Array<{
         timestamp: string;
         model: string;
@@ -103,22 +148,55 @@ export class CostReconciliation {
 
       let totalCost = 0;
 
-      for (const bucket of data.data) {
-        for (const cost of bucket.costs) {
-          const timestamp = new Date(cost.timestamp * 1000).toISOString();
+      for (const bucket of data) {
+        for (const result of bucket.results) {
+          const model = result.model || 'unknown';
+          const modelPricing = pricing[model];
+          
+          if (!modelPricing) {
+            console.warn(`[COST FETCH] No pricing found for model: ${model}`);
+            // Use average pricing for unknown models
+            const avgPricing = { input: 0.01, output: 0.03 };
+            const inputCost = (result.input_tokens / 1000) * avgPricing.input;
+            const outputCost = (result.output_tokens / 1000) * avgPricing.output;
+            const totalCostForResult = inputCost + outputCost;
+
+            const timestamp = new Date(bucket.start_time * 1000).toISOString();
+            const costData = {
+              timestamp,
+              model,
+              cost: totalCostForResult,
+              tokens: {
+                input: result.input_tokens,
+                output: result.output_tokens,
+              },
+              matched: false,
+            };
+
+            costs.push(costData);
+            totalCost += totalCostForResult;
+            continue;
+          }
+
+          // Calculate cost based on token usage and pricing
+          const inputCost = (result.input_tokens / 1000) * modelPricing.input;
+          const outputCost = (result.output_tokens / 1000) * modelPricing.output;
+          const totalCostForResult = inputCost + outputCost;
+
+          const timestamp = new Date(bucket.start_time * 1000).toISOString();
           const costData = {
             timestamp,
-            model: cost.model || 'unknown',
-            cost: cost.total_cost_usd,
+            model,
+            cost: totalCostForResult,
             tokens: {
-              input: cost.input_tokens,
-              output: cost.output_tokens,
+              input: result.input_tokens,
+              output: result.output_tokens,
             },
             matched: false,
           };
 
           costs.push(costData);
-          totalCost += cost.total_cost_usd;
+          totalCost += totalCostForResult;
         }
       }
 
