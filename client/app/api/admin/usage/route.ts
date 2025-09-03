@@ -16,6 +16,7 @@ export async function GET(req: NextRequest) {
     const url = new URL(req.url);
     const startDate = url.searchParams.get('startDate');
     const endDate = url.searchParams.get('endDate');
+    const provider = url.searchParams.get('provider'); // Add provider filter
 
     // Build date filter
     const dateFilter = {};
@@ -26,17 +27,24 @@ export async function GET(req: NextRequest) {
       dateFilter.lte = new Date(endDate);
     }
 
+    // Build provider filter
+    const providerFilter = provider && provider !== 'all' ? { modelProvider: provider } : {};
+
     // Get summary statistics
     const [
       overallStats,
       modelUsage,
       providerStats,
       accuracyByProvider,
-      dailyUsage
+      dailyUsage,
+      costReconciliationData
     ] = await Promise.all([
       // Overall summary stats - using only existing columns for now
       prisma.usageRecord.aggregate({
-        where: Object.keys(dateFilter).length > 0 ? { createdAt: dateFilter } : {},
+        where: { 
+          ...(Object.keys(dateFilter).length > 0 ? { createdAt: dateFilter } : {}),
+          ...providerFilter
+        },
         _sum: {
           apiCost: true, // Use existing apiCost column as estimated cost
           totalCost: true,
@@ -51,7 +59,10 @@ export async function GET(req: NextRequest) {
       // Model-by-model breakdown - using only existing columns
       prisma.usageRecord.groupBy({
         by: ['modelId', 'modelProvider'],
-        where: Object.keys(dateFilter).length > 0 ? { createdAt: dateFilter } : {},
+        where: { 
+          ...(Object.keys(dateFilter).length > 0 ? { createdAt: dateFilter } : {}),
+          ...providerFilter
+        },
         _sum: {
           apiCost: true, // Use existing apiCost as estimated cost
           totalCost: true,
@@ -71,7 +82,10 @@ export async function GET(req: NextRequest) {
       // Provider-level stats - using only existing columns
       prisma.usageRecord.groupBy({
         by: ['modelProvider'],
-        where: Object.keys(dateFilter).length > 0 ? { createdAt: dateFilter } : {},
+        where: { 
+          ...(Object.keys(dateFilter).length > 0 ? { createdAt: dateFilter } : {}),
+          ...providerFilter
+        },
         _sum: {
           apiCost: true, // Use existing apiCost as estimated cost
           totalCost: true
@@ -87,10 +101,13 @@ export async function GET(req: NextRequest) {
       // Daily usage trend - using only existing columns
       prisma.usageRecord.groupBy({
         by: ['createdAt'],
-        where: Object.keys(dateFilter).length > 0 ? { createdAt: dateFilter } : {
-          createdAt: {
-            gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) // Last 30 days
-          }
+        where: { 
+          ...(Object.keys(dateFilter).length > 0 ? { createdAt: dateFilter } : {
+            createdAt: {
+              gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) // Last 30 days
+            }
+          }),
+          ...providerFilter
         },
         _sum: {
           apiCost: true
@@ -102,32 +119,69 @@ export async function GET(req: NextRequest) {
           createdAt: 'desc'
         },
         take: 30
+      }),
+
+      // Cost reconciliation data (real costs from API providers)
+      prisma.usageRecord.findMany({
+        where: {
+          roundNumber: 0, // Cost reconciliation marker
+          ...(Object.keys(dateFilter).length > 0 ? { createdAt: dateFilter } : {
+            createdAt: {
+              gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) // Last 30 days
+            }
+          }),
+          ...providerFilter,
+          OR: [
+            { userId: { contains: 'system' } },
+            { debateId: { contains: 'cost-reconciliation' } }
+          ]
+        },
+        select: {
+          modelId: true,
+          modelProvider: true,
+          apiCost: true, // This is the real cost from API
+          createdAt: true,
+          inputTokens: true,
+          outputTokens: true
+        },
+        orderBy: {
+          createdAt: 'desc'
+        }
       })
     ]);
 
-    // Calculate summary metrics - simplified for existing columns only
+    // Calculate summary metrics with real cost reconciliation data
     const totalRequests = overallStats._count.id || 0;
-    const actualCostRequests = 0; // Will be populated once migration is applied
-    const coverageRate = 0; // Will be calculated once migration is applied
     
-    // Use existing apiCost as estimated cost for now
+    // Calculate actual costs from reconciliation data
+    const totalReconciledCost = costReconciliationData.reduce((sum, record) => sum + (record.apiCost || 0), 0);
+    const reconciliationRecordCount = costReconciliationData.length;
+    
+    // Use existing apiCost as estimated cost
     const totalEstimated = overallStats._sum.apiCost || 0;
-    const totalActual = null; // Will be populated once migration is applied
-    const totalDelta = null; // Will be calculated once migration is applied
-    const averageAccuracy = 0; // Will be calculated once migration is applied
+    const totalActual = totalReconciledCost > 0 ? totalReconciledCost : null;
+    const totalDelta = totalActual ? totalActual - totalEstimated : null;
+    const coverageRate = totalRequests > 0 ? reconciliationRecordCount / totalRequests : 0;
+    const averageAccuracy = totalActual && totalEstimated > 0 ? 
+      Math.min(totalActual, totalEstimated) / Math.max(totalActual, totalEstimated) : 0;
 
-    // Process model usage data
+    // Process model usage data with reconciliation
     const models = await Promise.all(modelUsage.map(async (model) => {
       // Get model display name from the models config if needed
       // For now, we'll use the modelId as display name
       const displayName = model.modelId.replace(/[-_]/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
       
-      // Use existing apiCost as estimated cost for now
+      // Find reconciliation data for this model
+      const modelReconciliationData = costReconciliationData.filter(r => 
+        r.modelId === model.modelId && r.modelProvider === model.modelProvider
+      );
+      
       const estimatedCost = model._sum.apiCost || 0;
-      const actualCost = null; // Will be populated once migration is applied
-      const delta = null; // Will be calculated once migration is applied
-      const accuracy = null; // Will be calculated once migration is applied
-      const hasActualData = false; // Will be true once migration is applied
+      const actualCost = modelReconciliationData.reduce((sum, r) => sum + (r.apiCost || 0), 0);
+      const hasActualData = actualCost > 0;
+      const delta = hasActualData ? actualCost - estimatedCost : null;
+      const accuracy = hasActualData && estimatedCost > 0 ? 
+        Math.min(actualCost, estimatedCost) / Math.max(actualCost, estimatedCost) : null;
       
       return {
         modelId: model.modelId,
@@ -137,11 +191,11 @@ export async function GET(req: NextRequest) {
           count: model._count.id || 0,
           inputTokens: model._sum.inputTokens || 0,
           outputTokens: model._sum.outputTokens || 0,
-          actualCostCount: 0 // Will be populated once migration is applied
+          actualCostCount: modelReconciliationData.length
         },
         costs: {
           estimated: estimatedCost,
-          actual: actualCost,
+          actual: hasActualData ? actualCost : null,
           delta: delta,
           accuracy: accuracy,
           hasActualData: hasActualData
@@ -149,41 +203,78 @@ export async function GET(req: NextRequest) {
       };
     }));
 
-    // Process provider stats - simplified for existing columns only
+    // Process provider stats with reconciliation data
     const providers = providerStats.map(provider => {
       const estimatedCost = provider._sum.apiCost || 0;
       const totalRequests = provider._count.id || 0;
+      
+      // Get reconciliation data for this provider
+      const providerReconciliationData = costReconciliationData.filter(r => 
+        r.modelProvider === provider.modelProvider
+      );
+      
+      const actualCost = providerReconciliationData.reduce((sum, r) => sum + (r.apiCost || 0), 0);
+      const actualCostRequests = providerReconciliationData.length;
+      const hasActualData = actualCost > 0;
+      const coverage = totalRequests > 0 ? actualCostRequests / totalRequests : 0;
+      const delta = hasActualData ? actualCost - estimatedCost : null;
+      
+      // Calculate accuracy metrics
+      let averageAccuracy = null;
+      let avgDelta = null;
+      if (hasActualData && estimatedCost > 0) {
+        averageAccuracy = Math.min(actualCost, estimatedCost) / Math.max(actualCost, estimatedCost);
+        avgDelta = delta / totalRequests; // Average delta per request
+      }
       
       return {
         provider: provider.modelProvider,
         usage: {
           totalRequests,
-          actualCostRequests: 0, // Will be populated once migration is applied
-          coverage: 0 // Will be calculated once migration is applied
+          actualCostRequests,
+          coverage
         },
         costs: {
           estimated: estimatedCost,
-          actual: null, // Will be populated once migration is applied
-          delta: null // Will be calculated once migration is applied
+          actual: hasActualData ? actualCost : null,
+          delta: delta
         },
         accuracy: {
-          average: null, // Will be populated once migration is applied
-          avgDelta: null, // Will be populated once migration is applied
-          sampleSize: 0 // Will be populated once migration is applied
+          average: averageAccuracy,
+          avgDelta: avgDelta,
+          sampleSize: actualCostRequests
         }
       };
     });
 
-    // Process daily usage data
+    // Process daily usage data with reconciliation
     const dailyTrend = (dailyUsage as any[]).map(day => {
       const dateStr = day.createdAt.toISOString().split('T')[0];
+      
+      // Find reconciliation data for this date
+      const dayReconciliationData = costReconciliationData.filter(r => {
+        const rDateStr = r.createdAt.toISOString().split('T')[0];
+        return rDateStr === dateStr;
+      });
+      
+      const actualCost = dayReconciliationData.reduce((sum, r) => sum + (r.apiCost || 0), 0);
+      const actualCostCount = dayReconciliationData.length;
+      const hasActualData = actualCost > 0;
+      const estimatedCost = day._sum.apiCost || 0;
+      
+      // Calculate average accuracy for the day
+      let avgAccuracy = 0;
+      if (hasActualData && estimatedCost > 0) {
+        avgAccuracy = Math.min(actualCost, estimatedCost) / Math.max(actualCost, estimatedCost);
+      }
+      
       return {
         date: dateStr,
-        estimatedCost: day._sum.apiCost || 0,
-        actualCost: day._sum.apiCost || 0, // Same as estimated for now
+        estimatedCost,
+        actualCost: hasActualData ? actualCost : null,
         requestCount: day._count.id || 0,
-        actualCostCount: 0,
-        avgAccuracy: 0
+        actualCostCount,
+        avgAccuracy: hasActualData ? avgAccuracy : null
       };
     });
 
@@ -195,7 +286,7 @@ export async function GET(req: NextRequest) {
         coverageRate,
         averageAccuracy,
         totalRequests,
-        actualCostRequests
+        actualCostRequests: reconciliationRecordCount
       },
       models,
       providers,

@@ -53,10 +53,10 @@ interface UsageData {
   dailyTrend: Array<{
     date: string;
     estimatedCost: number;
-    actualCost: number;
+    actualCost: number | null;
     requestCount: number;
     actualCostCount: number;
-    avgAccuracy: number;
+    avgAccuracy: number | null;
   }>;
 }
 
@@ -101,15 +101,29 @@ export default function AdminUsagePage() {
   const [data, setData] = useState<UsageData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [selectedProvider, setSelectedProvider] = useState<string>('all');
+  const [startDate, setStartDate] = useState<string>('');
+  const [endDate, setEndDate] = useState<string>('');
 
   useEffect(() => {
     fetchUsageData();
-  }, []);
+  }, [selectedProvider, startDate, endDate]);
 
   const fetchUsageData = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/admin/usage');
+      const params = new URLSearchParams();
+      if (selectedProvider !== 'all') {
+        params.set('provider', selectedProvider);
+      }
+      if (startDate) {
+        params.set('startDate', startDate);
+      }
+      if (endDate) {
+        params.set('endDate', endDate);
+      }
+      
+      const response = await fetch(`/api/admin/usage?${params.toString()}`);
       if (!response.ok) {
         throw new Error('Failed to fetch usage data');
       }
@@ -173,6 +187,87 @@ export default function AdminUsagePage() {
             Refresh
           </button>
         </div>
+      </div>
+
+      {/* Filters */}
+      <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-6">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div>
+            <label htmlFor="provider" className="block text-sm font-medium text-gray-700 mb-2">
+              Filter by Provider
+            </label>
+            <select
+              id="provider"
+              value={selectedProvider}
+              onChange={(e) => setSelectedProvider(e.target.value)}
+              className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+            >
+              <option value="all">All Providers</option>
+              <option value="openai">OpenAI</option>
+              <option value="anthropic">Anthropic</option>
+              <option value="google">Google</option>
+              <option value="x-ai">X.AI</option>
+              <option value="deepseek">DeepSeek</option>
+              <option value="mistral">Mistral</option>
+              <option value="meta">Meta</option>
+            </select>
+          </div>
+          
+          <div>
+            <label htmlFor="startDate" className="block text-sm font-medium text-gray-700 mb-2">
+              Start Date
+            </label>
+            <input
+              type="date"
+              id="startDate"
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+              className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+            />
+          </div>
+          
+          <div>
+            <label htmlFor="endDate" className="block text-sm font-medium text-gray-700 mb-2">
+              End Date
+            </label>
+            <input
+              type="date"
+              id="endDate"
+              value={endDate}
+              onChange={(e) => setEndDate(e.target.value)}
+              className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+            />
+          </div>
+          
+          <div className="flex items-end">
+            <button
+              onClick={() => {
+                setSelectedProvider('all');
+                setStartDate('');
+                setEndDate('');
+              }}
+              className="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 w-full"
+            >
+              Clear Filters
+            </button>
+          </div>
+        </div>
+        
+        {(selectedProvider !== 'all' || startDate || endDate) && (
+          <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
+            <div className="flex items-center">
+              <svg className="w-4 h-4 text-blue-400 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+              </svg>
+              <span className="text-sm text-blue-700">
+                Filters active: 
+                {selectedProvider !== 'all' && <span className="ml-1 font-medium">{selectedProvider}</span>}
+                {startDate && <span className="ml-1">from {startDate}</span>}
+                {endDate && <span className="ml-1">to {endDate}</span>}
+              </span>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Legacy Data Notice */}
@@ -351,7 +446,12 @@ export default function AdminUsagePage() {
             <div>
               <h3 className="text-sm font-medium text-gray-700 mb-4">Daily Cost: Estimated vs Actual</h3>
               <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={data.dailyTrend.slice(-14).reverse()}>
+                <BarChart 
+                  data={data.dailyTrend.slice(-14).reverse().map(d => ({
+                    ...d,
+                    actualCost: d.actualCost || undefined // Convert null to undefined for chart
+                  }))}
+                >
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis 
                     dataKey="date" 
@@ -359,7 +459,10 @@ export default function AdminUsagePage() {
                   />
                   <YAxis tickFormatter={(value) => formatCost(value)} />
                   <Tooltip 
-                    formatter={(value: number, name: string) => [formatCost(value), name === 'estimatedCost' ? 'Estimated' : 'Actual']}
+                    formatter={(value: number | null, name: string) => {
+                      if (value === null || value === undefined) return ['No data', 'Actual Cost'];
+                      return [formatCost(value), name === 'estimatedCost' ? 'Estimated' : 'Actual'];
+                    }}
                     labelFormatter={(value) => new Date(value).toLocaleDateString()}
                   />
                   <Bar dataKey="estimatedCost" fill="#3b82f6" name="Estimated Cost" />
@@ -399,11 +502,16 @@ export default function AdminUsagePage() {
           </div>
 
           {/* Daily Accuracy Trend */}
-          {data.dailyTrend.some(d => d.avgAccuracy > 0) && (
+          {data.dailyTrend.some(d => d.avgAccuracy !== null && d.avgAccuracy > 0) && (
             <div className="p-6 border-t border-gray-200">
               <h3 className="text-sm font-medium text-gray-700 mb-4">Daily Cost Accuracy Trend</h3>
               <ResponsiveContainer width="100%" height={200}>
-                <LineChart data={data.dailyTrend.slice(-14).reverse()}>
+                <LineChart 
+                  data={data.dailyTrend.slice(-14).reverse().map(d => ({
+                    ...d,
+                    avgAccuracy: d.avgAccuracy || undefined // Convert null to undefined for chart
+                  }))}
+                >
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis 
                     dataKey="date" 
@@ -414,7 +522,10 @@ export default function AdminUsagePage() {
                     tickFormatter={(value) => `${(value * 100).toFixed(0)}%`}
                   />
                   <Tooltip 
-                    formatter={(value: number) => [`${(value * 100).toFixed(1)}%`, 'Accuracy']}
+                    formatter={(value: number | null) => {
+                      if (value === null || value === undefined) return ['No data', 'Accuracy'];
+                      return [`${(value * 100).toFixed(1)}%`, 'Accuracy'];
+                    }}
                     labelFormatter={(value) => new Date(value).toLocaleDateString()}
                   />
                   <Line 
@@ -423,6 +534,7 @@ export default function AdminUsagePage() {
                     stroke="#10b981" 
                     strokeWidth={2}
                     dot={{ fill: '#10b981', strokeWidth: 2, r: 4 }}
+                    connectNulls={false}
                   />
                 </LineChart>
               </ResponsiveContainer>
