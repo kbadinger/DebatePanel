@@ -146,6 +146,15 @@ export class CostReconciliation {
       }
 
       console.log(`[COST FETCH] OpenAI returned ${buckets.length} usage buckets`);
+      
+      // Debug: Check if buckets have results
+      const bucketsWithResults = buckets.filter(bucket => bucket.results && bucket.results.length > 0);
+      console.log(`[COST FETCH] ${bucketsWithResults.length} buckets have results`);
+      
+      if (bucketsWithResults.length === 0) {
+        console.log(`[COST FETCH] No usage data found for project ${this.openaiProjectId} in time range ${startDate.toISOString()} to ${endDate.toISOString()}`);
+        console.log(`[COST FETCH] This might mean: 1) No API usage in this period, 2) Wrong project ID, or 3) Usage from different project`);
+      }
 
       // OpenAI model pricing (as of Jan 2025) - cost per 1K tokens
       const pricing: OpenAIModelPricing = {
@@ -410,34 +419,19 @@ export class CostReconciliation {
           });
 
           // Update the record with actual cost
-          // For now, just update the apiCost field since new columns don't exist in production
+          // Use only existing columns since production DB doesn't have new columns yet
           try {
-            // Check if new columns exist by trying to update with them
-            try {
-              await prisma.usageRecord.update({
-                where: { id: bestMatch.id },
-                data: {
-                  actualApiCost: cost.cost,
-                  costDelta: cost.cost - (bestMatch.estimatedApiCost || bestMatch.apiCost),
-                  costAccuracy: bestMatch.estimatedApiCost ? 
-                    Math.max(0, 1 - Math.abs(cost.cost - bestMatch.estimatedApiCost) / cost.cost) : null,
-                  hasActualCost: true,
-                  costSource: 'api_fetch',
-                  providerCostFetched: true,
-                  providerCostFetchedAt: new Date(),
-                  reconciliationNotes: `Matched by timestamp and token count (${cost.tokens.input + cost.tokens.output} tokens)`,
-                },
-              });
-            } catch (columnError) {
-              // New columns don't exist, fallback to updating existing apiCost field
-              console.log(`[COST MATCH] New columns not available, updating apiCost field only`);
-              await prisma.usageRecord.update({
-                where: { id: bestMatch.id },
-                data: {
-                  apiCost: cost.cost, // Use the existing apiCost field
-                },
-              });
-            }
+            await prisma.usageRecord.update({
+              where: { id: bestMatch.id },
+              data: {
+                apiCost: cost.cost, // Update existing apiCost field with actual cost
+                // Add reconciliation notes to existing fields if available
+                providerCostFetched: true,
+                providerCostFetchedAt: new Date(),
+                reconciliationNotes: `Matched actual cost $${cost.cost.toFixed(4)} by timestamp and model (${cost.model})`,
+              },
+            });
+            console.log(`[COST MATCH] Updated record ${bestMatch.id} with actual cost $${cost.cost.toFixed(4)}`);
 
             cost.matched = true;
             cost.usageRecordId = bestMatch.id;
