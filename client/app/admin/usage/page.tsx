@@ -447,7 +447,7 @@ export default function AdminUsagePage() {
               <h3 className="text-sm font-medium text-gray-700 mb-4">Daily Cost: Estimated vs Actual</h3>
               <ResponsiveContainer width="100%" height={300}>
                 <BarChart 
-                  data={data.dailyTrend.slice(-14).reverse().map(d => ({
+                  data={data.dailyTrend.reverse().map(d => ({
                     ...d,
                     actualCost: d.actualCost || undefined // Convert null to undefined for chart
                   }))}
