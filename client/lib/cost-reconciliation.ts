@@ -117,35 +117,58 @@ export class CostReconciliation {
         // project_ids: this.openaiProjectId, // TEMPORARILY DISABLED - get all organization usage
       });
 
-      const response = await fetch(`${url}?${params}`, {
-        headers: {
-          'Authorization': `Bearer ${this.openaiAdminKey}`,
-          'Content-Type': 'application/json',
-        },
-      });
+      // Fetch all pages of usage data
+      let allBuckets: OpenAIUsageResponse[] = [];
+      let nextPage: string | null = null;
+      let pageCount = 0;
+      
+      do {
+        pageCount++;
+        console.log(`[COST FETCH] Fetching page ${pageCount}${nextPage ? ` (cursor: ${nextPage.substring(0, 20)}...)` : ''}`);
+        
+        const requestParams = new URLSearchParams(params);
+        if (nextPage) {
+          requestParams.set('page', nextPage);
+        }
 
-      if (!response.ok) {
-        throw new Error(`OpenAI Usage API error: ${response.status} ${response.statusText}`);
-      }
+        const response = await fetch(`${url}?${requestParams}`, {
+          headers: {
+            'Authorization': `Bearer ${this.openaiAdminKey}`,
+            'Content-Type': 'application/json',
+          },
+        });
 
-      const data = await response.json();
-      console.log(`[COST FETCH] OpenAI response structure:`, JSON.stringify(data, null, 2));
+        if (!response.ok) {
+          throw new Error(`OpenAI Usage API error: ${response.status} ${response.statusText}`);
+        }
 
-      // Handle different possible response formats
-      let buckets: OpenAIUsageResponse[] = [];
-      if (Array.isArray(data)) {
-        buckets = data;
-      } else if (data.data && Array.isArray(data.data)) {
-        buckets = data.data;
-      } else if (data.object && data.results) {
-        // Single bucket response
-        buckets = [data];
-      } else {
-        console.error('[COST FETCH] Unexpected OpenAI response format:', data);
-        throw new Error('Unexpected OpenAI API response format');
-      }
+        const data = await response.json();
+        
+        // Log detailed structure only for first page
+        if (pageCount === 1) {
+          console.log(`[COST FETCH] OpenAI response structure:`, JSON.stringify(data, null, 2));
+        }
 
-      console.log(`[COST FETCH] OpenAI returned ${buckets.length} usage buckets`);
+        // Handle pagination response format
+        if (data.data && Array.isArray(data.data)) {
+          allBuckets.push(...data.data);
+          nextPage = data.has_more ? data.next_page : null;
+          console.log(`[COST FETCH] Page ${pageCount}: ${data.data.length} buckets, has_more: ${data.has_more}`);
+        } else {
+          console.error('[COST FETCH] Unexpected OpenAI response format:', data);
+          throw new Error('Unexpected OpenAI API response format');
+        }
+        
+        // Safety limit to prevent infinite loops
+        if (pageCount > 100) {
+          console.warn(`[COST FETCH] Reached page limit (${pageCount}), stopping pagination`);
+          break;
+        }
+        
+      } while (nextPage);
+
+      const buckets = allBuckets;
+      console.log(`[COST FETCH] OpenAI returned ${buckets.length} total usage buckets across ${pageCount} pages`);
       
       // Debug: Check if buckets have results
       const bucketsWithResults = buckets.filter(bucket => bucket.results && bucket.results.length > 0);
@@ -159,21 +182,44 @@ export class CostReconciliation {
 
       // OpenAI model pricing (as of Jan 2025) - cost per 1K tokens
       const pricing: OpenAIModelPricing = {
+        // GPT-4o family
         'gpt-4o': { input: 0.005, output: 0.015 },
         'gpt-4o-2024-11-20': { input: 0.005, output: 0.015 },
+        'gpt-4o-2024-08-06': { input: 0.005, output: 0.015 },
         'gpt-4o-mini': { input: 0.00015, output: 0.0006 },
         'gpt-4o-mini-2024-07-18': { input: 0.00015, output: 0.0006 },
+        
+        // GPT-4 legacy
         'gpt-4': { input: 0.03, output: 0.06 },
         'gpt-4-turbo': { input: 0.01, output: 0.03 },
         'gpt-4-turbo-2024-04-09': { input: 0.01, output: 0.03 },
         'gpt-3.5-turbo': { input: 0.0015, output: 0.002 },
         'gpt-3.5-turbo-0125': { input: 0.0015, output: 0.002 },
+        
+        // GPT-5 family (estimated pricing - adjust based on actual OpenAI pricing)
+        'gpt-5-2025-08-07': { input: 0.01, output: 0.03 },
+        'gpt-5-mini-2025-08-07': { input: 0.0005, output: 0.002 },
+        'gpt-5-nano-2025-08-07': { input: 0.0002, output: 0.001 },
+        
+        // GPT-4.1 family (estimated pricing)
+        'gpt-4.1-2025-04-14': { input: 0.008, output: 0.025 },
+        'gpt-4.1-mini-2025-04-14': { input: 0.0003, output: 0.0012 },
+        'gpt-4.1-nano-2025-04-14': { input: 0.0001, output: 0.0005 },
+        
+        // O1 family
         'o1-preview': { input: 0.015, output: 0.06 },
         'o1-preview-2024-09-12': { input: 0.015, output: 0.06 },
         'o1-mini': { input: 0.003, output: 0.012 },
         'o1-mini-2024-09-12': { input: 0.003, output: 0.012 },
+        'o1-2024-12-17': { input: 0.02, output: 0.08 },
+        
+        // O3 family (estimated pricing)
+        'o3-2025-04-16': { input: 0.025, output: 0.1 },
         'o3-mini': { input: 0.01, output: 0.04 },
-        // Add more models as needed
+        'o3-mini-2025-01-31': { input: 0.01, output: 0.04 },
+        
+        // O4 family (estimated pricing)
+        'o4-mini-2025-04-16': { input: 0.012, output: 0.05 },
       };
 
       // Process the response to calculate costs from usage data
