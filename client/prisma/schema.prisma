@@ -124,7 +124,7 @@ model UsageRecord {
   createdAt       DateTime @default(now())
   
   // Enhanced dual cost tracking
-  estimatedApiCost    Float    // Our calculated estimate
+  estimatedApiCost    Float?   // Our calculated estimate (nullable during migration)
   actualApiCost       Float?   // Real cost from provider (if available)
   costDelta          Float?   // Difference (actual - estimated)
   costAccuracy       Float?   // Accuracy percentage (0-1)

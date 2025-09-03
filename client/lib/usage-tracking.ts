@@ -91,13 +91,13 @@ export class UsageTracker {
           platformFee,
           totalCost,
           // Enhanced dual cost tracking
-          estimatedApiCost,
-          actualApiCost,
-          costDelta,
-          costAccuracy,
-          hasActualCost,
+          estimatedApiCost: estimatedApiCost,
+          actualApiCost: actualApiCost,
+          costDelta: costDelta,
+          costAccuracy: costAccuracy,
+          hasActualCost: hasActualCost,
           providerCostData: providerUsage || null,
-          costSource,
+          costSource: costSource,
         },
       });
 

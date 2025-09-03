@@ -40,6 +40,7 @@ export async function GET(req: NextRequest) {
         _sum: {
           estimatedApiCost: true,
           actualApiCost: true,
+          apiCost: true, // Fallback for records without estimatedApiCost
           totalCost: true,
           inputTokens: true,
           outputTokens: true
@@ -60,6 +61,7 @@ export async function GET(req: NextRequest) {
         _sum: {
           estimatedApiCost: true,
           actualApiCost: true,
+          apiCost: true, // Fallback for records without estimatedApiCost
           totalCost: true,
           inputTokens: true,
           outputTokens: true
@@ -85,6 +87,7 @@ export async function GET(req: NextRequest) {
         _sum: {
           estimatedApiCost: true,
           actualApiCost: true,
+          apiCost: true, // Fallback for records without estimatedApiCost
           totalCost: true
         },
         _avg: {
@@ -138,9 +141,10 @@ export async function GET(req: NextRequest) {
     const actualCostRequests = overallStats._count.hasActualCost || 0;
     const coverageRate = totalRequests > 0 ? actualCostRequests / totalRequests : 0;
     
-    const totalEstimated = overallStats._sum.estimatedApiCost || 0;
+    // Use estimatedApiCost if available, otherwise fall back to apiCost for backward compatibility
+    const totalEstimated = overallStats._sum.estimatedApiCost || overallStats._sum.apiCost || 0;
     const totalActual = overallStats._sum.actualApiCost || 0;
-    const totalDelta = totalActual - totalEstimated;
+    const totalDelta = totalActual > 0 ? totalActual - totalEstimated : null;
     const averageAccuracy = overallStats._avg.costAccuracy || 0;
 
     // Process model usage data
@@ -149,9 +153,10 @@ export async function GET(req: NextRequest) {
       // For now, we'll use the modelId as display name
       const displayName = model.modelId.replace(/[-_]/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
       
-      const estimatedCost = model._sum.estimatedApiCost || 0;
+      // Use estimatedApiCost if available, otherwise fall back to apiCost
+      const estimatedCost = model._sum.estimatedApiCost || model._sum.apiCost || 0;
       const actualCost = model._sum.actualApiCost || 0;
-      const delta = actualCost - estimatedCost;
+      const delta = actualCost > 0 ? actualCost - estimatedCost : null;
       const accuracy = model._avg.costAccuracy || null;
       const hasActualData = (model._count.hasActualCost || 0) > 0;
       
@@ -177,7 +182,8 @@ export async function GET(req: NextRequest) {
 
     // Process provider stats
     const providers = providerStats.map(provider => {
-      const estimatedCost = provider._sum.estimatedApiCost || 0;
+      // Use estimatedApiCost if available, otherwise fall back to apiCost
+      const estimatedCost = provider._sum.estimatedApiCost || provider._sum.apiCost || 0;
       const actualCost = provider._sum.actualApiCost || 0;
       const accuracy = provider._avg.costAccuracy || null;
       const totalRequests = provider._count.id || 0;
