@@ -610,34 +610,90 @@ export class CostReconciliation {
         if (dbError.code === 'P2022') {
           console.log(`[COST MATCH] New columns don't exist, creating summary records instead`);
           
-          // Create summary records using existing schema
+          // First, ensure we have system user and debate for cost tracking
+          let systemUserId: string;
+          let systemDebateId: string;
+          
+          try {
+            // Try to find or create system user
+            let systemUser = await prisma.user.findFirst({
+              where: { email: 'system@cost-reconciliation.internal' }
+            });
+            
+            if (!systemUser) {
+              systemUser = await prisma.user.create({
+                data: {
+                  email: 'system@cost-reconciliation.internal',
+                  name: 'Cost Reconciliation System',
+                  isAdmin: true
+                }
+              });
+              console.log(`[COST MATCH] Created system user: ${systemUser.id}`);
+            }
+            systemUserId = systemUser.id;
+            
+            // Try to find or create system debate
+            let systemDebate = await prisma.debate.findFirst({
+              where: { 
+                topic: 'Cost Reconciliation Data',
+                userId: systemUserId 
+              }
+            });
+            
+            if (!systemDebate) {
+              systemDebate = await prisma.debate.create({
+                data: {
+                  topic: 'Cost Reconciliation Data',
+                  description: 'System-generated debate for storing API cost reconciliation data',
+                  rounds: 1,
+                  status: 'completed',
+                  userId: systemUserId,
+                  completedAt: new Date()
+                }
+              });
+              console.log(`[COST MATCH] Created system debate: ${systemDebate.id}`);
+            }
+            systemDebateId = systemDebate.id;
+            
+          } catch (systemSetupError) {
+            console.error(`[COST MATCH] Failed to set up system records:`, systemSetupError);
+            return { matched: 0, updated: 0 };
+          }
+          
+          // Create summary records using existing schema with valid foreign keys
           let created = 0;
           for (const cost of costs.slice(0, 10)) { // Limit to avoid spam
             try {
-              await prisma.usageRecord.create({
+              const record = await prisma.usageRecord.create({
                 data: {
-                  userId: 'system', // System user for cost data
-                  debateId: 'cost-reconciliation',
+                  userId: systemUserId,
+                  debateId: systemDebateId,
                   roundNumber: 0,
                   modelId: cost.model,
                   modelProvider: provider,
                   inputTokens: cost.tokens.input,
                   outputTokens: cost.tokens.output,
-                  apiCost: cost.cost, // Use existing column
+                  apiCost: cost.cost,
                   platformFee: 0,
                   totalCost: cost.cost,
                   createdAt: new Date(cost.timestamp),
                 },
               });
+              console.log(`[COST MATCH] Created record ${record.id} for ${cost.model}: $${cost.cost}`);
               created++;
             } catch (createError) {
-              console.error(`[COST MATCH] Failed to create record:`, createError);
+              console.error(`[COST MATCH] Failed to create record for ${cost.model}:`, createError);
+              console.error(`[COST MATCH] Error details:`, {
+                code: (createError as any).code,
+                message: (createError as any).message
+              });
             }
           }
           
-          console.log(`[COST MATCH] Created ${created} summary records for ${provider} costs`);
+          console.log(`[COST MATCH] Successfully created ${created}/${costs.slice(0, 10).length} summary records for ${provider} costs`);
           return { matched: created, updated: 0 };
         } else {
+          console.error(`[COST MATCH] Unexpected database error:`, dbError);
           throw dbError;
         }
       }
