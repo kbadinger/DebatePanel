@@ -289,21 +289,34 @@ export class CostReconciliation {
           });
 
           // Update the record with actual cost
+          // For now, just update the apiCost field since new columns don't exist in production
           try {
-            await prisma.usageRecord.update({
-              where: { id: bestMatch.id },
-              data: {
-                actualApiCost: cost.cost,
-                costDelta: cost.cost - (bestMatch.estimatedApiCost || bestMatch.apiCost),
-                costAccuracy: bestMatch.estimatedApiCost ? 
-                  Math.max(0, 1 - Math.abs(cost.cost - bestMatch.estimatedApiCost) / cost.cost) : null,
-                hasActualCost: true,
-                costSource: 'api_fetch',
-                providerCostFetched: true,
-                providerCostFetchedAt: new Date(),
-                reconciliationNotes: `Matched by timestamp and token count (${cost.tokens.input + cost.tokens.output} tokens)`,
-              },
-            });
+            // Check if new columns exist by trying to update with them
+            try {
+              await prisma.usageRecord.update({
+                where: { id: bestMatch.id },
+                data: {
+                  actualApiCost: cost.cost,
+                  costDelta: cost.cost - (bestMatch.estimatedApiCost || bestMatch.apiCost),
+                  costAccuracy: bestMatch.estimatedApiCost ? 
+                    Math.max(0, 1 - Math.abs(cost.cost - bestMatch.estimatedApiCost) / cost.cost) : null,
+                  hasActualCost: true,
+                  costSource: 'api_fetch',
+                  providerCostFetched: true,
+                  providerCostFetchedAt: new Date(),
+                  reconciliationNotes: `Matched by timestamp and token count (${cost.tokens.input + cost.tokens.output} tokens)`,
+                },
+              });
+            } catch (columnError) {
+              // New columns don't exist, fallback to updating existing apiCost field
+              console.log(`[COST MATCH] New columns not available, updating apiCost field only`);
+              await prisma.usageRecord.update({
+                where: { id: bestMatch.id },
+                data: {
+                  apiCost: cost.cost, // Use the existing apiCost field
+                },
+              });
+            }
 
             cost.matched = true;
             cost.usageRecordId = bestMatch.id;

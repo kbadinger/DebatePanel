@@ -123,6 +123,12 @@ export async function GET(req: NextRequest) {
     const since = new Date();
     since.setDate(since.getDate() - days);
 
+    // For now, return empty data since production DB doesn't have the new columns yet
+    const recentRecords = [];
+    const reconciliationStats = [];
+
+    // Once database migration is applied to production, this can be uncommented:
+    /*
     const [recentRecords, reconciliationStats] = await Promise.all([
       // Recent records with actual costs
       prisma.usageRecord.findMany({
@@ -171,6 +177,7 @@ export async function GET(req: NextRequest) {
         }
       })
     ]);
+    */
 
     await prisma.$disconnect();
 
