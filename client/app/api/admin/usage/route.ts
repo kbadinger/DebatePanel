@@ -105,7 +105,7 @@ export async function GET(req: NextRequest) {
         const endDate = dateFilter.lte || new Date();
         
         if (provider && provider !== 'all') {
-          // With provider filter
+          // With provider filter - EXCLUDE reconciliation records
           return await prisma.$queryRaw`
             SELECT 
               DATE("createdAt") as date,
@@ -115,12 +115,13 @@ export async function GET(req: NextRequest) {
             WHERE "createdAt" >= ${startDate}
               AND "createdAt" <= ${endDate}
               AND "modelProvider" = ${provider}
+              AND "roundNumber" != 0
             GROUP BY DATE("createdAt")
             ORDER BY DATE("createdAt") DESC
             LIMIT 30
           `;
         } else {
-          // Without provider filter
+          // Without provider filter - EXCLUDE reconciliation records
           return await prisma.$queryRaw`
             SELECT 
               DATE("createdAt") as date,
@@ -129,6 +130,7 @@ export async function GET(req: NextRequest) {
             FROM "UsageRecord"
             WHERE "createdAt" >= ${startDate}
               AND "createdAt" <= ${endDate}
+              AND "roundNumber" != 0
             GROUP BY DATE("createdAt")
             ORDER BY DATE("createdAt") DESC
             LIMIT 30
