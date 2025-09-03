@@ -445,27 +445,59 @@ export class CostReconciliation {
         ending_at: endDate.toISOString(),
       });
 
-      const response = await fetch(`${url}?${params}`, {
-        method: 'GET',
-        headers: {
-          'x-api-key': this.anthropicAdminKey,
-          'anthropic-version': '2023-06-01',
-        },
-      });
+      // Fetch all pages of cost data
+      let allData: any[] = [];
+      let nextPage: string | null = null;
+      let pageCount = 0;
+      
+      do {
+        pageCount++;
+        console.log(`[COST FETCH] Fetching Anthropic page ${pageCount}${nextPage ? ` (cursor: ${nextPage.substring(0, 20)}...)` : ''}`);
+        
+        const requestParams = new URLSearchParams(params);
+        if (nextPage) {
+          requestParams.set('page', nextPage);
+        }
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error(`[COST FETCH] Anthropic API error details:`, {
-          status: response.status,
-          statusText: response.statusText,
-          body: errorText,
-          headers: Object.fromEntries(response.headers.entries())
+        const response = await fetch(`${url}?${requestParams}`, {
+          method: 'GET',
+          headers: {
+            'x-api-key': this.anthropicAdminKey,
+            'anthropic-version': '2023-06-01',
+          },
         });
-        throw new Error(`Anthropic Cost API error: ${response.status} ${response.statusText}. Body: ${errorText}`);
-      }
 
-      const data: AnthropicCostResponse = await response.json();
-      console.log(`[COST FETCH] Anthropic returned ${data.data.length} cost buckets`);
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error(`[COST FETCH] Anthropic API error details:`, {
+            status: response.status,
+            statusText: response.statusText,
+            body: errorText,
+            headers: Object.fromEntries(response.headers.entries())
+          });
+          throw new Error(`Anthropic Cost API error: ${response.status} ${response.statusText}. Body: ${errorText}`);
+        }
+
+        const data: AnthropicCostResponse = await response.json();
+        
+        // Log detailed structure only for first page
+        if (pageCount === 1) {
+          console.log(`[COST FETCH] Anthropic response structure:`, JSON.stringify(data, null, 2));
+        }
+        
+        allData.push(...data.data);
+        nextPage = data.has_more ? data.next_page : null;
+        console.log(`[COST FETCH] Page ${pageCount}: ${data.data.length} buckets, has_more: ${data.has_more}`);
+        
+        // Safety limit to prevent infinite loops
+        if (pageCount > 100) {
+          console.warn(`[COST FETCH] Reached page limit (${pageCount}), stopping pagination`);
+          break;
+        }
+        
+      } while (nextPage);
+
+      console.log(`[COST FETCH] Anthropic returned ${allData.length} total cost buckets across ${pageCount} pages`);
 
       // Process the response
       const costs: Array<{
@@ -479,10 +511,10 @@ export class CostReconciliation {
 
       let totalCost = 0;
 
-      for (const bucket of data.data) {
+      for (const bucket of allData) {
         for (const result of bucket.results) {
-          // Parse cost - API returns values in dollars already
-          const costInDollars = parseFloat(result.amount);
+          // Parse cost - API returns values in cents, convert to dollars
+          const costInDollars = parseFloat(result.amount) / 100;
           
           // Extract model from model field or description
           let model = result.model || 'unknown';
