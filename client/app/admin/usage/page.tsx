@@ -455,7 +455,7 @@ export default function AdminUsagePage() {
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis 
                     dataKey="date" 
-                    tickFormatter={(value) => new Date(value).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                    tickFormatter={(value) => new Date(value + 'T00:00:00Z').toLocaleDateString(undefined, { month: 'short', day: 'numeric', timeZone: 'UTC' })}
                   />
                   <YAxis tickFormatter={(value) => formatCost(value)} />
                   <Tooltip 
@@ -463,7 +463,7 @@ export default function AdminUsagePage() {
                       if (value === null || value === undefined) return ['No data', name];
                       return [formatCost(value), name];
                     }}
-                    labelFormatter={(value) => new Date(value).toLocaleDateString()}
+                    labelFormatter={(value) => new Date(value + 'T00:00:00Z').toLocaleDateString(undefined, { timeZone: 'UTC' })}
                   />
                   <Legend />
                   <Bar dataKey="estimatedCost" fill="#3b82f6" name="Estimated Cost" />
@@ -521,7 +521,7 @@ export default function AdminUsagePage() {
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis 
                     dataKey="date" 
-                    tickFormatter={(value) => new Date(value).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                    tickFormatter={(value) => new Date(value + 'T00:00:00Z').toLocaleDateString(undefined, { month: 'short', day: 'numeric', timeZone: 'UTC' })}
                   />
                   <YAxis 
                     domain={[0, 1]}
@@ -532,7 +532,7 @@ export default function AdminUsagePage() {
                       if (value === null || value === undefined) return ['No data', 'Accuracy'];
                       return [`${(value * 100).toFixed(1)}%`, 'Accuracy'];
                     }}
-                    labelFormatter={(value) => new Date(value).toLocaleDateString()}
+                    labelFormatter={(value) => new Date(value + 'T00:00:00Z').toLocaleDateString(undefined, { timeZone: 'UTC' })}
                   />
                   <Line 
                     type="monotone" 
