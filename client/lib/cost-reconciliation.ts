@@ -83,14 +83,17 @@ interface CostReconciliationResult {
 }
 
 export class CostReconciliation {
-  private openaiApiKey: string;
+  private openaiAdminKey: string;
+  private openaiProjectId: string;
   private anthropicApiKey: string;
 
   constructor() {
-    this.openaiApiKey = process.env.OPENAI_API_KEY!;
+    this.openaiAdminKey = process.env.OPENAI_ADMIN_API_KEY!;
+    this.openaiProjectId = process.env.OPENAI_PROJECT_ID!;
     this.anthropicApiKey = process.env.ANTHROPIC_API_KEY!;
 
-    if (!this.openaiApiKey) throw new Error('OPENAI_API_KEY not found');
+    if (!this.openaiAdminKey) throw new Error('OPENAI_ADMIN_API_KEY not found');
+    if (!this.openaiProjectId) throw new Error('OPENAI_PROJECT_ID not found');
     if (!this.anthropicApiKey) throw new Error('ANTHROPIC_API_KEY not found');
   }
 
@@ -111,11 +114,12 @@ export class CostReconciliation {
         end_time: endTimestamp.toString(),
         bucket_width: '1h', // Hourly buckets for better matching
         group_by: 'model', // Group by model to get model-specific data
+        project_ids: this.openaiProjectId, // Filter to DebatePanel project only
       });
 
       const response = await fetch(`${url}?${params}`, {
         headers: {
-          'Authorization': `Bearer ${this.openaiApiKey}`,
+          'Authorization': `Bearer ${this.openaiAdminKey}`,
           'Content-Type': 'application/json',
         },
       });
