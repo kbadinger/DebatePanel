@@ -33,44 +33,51 @@ export class UsageTracker {
       return;
     }
 
-    // Calculate costs - use real provider cost if available, otherwise estimate
-    let apiCost: number;
-    let isRealCost = false;
+    // Always calculate estimated cost
+    const inputCost = (usage.inputTokens / 1000) * pricing.costPer1kTokens.input;
+    const outputCost = (usage.outputTokens / 1000) * pricing.costPer1kTokens.output;
+    const estimatedApiCost = inputCost + outputCost;
+
+    // Try to extract actual cost from provider response
+    let actualApiCost: number | null = null;
+    let hasActualCost = false;
+    let costSource = 'estimated';
     
     if (providerUsage) {
       console.log(`[COST DEBUG] Checking for real cost data in provider usage:`, providerUsage);
       
       // Check for real cost data from different providers
-      const realCost = providerUsage.cost || 
-                       providerUsage.totalCost || 
-                       providerUsage.usage?.cost ||
-                       providerUsage.usage_cost ||
-                       providerUsage.totalTokenCost;
+      const realCost = this.extractActualCost(providerUsage);
       
       if (realCost && typeof realCost === 'number' && realCost > 0) {
-        apiCost = realCost;
-        isRealCost = true;
-        console.log(`[COST DEBUG] ✅ Using REAL API cost: $${apiCost} for ${model.displayName}`);
+        actualApiCost = realCost;
+        hasActualCost = true;
+        costSource = 'actual';
+        console.log(`[COST DEBUG] ✅ Found REAL API cost: $${actualApiCost} for ${model.displayName}`);
       } else {
-        // Fallback to estimated cost
-        const inputCost = (usage.inputTokens / 1000) * pricing.costPer1kTokens.input;
-        const outputCost = (usage.outputTokens / 1000) * pricing.costPer1kTokens.output;
-        apiCost = inputCost + outputCost;
-        console.log(`[COST DEBUG] ⚠️ Using ESTIMATED cost: $${apiCost} for ${model.displayName} (no real cost found)`);
+        console.log(`[COST DEBUG] ⚠️ No real cost found, using estimated cost: $${estimatedApiCost} for ${model.displayName}`);
       }
     } else {
-      // No provider usage data, use estimates
-      const inputCost = (usage.inputTokens / 1000) * pricing.costPer1kTokens.input;
-      const outputCost = (usage.outputTokens / 1000) * pricing.costPer1kTokens.output;
-      apiCost = inputCost + outputCost;
-      console.log(`[COST DEBUG] ⚠️ Using ESTIMATED cost: $${apiCost} for ${model.displayName} (no provider usage)`);
+      console.log(`[COST DEBUG] ⚠️ No provider usage data, using estimated cost: $${estimatedApiCost} for ${model.displayName}`);
     }
+
+    // Calculate accuracy metrics if we have actual cost
+    let costDelta: number | null = null;
+    let costAccuracy: number | null = null;
     
-    const platformFee = apiCost * pricing.platformMarkup;
-    const totalCost = apiCost + platformFee;
+    if (hasActualCost && actualApiCost) {
+      costDelta = actualApiCost - estimatedApiCost;
+      // Accuracy = 1 - (|delta| / actual), capped at 0
+      costAccuracy = Math.max(0, 1 - (Math.abs(costDelta) / actualApiCost));
+    }
+
+    // Use actual cost if available, otherwise use estimated for billing
+    const billingApiCost = actualApiCost || estimatedApiCost;
+    const platformFee = billingApiCost * pricing.platformMarkup;
+    const totalCost = billingApiCost + platformFee;
 
     try {
-      // Record the usage
+      // Record the usage with dual cost tracking
       await prisma.usageRecord.create({
         data: {
           userId: this.userId,
@@ -80,23 +87,62 @@ export class UsageTracker {
           modelProvider: model.provider,
           inputTokens: usage.inputTokens,
           outputTokens: usage.outputTokens,
-          apiCost,
+          apiCost: billingApiCost, // Legacy field - use actual if available
           platformFee,
           totalCost,
-          // Note: We'd need to add this field to schema if we want to track real vs estimated
-          // isRealCost,
+          // Enhanced dual cost tracking
+          estimatedApiCost,
+          actualApiCost,
+          costDelta,
+          costAccuracy,
+          hasActualCost,
+          providerCostData: providerUsage || null,
+          costSource,
         },
       });
 
       console.log(`[COST DEBUG] ✅ Tracked usage for ${model.displayName}:`, {
         tokens: usage,
-        costs: { apiCost, platformFee, totalCost },
-        costType: isRealCost ? 'REAL' : 'ESTIMATED'
+        costs: { 
+          estimated: estimatedApiCost, 
+          actual: actualApiCost,
+          delta: costDelta,
+          accuracy: costAccuracy ? `${(costAccuracy * 100).toFixed(1)}%` : 'N/A',
+          billing: billingApiCost,
+          platformFee, 
+          totalCost 
+        },
+        costSource
       });
     } catch (error) {
       console.error('Failed to track usage:', error);
       // Don't throw - we don't want usage tracking failures to break debates
     }
+  }
+
+  private extractActualCost(providerUsage: any): number | null {
+    // OpenAI format variations
+    if (providerUsage.total_cost) return providerUsage.total_cost;
+    if (providerUsage.usage?.total_cost) return providerUsage.usage.total_cost;
+    if (providerUsage.cost) return providerUsage.cost;
+    if (providerUsage.totalCost) return providerUsage.totalCost;
+    
+    // Anthropic format variations
+    if (providerUsage.usage?.cost) return providerUsage.usage.cost;
+    if (providerUsage.billing?.cost) return providerUsage.billing.cost;
+    
+    // Google/Gemini format variations
+    if (providerUsage.usage_metadata?.total_cost) return providerUsage.usage_metadata.total_cost;
+    if (providerUsage.usageMetadata?.totalCost) return providerUsage.usageMetadata.totalCost;
+    
+    // Other provider formats
+    if (providerUsage.usage_cost) return providerUsage.usage_cost;
+    if (providerUsage.totalTokenCost) return providerUsage.totalTokenCost;
+    
+    // DeepSeek and other providers might use different formats
+    if (providerUsage.cost_info?.total_cost) return providerUsage.cost_info.total_cost;
+    
+    return null;
   }
 
   async getDebateTotalCost(): Promise<number> {

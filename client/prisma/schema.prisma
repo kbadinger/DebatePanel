@@ -118,16 +118,26 @@ model UsageRecord {
   modelProvider   String
   inputTokens     Int
   outputTokens    Int
-  apiCost         Float    // What we paid the provider
+  apiCost         Float    // What we paid the provider (legacy - now estimated or actual)
   platformFee     Float    // Our markup
   totalCost       Float    // What user pays
   createdAt       DateTime @default(now())
+  
+  // Enhanced dual cost tracking
+  estimatedApiCost    Float    // Our calculated estimate
+  actualApiCost       Float?   // Real cost from provider (if available)
+  costDelta          Float?   // Difference (actual - estimated)
+  costAccuracy       Float?   // Accuracy percentage (0-1)
+  hasActualCost      Boolean  @default(false)
+  providerCostData   Json?    // Raw cost data from provider
+  costSource         String?  // 'estimated', 'actual', 'manual'
   
   user   User   @relation(fields: [userId], references: [id])
   debate Debate @relation(fields: [debateId], references: [id])
   
   @@index([userId, createdAt])
   @@index([debateId, roundNumber])
+  @@index([hasActualCost, modelProvider])  // For cost analysis queries
 }
 
 model Debate {

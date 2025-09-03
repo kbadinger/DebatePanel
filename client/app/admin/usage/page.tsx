@@ -1,12 +1,508 @@
 'use client';
 
-export default function AdminUsagePage() {
+import { useEffect, useState } from 'react';
+import { formatCost } from '@/lib/models/pricing';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from 'recharts';
+
+interface UsageData {
+  summary: {
+    totalEstimatedCost: number;
+    totalActualCost: number | null;
+    totalDelta: number | null;
+    coverageRate: number;
+    averageAccuracy: number;
+    totalRequests: number;
+    actualCostRequests: number;
+  };
+  models: Array<{
+    modelId: string;
+    displayName: string;
+    provider: string;
+    usage: {
+      count: number;
+      inputTokens: number;
+      outputTokens: number;
+      actualCostCount: number;
+    };
+    costs: {
+      estimated: number;
+      actual: number | null;
+      delta: number | null;
+      accuracy: number | null;
+      hasActualData: boolean;
+    };
+  }>;
+  providers: Array<{
+    provider: string;
+    usage: {
+      totalRequests: number;
+      actualCostRequests: number;
+      coverage: number;
+    };
+    costs: {
+      estimated: number;
+      actual: number | null;
+      delta: number | null;
+    };
+    accuracy: {
+      average: number | null;
+      avgDelta: number | null;
+      sampleSize: number;
+    };
+  }>;
+  dailyTrend: Array<{
+    date: string;
+    estimatedCost: number;
+    actualCost: number;
+    requestCount: number;
+    actualCostCount: number;
+    avgAccuracy: number;
+  }>;
+}
+
+function CostComparisonCell({ costs }: { costs: { estimated: number; actual: number | null; delta: number | null; accuracy: number | null; hasActualData: boolean } }) {
   return (
-    <div>
-      <h1 className="text-3xl font-bold text-slate-900 mb-8">Usage Analytics</h1>
-      <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-8 text-center">
-        <p className="text-slate-600">Detailed usage analytics coming soon...</p>
-        <p className="text-sm text-slate-500 mt-2">This page will show detailed usage patterns, model performance, and cost analysis.</p>
+    <div className="flex flex-col space-y-1">
+      <span className="font-medium text-gray-900">{formatCost(costs.estimated)}</span>
+      {costs.hasActualData ? (
+        <>
+          <span className="text-sm text-green-600 font-medium">
+            {formatCost(costs.actual)} ✓
+          </span>
+          {costs.delta !== null && (
+            <span className={`text-xs flex items-center ${
+              costs.delta < 0 ? 'text-blue-500' : costs.delta > 0 ? 'text-orange-500' : 'text-gray-500'
+            }`}>
+              {costs.delta < 0 ? '▼' : costs.delta > 0 ? '▲' : '='} {formatCost(Math.abs(costs.delta))}
+              {costs.accuracy !== null && (
+                <span className="ml-1">({(costs.accuracy * 100).toFixed(0)}%)</span>
+              )}
+            </span>
+          )}
+        </>
+      ) : (
+        <span className="text-xs text-gray-400">No actual data</span>
+      )}
+    </div>
+  );
+}
+
+function MetricCard({ title, value, subtitle, className = '' }: { title: string; value: string; subtitle?: string; className?: string }) {
+  return (
+    <div className={`bg-white rounded-lg shadow-sm border border-slate-200 p-6 ${className}`}>
+      <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wide">{title}</h3>
+      <p className="mt-2 text-3xl font-bold text-gray-900">{value}</p>
+      {subtitle && <p className="text-sm text-gray-600 mt-1">{subtitle}</p>}
+    </div>
+  );
+}
+
+export default function AdminUsagePage() {
+  const [data, setData] = useState<UsageData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetchUsageData();
+  }, []);
+
+  const fetchUsageData = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch('/api/admin/usage');
+      if (!response.ok) {
+        throw new Error('Failed to fetch usage data');
+      }
+      const result = await response.json();
+      setData(result);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unknown error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div>
+        <h1 className="text-3xl font-bold text-slate-900 mb-8">Usage Analytics</h1>
+        <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-8 text-center">
+          <div className="animate-pulse">
+            <div className="h-4 bg-slate-200 rounded w-3/4 mx-auto mb-4"></div>
+            <div className="h-4 bg-slate-200 rounded w-1/2 mx-auto"></div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div>
+        <h1 className="text-3xl font-bold text-slate-900 mb-8">Usage Analytics</h1>
+        <div className="bg-red-50 rounded-lg border border-red-200 p-8 text-center">
+          <p className="text-red-600">Error: {error}</p>
+          <button 
+            onClick={fetchUsageData}
+            className="mt-4 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (!data) return null;
+
+  return (
+    <div className="space-y-8">
+      <div className="flex justify-between items-center">
+        <h1 className="text-3xl font-bold text-slate-900">Usage Analytics</h1>
+        <button
+          onClick={fetchUsageData}
+          className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+        >
+          Refresh
+        </button>
+      </div>
+
+      {/* Summary Metrics */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <MetricCard
+          title="Total Estimated Cost"
+          value={formatCost(data.summary.totalEstimatedCost)}
+          subtitle={`${data.summary.totalRequests} total requests`}
+        />
+        
+        <MetricCard
+          title="Total Actual Cost"
+          value={data.summary.totalActualCost ? formatCost(data.summary.totalActualCost) : 'N/A'}
+          subtitle={`${data.summary.actualCostRequests} with real cost data`}
+          className={data.summary.totalActualCost ? 'border-green-200 bg-green-50' : ''}
+        />
+        
+        <MetricCard
+          title="Cost Delta"
+          value={data.summary.totalDelta ? 
+            `${data.summary.totalDelta >= 0 ? '+' : ''}${formatCost(data.summary.totalDelta)}` : 
+            'N/A'
+          }
+          subtitle={data.summary.totalDelta ? 
+            (data.summary.totalDelta < 0 ? 'Under-estimated' : 'Over-estimated') : 
+            'No comparison data'
+          }
+          className={data.summary.totalDelta ? 
+            (data.summary.totalDelta < 0 ? 'border-blue-200 bg-blue-50' : 'border-orange-200 bg-orange-50') : 
+            ''
+          }
+        />
+        
+        <MetricCard
+          title="Average Accuracy"
+          value={data.summary.averageAccuracy ? `${(data.summary.averageAccuracy * 100).toFixed(1)}%` : 'N/A'}
+          subtitle={`${(data.summary.coverageRate * 100).toFixed(1)}% coverage rate`}
+        />
+      </div>
+
+      {/* Model Usage Table */}
+      <div className="bg-white rounded-lg shadow-sm border border-slate-200">
+        <div className="px-6 py-4 border-b border-gray-200">
+          <h2 className="text-lg font-semibold text-gray-900">Model Usage Breakdown</h2>
+          <p className="text-sm text-gray-600">Estimated vs actual costs with accuracy metrics</p>
+        </div>
+        
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Model</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Provider</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Times Used</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tokens (In/Out)</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cost Analysis</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Data Coverage</th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {data.models.map((model) => (
+                <tr key={model.modelId} className="hover:bg-gray-50">
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm font-medium text-gray-900">{model.displayName}</div>
+                    <div className="text-xs text-gray-500">{model.modelId}</div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                      {model.provider}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    {model.usage.count.toLocaleString()}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm text-gray-900">
+                      {(model.usage.inputTokens / 1000).toFixed(0)}k / {(model.usage.outputTokens / 1000).toFixed(0)}k
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <CostComparisonCell costs={model.costs} />
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="flex flex-col">
+                      <span className="text-sm text-gray-900">
+                        {model.usage.actualCostCount} / {model.usage.count}
+                      </span>
+                      <span className="text-xs text-gray-500">
+                        {((model.usage.actualCostCount / model.usage.count) * 100).toFixed(0)}% coverage
+                      </span>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Provider Summary */}
+      <div className="bg-white rounded-lg shadow-sm border border-slate-200">
+        <div className="px-6 py-4 border-b border-gray-200">
+          <h2 className="text-lg font-semibold text-gray-900">Provider Summary</h2>
+          <p className="text-sm text-gray-600">Cost accuracy by AI provider</p>
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-6">
+          {data.providers.map((provider) => (
+            <div key={provider.provider} className="border border-gray-200 rounded-lg p-4">
+              <h3 className="font-medium text-gray-900 mb-3">{provider.provider}</h3>
+              
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Total Requests:</span>
+                  <span className="font-medium">{provider.usage.totalRequests.toLocaleString()}</span>
+                </div>
+                
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Actual Cost Data:</span>
+                  <span className="font-medium">
+                    {provider.usage.actualCostRequests} ({(provider.usage.coverage * 100).toFixed(0)}%)
+                  </span>
+                </div>
+                
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Estimated Cost:</span>
+                  <span className="font-medium">{formatCost(provider.costs.estimated)}</span>
+                </div>
+                
+                {provider.costs.actual && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Actual Cost:</span>
+                    <span className="font-medium text-green-600">{formatCost(provider.costs.actual)}</span>
+                  </div>
+                )}
+                
+                {provider.accuracy.average && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Avg Accuracy:</span>
+                    <span className="font-medium">{(provider.accuracy.average * 100).toFixed(1)}%</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Cost Accuracy Visualizations */}
+      {data.dailyTrend && data.dailyTrend.length > 0 && (
+        <div className="bg-white rounded-lg shadow-sm border border-slate-200">
+          <div className="px-6 py-4 border-b border-gray-200">
+            <h2 className="text-lg font-semibold text-gray-900">Cost Analysis Trends</h2>
+            <p className="text-sm text-gray-600">Daily usage patterns and accuracy metrics</p>
+          </div>
+          
+          <div className="p-6 grid grid-cols-1 lg:grid-cols-2 gap-8">
+            {/* Daily Cost Comparison */}
+            <div>
+              <h3 className="text-sm font-medium text-gray-700 mb-4">Daily Cost: Estimated vs Actual</h3>
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={data.dailyTrend.slice(-14).reverse()}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis 
+                    dataKey="date" 
+                    tickFormatter={(value) => new Date(value).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                  />
+                  <YAxis tickFormatter={(value) => formatCost(value)} />
+                  <Tooltip 
+                    formatter={(value: number, name: string) => [formatCost(value), name === 'estimatedCost' ? 'Estimated' : 'Actual']}
+                    labelFormatter={(value) => new Date(value).toLocaleDateString()}
+                  />
+                  <Bar dataKey="estimatedCost" fill="#3b82f6" name="Estimated Cost" />
+                  <Bar dataKey="actualCost" fill="#10b981" name="Actual Cost" />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+
+            {/* Provider Cost Coverage */}
+            <div>
+              <h3 className="text-sm font-medium text-gray-700 mb-4">Cost Data Coverage by Provider</h3>
+              <ResponsiveContainer width="100%" height={300}>
+                <PieChart>
+                  <Pie
+                    data={data.providers.map(p => ({
+                      name: p.provider,
+                      value: p.usage.coverage * 100,
+                      actualCount: p.usage.actualCostRequests,
+                      totalCount: p.usage.totalRequests
+                    }))}
+                    cx="50%"
+                    cy="50%"
+                    outerRadius={100}
+                    fill="#8884d8"
+                    dataKey="value"
+                    label={({ name, value }) => `${name}: ${value.toFixed(0)}%`}
+                  >
+                    {data.providers.map((entry, index) => {
+                      const colors = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4'];
+                      return <Cell key={`cell-${index}`} fill={colors[index % colors.length]} />;
+                    })}
+                  </Pie>
+                  <Tooltip formatter={(value: number) => [`${value.toFixed(1)}%`, 'Coverage']} />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          {/* Daily Accuracy Trend */}
+          {data.dailyTrend.some(d => d.avgAccuracy > 0) && (
+            <div className="p-6 border-t border-gray-200">
+              <h3 className="text-sm font-medium text-gray-700 mb-4">Daily Cost Accuracy Trend</h3>
+              <ResponsiveContainer width="100%" height={200}>
+                <LineChart data={data.dailyTrend.slice(-14).reverse()}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis 
+                    dataKey="date" 
+                    tickFormatter={(value) => new Date(value).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                  />
+                  <YAxis 
+                    domain={[0, 1]}
+                    tickFormatter={(value) => `${(value * 100).toFixed(0)}%`}
+                  />
+                  <Tooltip 
+                    formatter={(value: number) => [`${(value * 100).toFixed(1)}%`, 'Accuracy']}
+                    labelFormatter={(value) => new Date(value).toLocaleDateString()}
+                  />
+                  <Line 
+                    type="monotone" 
+                    dataKey="avgAccuracy" 
+                    stroke="#10b981" 
+                    strokeWidth={2}
+                    dot={{ fill: '#10b981', strokeWidth: 2, r: 4 }}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Model Performance Insights */}
+      <div className="bg-white rounded-lg shadow-sm border border-slate-200">
+        <div className="px-6 py-4 border-b border-gray-200">
+          <h2 className="text-lg font-semibold text-gray-900">Performance Insights</h2>
+          <p className="text-sm text-gray-600">Key findings from cost analysis</p>
+        </div>
+        
+        <div className="p-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {/* Most Accurate Model */}
+            {(() => {
+              const mostAccurate = data.models
+                .filter(m => m.costs.hasActualData && m.costs.accuracy !== null)
+                .sort((a, b) => (b.costs.accuracy || 0) - (a.costs.accuracy || 0))[0];
+              
+              return mostAccurate && (
+                <div className="border border-green-200 rounded-lg p-4 bg-green-50">
+                  <h4 className="font-medium text-green-800 mb-2">🎯 Most Accurate Model</h4>
+                  <p className="text-green-700 font-medium">{mostAccurate.displayName}</p>
+                  <p className="text-sm text-green-600">
+                    {((mostAccurate.costs.accuracy || 0) * 100).toFixed(1)}% accuracy
+                  </p>
+                  <p className="text-xs text-green-600 mt-1">
+                    Avg delta: {formatCost(Math.abs(mostAccurate.costs.delta || 0))}
+                  </p>
+                </div>
+              );
+            })()}
+
+            {/* Biggest Overestimate */}
+            {(() => {
+              const biggestOver = data.models
+                .filter(m => m.costs.hasActualData && (m.costs.delta || 0) < 0)
+                .sort((a, b) => (a.costs.delta || 0) - (b.costs.delta || 0))[0];
+              
+              return biggestOver && (
+                <div className="border border-blue-200 rounded-lg p-4 bg-blue-50">
+                  <h4 className="font-medium text-blue-800 mb-2">📉 Biggest Overestimate</h4>
+                  <p className="text-blue-700 font-medium">{biggestOver.displayName}</p>
+                  <p className="text-sm text-blue-600">
+                    {formatCost(Math.abs(biggestOver.costs.delta || 0))} cheaper than expected
+                  </p>
+                  <p className="text-xs text-blue-600 mt-1">
+                    {((biggestOver.costs.accuracy || 0) * 100).toFixed(1)}% accuracy
+                  </p>
+                </div>
+              );
+            })()}
+
+            {/* Most Used Model */}
+            {(() => {
+              const mostUsed = data.models.sort((a, b) => b.usage.count - a.usage.count)[0];
+              
+              return mostUsed && (
+                <div className="border border-purple-200 rounded-lg p-4 bg-purple-50">
+                  <h4 className="font-medium text-purple-800 mb-2">🏆 Most Popular Model</h4>
+                  <p className="text-purple-700 font-medium">{mostUsed.displayName}</p>
+                  <p className="text-sm text-purple-600">
+                    {mostUsed.usage.count.toLocaleString()} requests
+                  </p>
+                  <p className="text-xs text-purple-600 mt-1">
+                    {formatCost(mostUsed.costs.estimated)} total estimated cost
+                  </p>
+                </div>
+              );
+            })()}
+          </div>
+
+          {/* Cost Accuracy Summary */}
+          <div className="mt-6 p-4 bg-gray-50 rounded-lg">
+            <h4 className="font-medium text-gray-800 mb-2">💡 Cost Accuracy Summary</h4>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+              <div>
+                <span className="text-gray-600">Overall Accuracy:</span>
+                <span className="font-medium ml-2">
+                  {data.summary.averageAccuracy ? `${(data.summary.averageAccuracy * 100).toFixed(1)}%` : 'N/A'}
+                </span>
+              </div>
+              <div>
+                <span className="text-gray-600">Data Coverage:</span>
+                <span className="font-medium ml-2">
+                  {(data.summary.coverageRate * 100).toFixed(1)}% of requests
+                </span>
+              </div>
+              <div>
+                <span className="text-gray-600">Total Delta:</span>
+                <span className={`font-medium ml-2 ${
+                  data.summary.totalDelta && data.summary.totalDelta < 0 ? 'text-blue-600' : 
+                  data.summary.totalDelta && data.summary.totalDelta > 0 ? 'text-orange-600' : 
+                  'text-gray-600'
+                }`}>
+                  {data.summary.totalDelta ? formatCost(data.summary.totalDelta) : 'N/A'}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
