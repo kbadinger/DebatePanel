@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { formatCost } from '@/lib/models/pricing';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, Legend } from 'recharts';
 
 interface UsageData {
   summary: {
@@ -460,11 +460,12 @@ export default function AdminUsagePage() {
                   <YAxis tickFormatter={(value) => formatCost(value)} />
                   <Tooltip 
                     formatter={(value: number | null, name: string) => {
-                      if (value === null || value === undefined) return ['No data', 'Actual Cost'];
-                      return [formatCost(value), name === 'estimatedCost' ? 'Estimated' : 'Actual'];
+                      if (value === null || value === undefined) return ['No data', name];
+                      return [formatCost(value), name];
                     }}
                     labelFormatter={(value) => new Date(value).toLocaleDateString()}
                   />
+                  <Legend />
                   <Bar dataKey="estimatedCost" fill="#3b82f6" name="Estimated Cost" />
                   <Bar dataKey="actualCost" fill="#10b981" name="Actual Cost" />
                 </BarChart>
@@ -485,17 +486,22 @@ export default function AdminUsagePage() {
                     }))}
                     cx="50%"
                     cy="50%"
-                    outerRadius={100}
+                    outerRadius={80}
                     fill="#8884d8"
                     dataKey="value"
-                    label={({ name, value }) => `${name}: ${value.toFixed(0)}%`}
                   >
                     {data.providers.map((entry, index) => {
                       const colors = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4'];
                       return <Cell key={`cell-${index}`} fill={colors[index % colors.length]} />;
                     })}
                   </Pie>
-                  <Tooltip formatter={(value: number) => [`${value.toFixed(1)}%`, 'Coverage']} />
+                  <Tooltip 
+                    formatter={(value: number, name: string, props: any) => [
+                      `${value.toFixed(1)}% (${props.payload.actualCount}/${props.payload.totalCount})`, 
+                      'Coverage'
+                    ]} 
+                  />
+                  <Legend />
                 </PieChart>
               </ResponsiveContainer>
             </div>
