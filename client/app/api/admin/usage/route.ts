@@ -34,44 +34,32 @@ export async function GET(req: NextRequest) {
       accuracyByProvider,
       dailyUsage
     ] = await Promise.all([
-      // Overall summary stats
+      // Overall summary stats - using only existing columns for now
       prisma.usageRecord.aggregate({
         where: Object.keys(dateFilter).length > 0 ? { createdAt: dateFilter } : {},
         _sum: {
-          estimatedApiCost: true,
-          actualApiCost: true,
-          apiCost: true, // Fallback for records without estimatedApiCost
+          apiCost: true, // Use existing apiCost column as estimated cost
           totalCost: true,
           inputTokens: true,
           outputTokens: true
         },
-        _avg: {
-          costAccuracy: true
-        },
         _count: {
-          hasActualCost: true,
           id: true
         }
       }),
 
-      // Model-by-model breakdown
+      // Model-by-model breakdown - using only existing columns
       prisma.usageRecord.groupBy({
         by: ['modelId', 'modelProvider'],
         where: Object.keys(dateFilter).length > 0 ? { createdAt: dateFilter } : {},
         _sum: {
-          estimatedApiCost: true,
-          actualApiCost: true,
-          apiCost: true, // Fallback for records without estimatedApiCost
+          apiCost: true, // Use existing apiCost as estimated cost
           totalCost: true,
           inputTokens: true,
           outputTokens: true
         },
-        _avg: {
-          costAccuracy: true
-        },
         _count: {
-          id: true,
-          hasActualCost: true
+          id: true
         },
         orderBy: {
           _sum: {
@@ -80,55 +68,36 @@ export async function GET(req: NextRequest) {
         }
       }),
 
-      // Provider-level stats
+      // Provider-level stats - using only existing columns
       prisma.usageRecord.groupBy({
         by: ['modelProvider'],
         where: Object.keys(dateFilter).length > 0 ? { createdAt: dateFilter } : {},
         _sum: {
-          estimatedApiCost: true,
-          actualApiCost: true,
-          apiCost: true, // Fallback for records without estimatedApiCost
+          apiCost: true, // Use existing apiCost as estimated cost
           totalCost: true
-        },
-        _avg: {
-          costAccuracy: true
-        },
-        _count: {
-          id: true,
-          hasActualCost: true
-        }
-      }),
-
-      // Accuracy metrics by provider (only records with actual costs)
-      prisma.usageRecord.groupBy({
-        by: ['modelProvider'],
-        where: {
-          hasActualCost: true,
-          ...(Object.keys(dateFilter).length > 0 ? { createdAt: dateFilter } : {})
-        },
-        _avg: {
-          costAccuracy: true,
-          costDelta: true
         },
         _count: {
           id: true
         }
       }),
 
-      // Daily usage trend
+      // Simplified provider accuracy (empty for now until migration is applied)
+      [],
+
+      // Daily usage trend - using only existing columns
       prisma.$queryRaw`
         SELECT 
           DATE(created_at) as date,
-          SUM(estimated_api_cost) as estimated_cost,
-          SUM(actual_api_cost) as actual_cost,
+          SUM(api_cost) as estimated_cost,
+          SUM(api_cost) as actual_cost,
           COUNT(*) as request_count,
-          COUNT(CASE WHEN has_actual_cost = true THEN 1 END) as actual_cost_count,
-          AVG(CASE WHEN has_actual_cost = true THEN cost_accuracy END) as avg_accuracy
+          0 as actual_cost_count,
+          0 as avg_accuracy
         FROM usage_record 
         ${Object.keys(dateFilter).length > 0 ? 
           `WHERE created_at >= ${startDate ? `'${startDate}'` : 'created_at'} 
            AND created_at <= ${endDate ? `'${endDate}'` : 'created_at'}` : 
-          'WHERE created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)'
+          'WHERE created_at >= CURRENT_DATE - INTERVAL 30 DAY'
         }
         GROUP BY DATE(created_at)
         ORDER BY date DESC
@@ -136,16 +105,16 @@ export async function GET(req: NextRequest) {
       `
     ]);
 
-    // Calculate summary metrics
+    // Calculate summary metrics - simplified for existing columns only
     const totalRequests = overallStats._count.id || 0;
-    const actualCostRequests = overallStats._count.hasActualCost || 0;
-    const coverageRate = totalRequests > 0 ? actualCostRequests / totalRequests : 0;
+    const actualCostRequests = 0; // Will be populated once migration is applied
+    const coverageRate = 0; // Will be calculated once migration is applied
     
-    // Use estimatedApiCost if available, otherwise fall back to apiCost for backward compatibility
-    const totalEstimated = overallStats._sum.estimatedApiCost || overallStats._sum.apiCost || 0;
-    const totalActual = overallStats._sum.actualApiCost || 0;
-    const totalDelta = totalActual > 0 ? totalActual - totalEstimated : null;
-    const averageAccuracy = overallStats._avg.costAccuracy || 0;
+    // Use existing apiCost as estimated cost for now
+    const totalEstimated = overallStats._sum.apiCost || 0;
+    const totalActual = null; // Will be populated once migration is applied
+    const totalDelta = null; // Will be calculated once migration is applied
+    const averageAccuracy = 0; // Will be calculated once migration is applied
 
     // Process model usage data
     const models = await Promise.all(modelUsage.map(async (model) => {
@@ -153,12 +122,12 @@ export async function GET(req: NextRequest) {
       // For now, we'll use the modelId as display name
       const displayName = model.modelId.replace(/[-_]/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
       
-      // Use estimatedApiCost if available, otherwise fall back to apiCost
-      const estimatedCost = model._sum.estimatedApiCost || model._sum.apiCost || 0;
-      const actualCost = model._sum.actualApiCost || 0;
-      const delta = actualCost > 0 ? actualCost - estimatedCost : null;
-      const accuracy = model._avg.costAccuracy || null;
-      const hasActualData = (model._count.hasActualCost || 0) > 0;
+      // Use existing apiCost as estimated cost for now
+      const estimatedCost = model._sum.apiCost || 0;
+      const actualCost = null; // Will be populated once migration is applied
+      const delta = null; // Will be calculated once migration is applied
+      const accuracy = null; // Will be calculated once migration is applied
+      const hasActualData = false; // Will be true once migration is applied
       
       return {
         modelId: model.modelId,
@@ -168,47 +137,39 @@ export async function GET(req: NextRequest) {
           count: model._count.id || 0,
           inputTokens: model._sum.inputTokens || 0,
           outputTokens: model._sum.outputTokens || 0,
-          actualCostCount: model._count.hasActualCost || 0
+          actualCostCount: 0 // Will be populated once migration is applied
         },
         costs: {
           estimated: estimatedCost,
-          actual: actualCost || null,
-          delta: hasActualData ? delta : null,
+          actual: actualCost,
+          delta: delta,
           accuracy: accuracy,
-          hasActualData
+          hasActualData: hasActualData
         }
       };
     }));
 
-    // Process provider stats
+    // Process provider stats - simplified for existing columns only
     const providers = providerStats.map(provider => {
-      // Use estimatedApiCost if available, otherwise fall back to apiCost
-      const estimatedCost = provider._sum.estimatedApiCost || provider._sum.apiCost || 0;
-      const actualCost = provider._sum.actualApiCost || 0;
-      const accuracy = provider._avg.costAccuracy || null;
+      const estimatedCost = provider._sum.apiCost || 0;
       const totalRequests = provider._count.id || 0;
-      const actualCostRequests = provider._count.hasActualCost || 0;
-      const coverage = totalRequests > 0 ? actualCostRequests / totalRequests : 0;
-
-      // Find detailed accuracy stats for this provider
-      const accuracyStats = accuracyByProvider.find(a => a.modelProvider === provider.modelProvider);
       
       return {
         provider: provider.modelProvider,
         usage: {
           totalRequests,
-          actualCostRequests,
-          coverage
+          actualCostRequests: 0, // Will be populated once migration is applied
+          coverage: 0 // Will be calculated once migration is applied
         },
         costs: {
           estimated: estimatedCost,
-          actual: actualCost || null,
-          delta: actualCost > 0 ? actualCost - estimatedCost : null
+          actual: null, // Will be populated once migration is applied
+          delta: null // Will be calculated once migration is applied
         },
         accuracy: {
-          average: accuracy,
-          avgDelta: accuracyStats?._avg.costDelta || null,
-          sampleSize: accuracyStats?._count.id || 0
+          average: null, // Will be populated once migration is applied
+          avgDelta: null, // Will be populated once migration is applied
+          sampleSize: 0 // Will be populated once migration is applied
         }
       };
     });
