@@ -114,7 +114,7 @@ export class CostReconciliation {
         end_time: endTimestamp.toString(),
         bucket_width: '1h', // Hourly buckets for better matching
         group_by: 'model', // Group by model to get model-specific data
-        project_ids: this.openaiProjectId, // Filter to DebatePanel project only
+        // project_ids: this.openaiProjectId, // TEMPORARILY DISABLED - get all organization usage
       });
 
       const response = await fetch(`${url}?${params}`, {
@@ -152,8 +152,8 @@ export class CostReconciliation {
       console.log(`[COST FETCH] ${bucketsWithResults.length} buckets have results`);
       
       if (bucketsWithResults.length === 0) {
-        console.log(`[COST FETCH] No usage data found for project ${this.openaiProjectId} in time range ${startDate.toISOString()} to ${endDate.toISOString()}`);
-        console.log(`[COST FETCH] This might mean: 1) No API usage in this period, 2) Wrong project ID, or 3) Usage from different project`);
+        console.log(`[COST FETCH] No usage data found for organization in time range ${startDate.toISOString()} to ${endDate.toISOString()}`);
+        console.log(`[COST FETCH] This might mean: 1) No API usage in this period, or 2) Different time zone/date range needed`);
       }
 
       // OpenAI model pricing (as of Jan 2025) - cost per 1K tokens
