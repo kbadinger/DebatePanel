@@ -658,6 +658,7 @@ export class CostReconciliation {
       
       for (const cost of costsToProcess) {
         try {
+          // First try with basic schema only (backward compatible)
           const record = await prisma.usageRecord.create({
             data: {
               userId: systemUserId,
@@ -675,12 +676,20 @@ export class CostReconciliation {
           });
           console.log(`[COST MATCH] ✅ Created record ${record.id} for ${cost.model}: $${cost.cost.toFixed(4)}`);
           created++;
-        } catch (createError) {
-          console.error(`[COST MATCH] ❌ Failed to create record for ${cost.model}:`, createError);
-          console.error(`[COST MATCH] Error details:`, {
-            code: (createError as any).code,
-            message: (createError as any).message?.substring(0, 200) // Truncate long messages
-          });
+        } catch (createError: any) {
+          if (createError.code === 'P2022') {
+            console.log(`[COST MATCH] Database schema mismatch for ${cost.model}, this should not happen with basic fields`);
+            console.error(`[COST MATCH] Schema error details:`, {
+              code: createError.code,
+              message: createError.message?.substring(0, 200)
+            });
+          } else {
+            console.error(`[COST MATCH] ❌ Failed to create record for ${cost.model}:`, createError);
+            console.error(`[COST MATCH] Error details:`, {
+              code: createError.code,
+              message: createError.message?.substring(0, 200) // Truncate long messages
+            });
+          }
         }
       }
       

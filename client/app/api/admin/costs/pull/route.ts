@@ -177,7 +177,7 @@ export async function GET(req: NextRequest) {
       modelId: record.modelId,
       modelProvider: record.modelProvider,
       createdAt: record.createdAt.toISOString(),
-      estimatedApiCost: null, // Not available in existing schema
+      estimatedApiCost: null, // Not available in current schema
       actualApiCost: record.apiCost, // This is the real cost from API
       costDelta: null,
       costAccuracy: null,

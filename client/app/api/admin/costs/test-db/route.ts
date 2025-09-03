@@ -50,14 +50,14 @@ async function handleRequest(req: NextRequest) {
         inputTokens: true,
         outputTokens: true,
         apiCost: true,
-        actualApiCost: true,
-        estimatedApiCost: true,
-        costDelta: true,
-        hasActualCost: true,
-        costSource: true,
-        providerCostFetched: true,
-        providerCostFetchedAt: true,
-        reconciliationNotes: true,
+        // actualApiCost: true,            // Disabled for backward compatibility
+        // estimatedApiCost: true,         // Disabled for backward compatibility
+        // costDelta: true,                // Disabled for backward compatibility
+        // hasActualCost: true,            // Disabled for backward compatibility
+        // costSource: true,               // Disabled for backward compatibility
+        // providerCostFetched: true,      // Disabled for backward compatibility  
+        // providerCostFetchedAt: true,    // Disabled for backward compatibility
+        // reconciliationNotes: true,      // Disabled for backward compatibility
         createdAt: true,
       },
       orderBy: { createdAt: 'desc' },
@@ -92,25 +92,26 @@ async function handleRequest(req: NextRequest) {
         modelId: true,
         modelProvider: true,
         createdAt: true,
-        actualApiCost: true,
-        estimatedApiCost: true,
-        hasActualCost: true,
-        reconciliationNotes: true,
+        // actualApiCost: true,        // Disabled for backward compatibility
+        // estimatedApiCost: true,     // Disabled for backward compatibility  
+        // hasActualCost: true,        // Disabled for backward compatibility
+        // reconciliationNotes: true,  // Disabled for backward compatibility
       },
       orderBy: { createdAt: 'desc' },
       take: 5 // Just show 5 most recent
     });
 
-    const totalWithActualCosts = await prisma.usageRecord.count({
-      where: {
-        hasActualCost: true,
-        OR: [
-          { userId: { contains: 'system' } },
-          { debateId: { contains: 'cost-reconciliation' } },
-          { roundNumber: 0 }
-        ]
-      }
-    });
+    // Disabled for backward compatibility - hasActualCost field not available
+    const totalWithActualCosts = 0; // await prisma.usageRecord.count({
+    //   where: {
+    //     hasActualCost: true,
+    //     OR: [
+    //       { userId: { contains: 'system' } },
+    //       { debateId: { contains: 'cost-reconciliation' } },
+    //       { roundNumber: 0 }
+    //     ]
+    //   }
+    // });
 
     // Get system user info
     const systemUser = await prisma.user.findFirst({
@@ -145,11 +146,21 @@ async function handleRequest(req: NextRequest) {
       recentRecords: costRecords.map(record => ({
         ...record,
         createdAt: record.createdAt.toISOString(),
-        providerCostFetchedAt: record.providerCostFetchedAt?.toISOString() || null
+        // Add backward compatibility fields
+        actualApiCost: null,
+        estimatedApiCost: null,
+        hasActualCost: false,
+        providerCostFetchedAt: null,
+        reconciliationNotes: null
       })),
       allCostRecords: allCostRecords.map(record => ({
         ...record,
-        createdAt: record.createdAt.toISOString()
+        createdAt: record.createdAt.toISOString(),
+        // Add backward compatibility fields
+        actualApiCost: null,
+        estimatedApiCost: null,
+        hasActualCost: false,
+        reconciliationNotes: null
       })),
       timestamp: new Date().toISOString()
     });

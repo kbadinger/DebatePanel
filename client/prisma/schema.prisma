@@ -123,26 +123,27 @@ model UsageRecord {
   totalCost       Float    // What user pays
   createdAt       DateTime @default(now())
   
-  // Enhanced dual cost tracking
-  estimatedApiCost    Float?   // Our calculated estimate (nullable during migration)
-  actualApiCost       Float?   // Real cost from provider (if available)
-  costDelta          Float?   // Difference (actual - estimated)
-  costAccuracy       Float?   // Accuracy percentage (0-1)
-  hasActualCost      Boolean  @default(false)
-  providerCostData   Json?    // Raw cost data from provider
-  costSource         String?  // 'estimated', 'actual', 'manual', 'api_fetch'
+  // Enhanced dual cost tracking - TEMPORARILY DISABLED FOR BACKWARD COMPATIBILITY
+  // Will be re-enabled after production database migration
+  // estimatedApiCost    Float?   // Our calculated estimate (nullable during migration)
+  // actualApiCost       Float?   // Real cost from provider (if available)
+  // costDelta          Float?   // Difference (actual - estimated)
+  // costAccuracy       Float?   // Accuracy percentage (0-1)
+  // hasActualCost      Boolean  @default(false)
+  // providerCostData   Json?    // Raw cost data from provider
+  // costSource         String?  // 'estimated', 'actual', 'manual', 'api_fetch'
   
-  // Reconciliation tracking
-  providerCostFetched   Boolean @default(false)
-  providerCostFetchedAt DateTime?
-  reconciliationNotes   String?  // Details about how cost was matched/updated
+  // Reconciliation tracking - TEMPORARILY DISABLED FOR BACKWARD COMPATIBILITY
+  // providerCostFetched   Boolean @default(false)
+  // providerCostFetchedAt DateTime?
+  // reconciliationNotes   String?  // Details about how cost was matched/updated
   
   user   User   @relation(fields: [userId], references: [id])
   debate Debate @relation(fields: [debateId], references: [id])
   
   @@index([userId, createdAt])
   @@index([debateId, roundNumber])
-  @@index([hasActualCost, modelProvider])  // For cost analysis queries
+  // @@index([hasActualCost, modelProvider])  // For cost analysis queries - DISABLED
 }
 
 model Debate {

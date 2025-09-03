@@ -91,16 +91,16 @@ export class UsageTracker {
             apiCost: billingApiCost, // Legacy field - use actual if available
             platformFee,
             totalCost,
-            // Enhanced dual cost tracking - only include if columns exist
-            ...(hasActualCost && actualApiCost ? {
-              estimatedApiCost: estimatedApiCost,
-              actualApiCost: actualApiCost,
-              costDelta: costDelta,
-              costAccuracy: costAccuracy,
-              hasActualCost: hasActualCost,
-              providerCostData: providerUsage || null,
-              costSource: costSource,
-            } : {}),
+            // Enhanced dual cost tracking - DISABLED FOR BACKWARD COMPATIBILITY
+            // ...(hasActualCost && actualApiCost ? {
+            //   estimatedApiCost: estimatedApiCost,
+            //   actualApiCost: actualApiCost,
+            //   costDelta: costDelta,
+            //   costAccuracy: costAccuracy,
+            //   hasActualCost: hasActualCost,
+            //   providerCostData: providerUsage || null,
+            //   costSource: costSource,
+            // } : {}),
           },
         });
       } catch (schemaError: any) {
