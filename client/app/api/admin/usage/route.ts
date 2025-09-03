@@ -85,24 +85,24 @@ export async function GET(req: NextRequest) {
       [],
 
       // Daily usage trend - using only existing columns
-      prisma.$queryRaw`
-        SELECT 
-          DATE(created_at) as date,
-          SUM(api_cost) as estimated_cost,
-          SUM(api_cost) as actual_cost,
-          COUNT(*) as request_count,
-          0 as actual_cost_count,
-          0 as avg_accuracy
-        FROM usage_record 
-        ${Object.keys(dateFilter).length > 0 ? 
-          `WHERE created_at >= ${startDate ? `'${startDate}'` : 'created_at'} 
-           AND created_at <= ${endDate ? `'${endDate}'` : 'created_at'}` : 
-          'WHERE created_at >= CURRENT_DATE - INTERVAL 30 DAY'
-        }
-        GROUP BY DATE(created_at)
-        ORDER BY date DESC
-        LIMIT 30
-      `
+      prisma.usageRecord.groupBy({
+        by: ['createdAt'],
+        where: Object.keys(dateFilter).length > 0 ? { createdAt: dateFilter } : {
+          createdAt: {
+            gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) // Last 30 days
+          }
+        },
+        _sum: {
+          apiCost: true
+        },
+        _count: {
+          id: true
+        },
+        orderBy: {
+          createdAt: 'desc'
+        },
+        take: 30
+      })
     ]);
 
     // Calculate summary metrics - simplified for existing columns only
@@ -175,14 +175,17 @@ export async function GET(req: NextRequest) {
     });
 
     // Process daily usage data
-    const dailyTrend = (dailyUsage as any[]).map(day => ({
-      date: day.date,
-      estimatedCost: parseFloat(day.estimated_cost || '0'),
-      actualCost: parseFloat(day.actual_cost || '0'),
-      requestCount: parseInt(day.request_count || '0'),
-      actualCostCount: parseInt(day.actual_cost_count || '0'),
-      avgAccuracy: parseFloat(day.avg_accuracy || '0')
-    }));
+    const dailyTrend = (dailyUsage as any[]).map(day => {
+      const dateStr = day.createdAt.toISOString().split('T')[0];
+      return {
+        date: dateStr,
+        estimatedCost: day._sum.apiCost || 0,
+        actualCost: day._sum.apiCost || 0, // Same as estimated for now
+        requestCount: day._count.id || 0,
+        actualCostCount: 0,
+        avgAccuracy: 0
+      };
+    });
 
     return NextResponse.json({
       summary: {
