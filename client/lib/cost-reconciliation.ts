@@ -46,13 +46,23 @@ interface OpenAIModelPricing {
 }
 
 interface AnthropicCostResponse {
-  costs: {
-    timestamp: string;
-    model: string;
-    input_tokens: number;
-    output_tokens: number;
-    cost_usd: number;
+  data: {
+    starting_at: string;
+    ending_at: string;
+    results: {
+      currency: string;
+      amount: string; // Cost in cents as string
+      workspace_id?: string | null;
+      description?: string | null;
+      cost_type?: string;
+      model?: string | null;
+      token_type?: string;
+      context_window?: string;
+      service_tier?: string;
+    }[];
   }[];
+  has_more: boolean;
+  next_page?: string;
 }
 
 interface CostReconciliationResult {
@@ -227,21 +237,19 @@ export class CostReconciliation {
     try {
       console.log(`[COST FETCH] Fetching Anthropic costs from ${startDate.toISOString()} to ${endDate.toISOString()}`);
 
-      // Anthropic Cost API endpoint
+      // Anthropic Cost API endpoint - GET request with query parameters
       const url = 'https://api.anthropic.com/v1/organizations/cost_report';
-      const body = {
-        start_date: startDate.toISOString().split('T')[0], // YYYY-MM-DD format
-        end_date: endDate.toISOString().split('T')[0],
-      };
+      const params = new URLSearchParams({
+        starting_at: startDate.toISOString(), // ISO 8601 format with timezone
+        ending_at: endDate.toISOString(),
+      });
 
-      const response = await fetch(url, {
-        method: 'POST',
+      const response = await fetch(`${url}?${params}`, {
+        method: 'GET',
         headers: {
           'x-api-key': this.anthropicApiKey,
-          'Content-Type': 'application/json',
           'anthropic-version': '2023-06-01',
         },
-        body: JSON.stringify(body),
       });
 
       if (!response.ok) {
@@ -249,7 +257,7 @@ export class CostReconciliation {
       }
 
       const data: AnthropicCostResponse = await response.json();
-      console.log(`[COST FETCH] Anthropic returned ${data.costs.length} cost entries`);
+      console.log(`[COST FETCH] Anthropic returned ${data.data.length} cost buckets`);
 
       // Process the response
       const costs: Array<{
@@ -263,20 +271,35 @@ export class CostReconciliation {
 
       let totalCost = 0;
 
-      for (const cost of data.costs) {
-        const costData = {
-          timestamp: cost.timestamp,
-          model: cost.model,
-          cost: cost.cost_usd,
-          tokens: {
-            input: cost.input_tokens,
-            output: cost.output_tokens,
-          },
-          matched: false,
-        };
+      for (const bucket of data.data) {
+        for (const result of bucket.results) {
+          // Parse cost from cents string to dollars
+          const costInDollars = parseFloat(result.amount) / 100;
+          
+          // Extract model from model field or description
+          let model = result.model || 'unknown';
+          if (!result.model && result.description) {
+            // Try to extract model from description like "Claude Sonnet 4 Usage - Input Tokens"
+            const modelMatch = result.description.match(/(claude|sonnet|haiku|opus)[^-]*/i);
+            if (modelMatch) {
+              model = modelMatch[0].toLowerCase().replace(/\s+/g, '-');
+            }
+          }
 
-        costs.push(costData);
-        totalCost += cost.cost_usd;
+          const costData = {
+            timestamp: bucket.starting_at,
+            model,
+            cost: costInDollars,
+            tokens: {
+              input: 0, // Anthropic Cost API doesn't provide token breakdown
+              output: 0,
+            },
+            matched: false,
+          };
+
+          costs.push(costData);
+          totalCost += costInDollars;
+        }
       }
 
       console.log(`[COST FETCH] Anthropic total cost: $${totalCost.toFixed(4)}`);
