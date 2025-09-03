@@ -141,17 +141,13 @@ export async function GET(req: NextRequest) {
       // Cost reconciliation data (real costs from API providers)
       prisma.usageRecord.findMany({
         where: {
-          roundNumber: 0, // Cost reconciliation marker
+          roundNumber: 0, // Cost reconciliation marker - this is the only criteria needed
           ...(Object.keys(dateFilter).length > 0 ? { createdAt: dateFilter } : {
             createdAt: {
               gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) // Last 30 days
             }
           }),
-          ...providerFilter,
-          OR: [
-            { userId: { contains: 'system' } },
-            { debateId: { contains: 'cost-reconciliation' } }
-          ]
+          ...providerFilter
         },
         select: {
           modelId: true,
