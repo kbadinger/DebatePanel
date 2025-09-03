@@ -143,10 +143,7 @@ export async function GET(req: NextRequest) {
           modelId: true,
           modelProvider: true,
           createdAt: true,
-          estimatedApiCost: true,
-          actualApiCost: true,
-          costDelta: true,
-          costAccuracy: true,
+          apiCost: true, // Use existing column instead of estimatedApiCost
           providerCostFetchedAt: true,
           reconciliationNotes: true,
         },
@@ -168,12 +165,7 @@ export async function GET(req: NextRequest) {
           id: true
         },
         _sum: {
-          estimatedApiCost: true,
-          actualApiCost: true,
-          costDelta: true,
-        },
-        _avg: {
-          costAccuracy: true,
+          apiCost: true, // Use existing column
         }
       })
     ]);
