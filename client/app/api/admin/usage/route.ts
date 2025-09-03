@@ -98,28 +98,43 @@ export async function GET(req: NextRequest) {
       // Simplified provider accuracy (empty for now until migration is applied)
       [],
 
-      // Daily usage trend - using only existing columns
-      prisma.usageRecord.groupBy({
-        by: ['createdAt'],
-        where: { 
-          ...(Object.keys(dateFilter).length > 0 ? { createdAt: dateFilter } : {
-            createdAt: {
-              gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) // Last 30 days
-            }
-          }),
-          ...providerFilter
-        },
-        _sum: {
-          apiCost: true
-        },
-        _count: {
-          id: true
-        },
-        orderBy: {
-          createdAt: 'desc'
-        },
-        take: 30
-      }),
+      // Daily usage trend - using raw SQL to group by date only
+      (async () => {
+        // Get default date range (last 30 days) or use provided filters
+        const startDate = dateFilter.gte || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+        const endDate = dateFilter.lte || new Date();
+        
+        if (provider && provider !== 'all') {
+          // With provider filter
+          return await prisma.$queryRaw`
+            SELECT 
+              DATE("createdAt") as date,
+              SUM("apiCost")::DECIMAL as "totalApiCost", 
+              COUNT(*)::INTEGER as "requestCount"
+            FROM "UsageRecord"
+            WHERE "createdAt" >= ${startDate}
+              AND "createdAt" <= ${endDate}
+              AND "modelProvider" = ${provider}
+            GROUP BY DATE("createdAt")
+            ORDER BY DATE("createdAt") DESC
+            LIMIT 30
+          `;
+        } else {
+          // Without provider filter
+          return await prisma.$queryRaw`
+            SELECT 
+              DATE("createdAt") as date,
+              SUM("apiCost")::DECIMAL as "totalApiCost",
+              COUNT(*)::INTEGER as "requestCount" 
+            FROM "UsageRecord"
+            WHERE "createdAt" >= ${startDate}
+              AND "createdAt" <= ${endDate}
+            GROUP BY DATE("createdAt")
+            ORDER BY DATE("createdAt") DESC
+            LIMIT 30
+          `;
+        }
+      })(),
 
       // Cost reconciliation data (real costs from API providers)
       prisma.usageRecord.findMany({
@@ -249,7 +264,7 @@ export async function GET(req: NextRequest) {
 
     // Process daily usage data with reconciliation
     const dailyTrend = (dailyUsage as any[]).map(day => {
-      const dateStr = day.createdAt.toISOString().split('T')[0];
+      const dateStr = day.date instanceof Date ? day.date.toISOString().split('T')[0] : day.date;
       
       // Find reconciliation data for this date
       const dayReconciliationData = costReconciliationData.filter(r => {
@@ -260,7 +275,7 @@ export async function GET(req: NextRequest) {
       const actualCost = dayReconciliationData.reduce((sum, r) => sum + (r.apiCost || 0), 0);
       const actualCostCount = dayReconciliationData.length;
       const hasActualData = actualCost > 0;
-      const estimatedCost = day._sum.apiCost || 0;
+      const estimatedCost = Number(day.totalApiCost) || 0;
       
       // Calculate average accuracy for the day
       let avgAccuracy = 0;
@@ -272,7 +287,7 @@ export async function GET(req: NextRequest) {
         date: dateStr,
         estimatedCost,
         actualCost: hasActualData ? actualCost : null,
-        requestCount: day._count.id || 0,
+        requestCount: Number(day.requestCount) || 0,
         actualCostCount,
         avgAccuracy: hasActualData ? avgAccuracy : null
       };
