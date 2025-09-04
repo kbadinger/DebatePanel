@@ -133,10 +133,16 @@ model UsageRecord {
   // providerCostData   Json?    // Raw cost data from provider
   // costSource         String?  // 'estimated', 'actual', 'manual', 'api_fetch'
   
-  // Reconciliation tracking - TEMPORARILY DISABLED FOR BACKWARD COMPATIBILITY
-  // providerCostFetched   Boolean @default(false)
-  // providerCostFetchedAt DateTime?
-  // reconciliationNotes   String?  // Details about how cost was matched/updated
+  // Reconciliation tracking
+  providerCostFetched   Boolean @default(false)
+  providerCostFetchedAt DateTime?
+  reconciliationNotes   String?
+  
+  // Provider-reported token counts (for reconciliation)
+  providerInputTokens   Int?     // Tokens reported by provider API
+  providerOutputTokens  Int?     // Tokens reported by provider API
+  providerReportedCost  Float?   // Cost reported directly by provider API
+  importSource          String?  // 'api_response', 'csv_import', 'manual', 'billing_api'
   
   user   User   @relation(fields: [userId], references: [id])
   debate Debate @relation(fields: [debateId], references: [id])

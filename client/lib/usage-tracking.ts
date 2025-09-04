@@ -77,7 +77,34 @@ export class UsageTracker {
     const totalCost = billingApiCost + platformFee;
 
     try {
-      // Record the usage - backward compatible with existing production schema
+      // Extract provider-reported token counts if available
+      let providerInputTokens: number | null = null;
+      let providerOutputTokens: number | null = null;
+      let providerReportedCost: number | null = null;
+      let importSource = 'api_response';
+
+      if (providerUsage) {
+        // Extract provider-reported tokens (different from our estimated tokens)
+        if (providerUsage.usage?.prompt_tokens) providerInputTokens = providerUsage.usage.prompt_tokens;
+        if (providerUsage.usage?.completion_tokens) providerOutputTokens = providerUsage.usage.completion_tokens;
+        if (providerUsage.usage?.input_tokens) providerInputTokens = providerUsage.usage.input_tokens;
+        if (providerUsage.usage?.output_tokens) providerOutputTokens = providerUsage.usage.output_tokens;
+        
+        // Perplexity specific token fields
+        if (providerUsage.usage?.prompt_tokens && !providerInputTokens) providerInputTokens = providerUsage.usage.prompt_tokens;
+        if (providerUsage.usage?.completion_tokens && !providerOutputTokens) providerOutputTokens = providerUsage.usage.completion_tokens;
+        
+        // DeepSeek specific token fields
+        if (providerUsage.usage?.total_tokens && providerUsage.usage?.prompt_tokens) {
+          providerInputTokens = providerUsage.usage.prompt_tokens;
+          providerOutputTokens = providerUsage.usage.total_tokens - providerUsage.usage.prompt_tokens;
+        }
+
+        // Store provider-reported cost if available
+        if (actualApiCost) providerReportedCost = actualApiCost;
+      }
+
+      // Record the usage - now with provider token tracking
       try {
         await prisma.usageRecord.create({
           data: {
@@ -91,16 +118,14 @@ export class UsageTracker {
             apiCost: billingApiCost, // Legacy field - use actual if available
             platformFee,
             totalCost,
-            // Enhanced dual cost tracking - DISABLED FOR BACKWARD COMPATIBILITY
-            // ...(hasActualCost && actualApiCost ? {
-            //   estimatedApiCost: estimatedApiCost,
-            //   actualApiCost: actualApiCost,
-            //   costDelta: costDelta,
-            //   costAccuracy: costAccuracy,
-            //   hasActualCost: hasActualCost,
-            //   providerCostData: providerUsage || null,
-            //   costSource: costSource,
-            // } : {}),
+            // Provider reconciliation data
+            providerInputTokens,
+            providerOutputTokens,
+            providerReportedCost,
+            importSource,
+            providerCostFetched: hasActualCost,
+            providerCostFetchedAt: hasActualCost ? new Date() : null,
+            reconciliationNotes: hasActualCost ? `Real cost from ${model.provider} API: $${actualApiCost}` : null,
           },
         });
       } catch (schemaError: any) {
@@ -146,9 +171,15 @@ export class UsageTracker {
   }
 
   private extractActualCost(providerUsage: any): number | null {
+    // Perplexity format - REAL COSTS! (check first since it has actual costs)
+    if (providerUsage.usage?.total_cost) return providerUsage.usage.total_cost;
+    if (providerUsage.usage?.request_cost) return providerUsage.usage.request_cost;
+    if (providerUsage.usage?.input_tokens_cost && providerUsage.usage?.output_tokens_cost) {
+      return providerUsage.usage.input_tokens_cost + providerUsage.usage.output_tokens_cost;
+    }
+    
     // OpenAI format variations
     if (providerUsage.total_cost) return providerUsage.total_cost;
-    if (providerUsage.usage?.total_cost) return providerUsage.usage.total_cost;
     if (providerUsage.cost) return providerUsage.cost;
     if (providerUsage.totalCost) return providerUsage.totalCost;
     
