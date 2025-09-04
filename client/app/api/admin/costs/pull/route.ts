@@ -57,9 +57,12 @@ export async function POST(req: NextRequest) {
       } else if (provider === 'anthropic') {
         const result = await reconciliation.fetchAnthropicCosts(start, end, force);
         results = [result];
+      } else if (provider === 'google') {
+        const result = await reconciliation.fetchGoogleCosts(start, end, force);
+        results = [result];
       } else {
         return NextResponse.json(
-          { error: 'Invalid provider. Must be "all", "openai", or "anthropic"' },
+          { error: 'Invalid provider. Must be "all", "openai", "anthropic", or "google"' },
           { status: 400 }
         );
       }
@@ -146,7 +149,7 @@ export async function GET(req: NextRequest) {
             { roundNumber: 0 } // Cost reconciliation records use roundNumber 0
           ],
           modelProvider: {
-            in: ['openai', 'anthropic']
+            in: ['openai', 'anthropic', 'google']
           }
         },
         select: {
