@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { formatCost } from '@/lib/models/pricing';
+import { SUBSCRIPTION_PLANS } from '@/lib/stripe';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -230,7 +231,7 @@ export default function UserDetailPage() {
                   data.user.subscription.plan === 'pro' ? 'bg-purple-100 text-purple-700' :
                   'bg-orange-100 text-orange-700'
                 }`}>
-                  {data.user.subscription.plan.charAt(0).toUpperCase() + data.user.subscription.plan.slice(1)}
+                  {SUBSCRIPTION_PLANS[data.user.subscription.plan as keyof typeof SUBSCRIPTION_PLANS]?.name || data.user.subscription.plan}
                 </span>
               </div>
               <div className="flex justify-between items-center">

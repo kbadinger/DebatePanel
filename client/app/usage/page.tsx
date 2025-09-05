@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { formatCost } from '@/lib/models/pricing';
+import { SUBSCRIPTION_PLANS } from '@/lib/stripe';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 
@@ -112,7 +113,7 @@ export default function UsagePage() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           <div className="bg-white rounded-xl shadow-lg p-6 border border-slate-200">
             <h3 className="text-sm font-semibold text-slate-600 mb-2">Current Plan</h3>
-            <div className="text-2xl font-bold text-blue-600 mb-1">{usage.subscription.plan.charAt(0).toUpperCase() + usage.subscription.plan.slice(1)}</div>
+            <div className="text-2xl font-bold text-blue-600 mb-1">{SUBSCRIPTION_PLANS[usage.subscription.plan as keyof typeof SUBSCRIPTION_PLANS]?.name || usage.subscription.plan}</div>
             <div className="text-sm text-slate-500">
               ${usage.subscription.monthlyAllowance}/month allowance
             </div>

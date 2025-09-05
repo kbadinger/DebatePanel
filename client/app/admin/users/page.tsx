@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { formatCost } from '@/lib/models/pricing';
+import { SUBSCRIPTION_PLANS } from '@/lib/stripe';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Search, ChevronLeft, ChevronRight, Shield, User } from 'lucide-react';
@@ -150,7 +151,7 @@ export default function AdminUsersPage() {
                             user.subscription.plan === 'pro' ? 'bg-purple-100 text-purple-700' :
                             'bg-orange-100 text-orange-700'
                           }`}>
-                            {user.subscription.plan.charAt(0).toUpperCase() + user.subscription.plan.slice(1)}
+                            {SUBSCRIPTION_PLANS[user.subscription.plan as keyof typeof SUBSCRIPTION_PLANS]?.name || user.subscription.plan}
                           </span>
                         ) : (
                           <span className="text-sm text-slate-400">No subscription</span>
