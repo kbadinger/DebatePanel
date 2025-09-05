@@ -13,7 +13,7 @@ export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
 export const SUBSCRIPTION_PLANS = {
   free: {
     id: 'free',
-    name: 'Free',
+    name: 'Free Trial',
     description: 'Get started with $5 in credits',
     price: 0,
     monthlyCredits: 5,
