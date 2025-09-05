@@ -129,6 +129,10 @@ node scripts/fetch-models.js        # Check OpenAI models
 npx prisma migrate dev              # Run migrations
 npx prisma studio                   # Open database GUI
 
+# Database Utilities
+npx tsx scripts/clear-user-history.ts user@example.com --dry-run  # Preview user history cleanup
+npx tsx scripts/clear-user-history.ts user@example.com            # Clear user history (preserves billing)
+
 # Admin
 npm run make-admin user@email.com  # Grant admin access
 ```

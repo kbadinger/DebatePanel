@@ -10,9 +10,9 @@ This document outlines how we track real costs vs estimates for all AI providers
 | **Anthropic** | ✅ Billing API | ✅ API Response | Automatic via API | **ACTIVE** |
 | **Perplexity** | ✅ API Response | ✅ API Response | Real-time in debates | **ACTIVE** |
 | **Google Cloud** | 🔄 Calculated | ✅ API Response | Official pricing + usage | **ACTIVE** |
-| **DeepSeek** | ❌ No API | ✅ API Response | Manual CSV import | **MANUAL** |
-| **X.AI (Grok)** | ❌ No API | ✅ API Response | Manual CSV import | **MANUAL** |
-| **Mistral** | ❌ No API | ❌ Dashboard only | Manual CSV import | **MANUAL** |
+| **DeepSeek** | ❌ No API | ✅ API Response | Manual CSV export | **MANUAL** |
+| **X.AI (Grok)** | ❌ No API | ✅ API Response | Manual copy/paste + CSV | **MANUAL** |
+| **Mistral** | ❌ No API | ⚠️ Aggregate only | Manual aggregate totals | **MANUAL** |
 | **Meta (Llama)** | ❌ Third-party | 🔄 Via providers | Provider dashboards | **MANUAL** |
 
 ## Real-Time Cost Tracking (Automatic)
@@ -45,9 +45,11 @@ This document outlines how we track real costs vs estimates for all AI providers
 - **Frequency**: Real-time during debates
 - **Status**: Implemented with official pricing
 
-## Manual Reconciliation (CSV Import)
+## Manual Reconciliation (Mixed Methods)
 
-### 5. DeepSeek - Manual Import Required ❌
+**Reality Check**: Provider export capabilities vary significantly. Some have true CSV export (DeepSeek), others only provide copy/paste data (X.AI, Mistral).
+
+### 5. DeepSeek - CSV Export Available ✅
 **Export Instructions:**
 1. Go to [platform.deepseek.com](https://platform.deepseek.com)
 2. Navigate to **Usage** section
@@ -61,33 +63,60 @@ This document outlines how we track real costs vs estimates for all AI providers
 - Use for reconciliation when real costs imported
 
 **Current Pricing (Jan 2025):**
-- DeepSeek-Chat: $0.27/$1.10 per 1M tokens (input/output)
+- DeepSeek-Chat: $0.27/$1.10 per 1M tokens (input/output)  
 - DeepSeek-R1: $0.55/$2.19 per 1M tokens (input/output)
 
-### 6. X.AI (Grok) - Manual Import Required ❌
-**Export Instructions:**
+### 6. X.AI (Grok) - Copy/Paste Data ✅
+**Data Export Method:**
 1. Go to [console.x.ai](https://console.x.ai)
 2. Navigate to **Billing** section
-3. Select **Export Usage Data**
-4. Download CSV for date range
+3. **Copy/paste the hourly cost breakdown table** (like your example)
+4. Create CSV with format: `timestamp,model,cost`
 5. Import via `/admin/usage/import`
+
+**Example Data Format:**
+```
+timestamp,model,cost
+2025-09-01T20:00:00Z,grok-2,0.0977
+2025-09-01T21:00:00Z,grok-2,0.1066  
+2025-09-01T23:00:00Z,grok-2,0.5272
+```
 
 **API Response Data:**
 - Provides token counts in API responses
 - Store `usage.prompt_tokens`, `usage.completion_tokens`
 - Store `usage.cached_prompt_tokens` for cache tracking
 
-### 7. Mistral - Manual Import Required ❌
-**Export Instructions:**
+### 7. Mistral - Aggregate Model Data ⚠️
+**Data Format**: Mistral provides **aggregate totals by model**, not per-request granularity
+**Example Dashboard Data:**
+```
+pixtral-large-2411
+Input Tokens: 0.02905 USD
+Output Tokens: 0.06265 USD
+Total: 0.09170 USD
+
+mistral-medium-2505  
+Input Tokens: 0.00428 USD
+Output Tokens: 0.01175 USD
+Total: 0.01604 USD
+```
+
+**Data Collection Method:**
 1. Go to [console.mistral.ai](https://console.mistral.ai)
-2. Navigate to **Usage** section  
-3. View workspace-level usage
-4. Export CSV data
+2. Navigate to **Billing** section under Administration  
+3. Copy aggregate model costs from dashboard
+4. Create CSV with **daily totals**: `date,model,total_cost,input_cost,output_cost`
 5. Import via `/admin/usage/import`
+
+**Reconciliation Approach:**
+- **Aggregate Matching**: Match total daily costs per model rather than individual requests
+- **Proportional Distribution**: Distribute aggregate costs across debates proportionally
+- **Less Precision**: Cannot match individual API calls, only daily model totals
 
 **API Response:**
 - Limited usage data in responses
-- Must rely on dashboard export
+- Must rely on aggregate dashboard data collection
 
 ### 8. Meta/Llama - Third-Party Provider Dependent ❌
 **Together AI:**

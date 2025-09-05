@@ -6,6 +6,7 @@ import { ModelResponseCard } from './ModelResponseCard';
 import { RatingsKey } from './RatingsKey';
 import { HumanInputPanel } from './HumanInputPanel';
 import { WinnerDisplay } from './WinnerDisplay';
+import { DebateProgressIndicator } from '@/components/ui/DebateProgressIndicator';
 import { Button } from '@/components/ui/button';
 import { Loader2, Users, Copy, Check, Download } from 'lucide-react';
 import { useSession } from 'next-auth/react';
@@ -28,6 +29,12 @@ export function DebateInterface({ config, onComplete }: DebateInterfaceProps) {
   const [waitingForHuman, setWaitingForHuman] = useState(false);
   const [isSubmittingHuman, setIsSubmittingHuman] = useState(false);
   const [debug, setDebug] = useState(false);
+  
+  // Progress tracking state
+  const [debatePhase, setDebatePhase] = useState<'initializing' | 'round' | 'waiting-human' | 'analyzing' | 'judge-review' | 'completed'>('initializing');
+  const [modelStatuses, setModelStatuses] = useState<Record<string, 'pending' | 'thinking' | 'responding' | 'completed' | 'error'>>({});
+  const [debateStartTime, setDebateStartTime] = useState<Date | null>(null);
+  const [expectedModelsInRound, setExpectedModelsInRound] = useState<string[]>([]);
 
   
   const handleCopySynthesis = async () => {
@@ -117,6 +124,12 @@ export function DebateInterface({ config, onComplete }: DebateInterfaceProps) {
     setCurrentRound(1);
     setInitTimeout(false);
     
+    // Initialize progress tracking
+    setDebatePhase('initializing');
+    setDebateStartTime(new Date());
+    setModelStatuses({});
+    setExpectedModelsInRound(config.models.map(m => m.id));
+    
     // Set a timeout to show a message if initialization takes too long
     const timeoutId = setTimeout(() => {
       setInitTimeout(true);
@@ -170,6 +183,17 @@ export function DebateInterface({ config, onComplete }: DebateInterfaceProps) {
       clearTimeout(timeoutId);
       setInitTimeout(false);
       
+      // Start first round
+      setDebatePhase('round');
+      setCurrentRound(1);
+      
+      // Initialize all models as pending for round 1
+      const initialStatuses: Record<string, 'pending' | 'thinking' | 'responding' | 'completed' | 'error'> = {};
+      config.models.forEach(model => {
+        initialStatuses[model.id] = 'thinking';
+      });
+      setModelStatuses(initialStatuses);
+      
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
@@ -193,17 +217,35 @@ export function DebateInterface({ config, onComplete }: DebateInterfaceProps) {
             if (data.type === 'response') {
               console.log('Adding streaming response from:', data.data.modelId, 'round:', data.data.round);
               setStreamingResponses(prev => [...prev, data.data]);
+              
+              // Update model status to completed
+              setModelStatuses(prev => ({
+                ...prev,
+                [data.data.modelId]: 'completed'
+              }));
             } else if (data.type === 'round-complete') {
               console.log('Round complete:', data.data.roundNumber, 'Adding to debate state');
               setCurrentRound(data.data.roundNumber);
               setStreamingResponses([]);
+              
+              // Reset model statuses for next round if not final round
+              if (data.data.roundNumber < config.rounds) {
+                const nextRoundStatuses: Record<string, 'pending' | 'thinking' | 'responding' | 'completed' | 'error'> = {};
+                config.models.forEach(model => {
+                  nextRoundStatuses[model.id] = 'thinking';
+                });
+                setModelStatuses(nextRoundStatuses);
+              } else {
+                // Final round complete, moving to analysis
+                setDebatePhase('analyzing');
+              }
               
               // Update the debate object with the completed round
               setDebate(prevDebate => {
                 const updatedDebate = {
                   ...prevDebate,
                   id: prevDebate?.id || `temp-${Date.now()}`,
-                  status: 'running',
+                  status: 'active' as const,
                   config: prevDebate?.config || config,
                   rounds: [
                     ...(prevDebate?.rounds || []),
@@ -216,6 +258,7 @@ export function DebateInterface({ config, onComplete }: DebateInterfaceProps) {
             } else if (data.type === 'waiting-for-human') {
               setWaitingForHuman(true);
               setStreamingResponses([]);
+              setDebatePhase('waiting-human');
             } else if (data.type === 'human-joined') {
               const participant = data.data as { userId: string; userName: string };
               setParticipants(prev => [...prev, participant]);
@@ -227,6 +270,13 @@ export function DebateInterface({ config, onComplete }: DebateInterfaceProps) {
                 ...data.data,
                 status: data.data.status || 'completed'
               }));
+              
+              // Move to judge phase if judge is enabled, otherwise analyzing
+              if (config.judge?.enabled) {
+                setDebatePhase('judge-review');
+              } else {
+                setDebatePhase('analyzing');
+              }
             } else if (data.type === 'debate-complete') {
               console.log('Debate completed - Full data:', JSON.stringify(data.data, null, 2));
               console.log('Debate status:', data.data.status);
@@ -237,6 +287,7 @@ export function DebateInterface({ config, onComplete }: DebateInterfaceProps) {
               
               // Merge completed debate with existing rounds data AND stop running in the same update
               setIsRunning(false);
+              setDebatePhase('completed');
               setDebate(prevDebate => {
                 const completedDebate = {
                   ...prevDebate,  // Keep existing rounds and config
@@ -290,6 +341,14 @@ export function DebateInterface({ config, onComplete }: DebateInterfaceProps) {
     
     setIsSubmittingHuman(true);
     setWaitingForHuman(false);
+    setDebatePhase('round'); // Back to round phase after human input
+    
+    // Reset model statuses for next responses
+    const nextRoundStatuses: Record<string, 'pending' | 'thinking' | 'responding' | 'completed' | 'error'> = {};
+    config.models.forEach(model => {
+      nextRoundStatuses[model.id] = 'thinking';
+    });
+    setModelStatuses(nextRoundStatuses);
     
     try {
       const response = await fetch('/api/debate/human-input', {
@@ -336,15 +395,33 @@ export function DebateInterface({ config, onComplete }: DebateInterfaceProps) {
             
             if (data.type === 'response') {
               setStreamingResponses(prev => [...prev, data.data]);
+              // Update model status to completed
+              setModelStatuses(prev => ({
+                ...prev,
+                [data.data.modelId]: 'completed'
+              }));
             } else if (data.type === 'round-complete') {
               setCurrentRound(data.data.roundNumber);
               setStreamingResponses([]);
+              // Reset model statuses for next round if not final round
+              if (data.data.roundNumber < config.rounds) {
+                const nextRoundStatuses: Record<string, 'pending' | 'thinking' | 'responding' | 'completed' | 'error'> = {};
+                config.models.forEach(model => {
+                  nextRoundStatuses[model.id] = 'thinking';
+                });
+                setModelStatuses(nextRoundStatuses);
+              } else {
+                // Final round complete, moving to analysis
+                setDebatePhase('analyzing');
+              }
             } else if (data.type === 'waiting-for-human') {
               setWaitingForHuman(true);
               setStreamingResponses([]);
+              setDebatePhase('waiting-human');
             } else if (data.type === 'debate-complete') {
               console.log('Debate completed (2nd handler):', data.data);
               setIsRunning(false);
+              setDebatePhase('completed');
               setDebate(data.data);
               onComplete?.(data.data);
             }
@@ -527,6 +604,21 @@ export function DebateInterface({ config, onComplete }: DebateInterfaceProps) {
         </div>
       )}
 
+      {/* Progress Indicator - Show during debate process */}
+      {(isRunning || debatePhase !== 'completed') && (
+        <DebateProgressIndicator
+          phase={debatePhase}
+          currentRound={currentRound}
+          totalRounds={config.rounds}
+          models={config.models}
+          modelStatuses={modelStatuses}
+          hasJudge={config.judge?.enabled || false}
+          isInteractive={config.isInteractive || false}
+          completedModels={Object.values(modelStatuses).filter(status => status === 'completed').length}
+          startTime={debateStartTime || undefined}
+        />
+      )}
+
       {/* Ratings Key - Always show if we have rounds */}
       {(debate?.rounds && debate.rounds.length > 0) && (
         <div className="mb-6">
@@ -534,34 +626,6 @@ export function DebateInterface({ config, onComplete }: DebateInterfaceProps) {
         </div>
       )}
       
-      {/* Loading States - Always at top after legend */}
-      {isRunning && allResponses.length === 0 && (
-        <div className="mb-6">
-          <div className="bg-white rounded-xl shadow-lg border border-slate-200 p-6 flex items-center justify-center gap-4">
-            <Loader2 className="animate-spin text-blue-600" size={28} />
-            <div>
-              <p className="text-lg font-semibold text-slate-800">Starting Debate</p>
-              <p className="text-sm text-slate-600">Initializing models...</p>
-              {initTimeout && (
-                <p className="text-sm text-amber-600 mt-2">
-                  ⏱️ Models are taking longer than usual to respond. This can happen with complex topics or when models are under high load. Please wait...
-                </p>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-      
-      {isRunning && allResponses.length > 0 && streamingResponses.length === 0 && !waitingForHuman && (
-        <div className="mb-6">
-          <div className="bg-white rounded-xl shadow-md border border-slate-200 p-4 flex items-center gap-3">
-            <Loader2 className="animate-spin text-blue-600" size={20} />
-            <span className="text-sm font-medium text-slate-700">
-              Waiting for next response...
-            </span>
-          </div>
-        </div>
-      )}
       
       <div className="space-y-4">
         {allResponses.map((response, idx) => (
