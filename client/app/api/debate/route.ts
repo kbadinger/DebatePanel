@@ -672,7 +672,15 @@ export async function GET(req: NextRequest) {
   }
   
   const debates = await prisma.debate.findMany({
-    where: userId ? { userId } : {},
+    where: {
+      ...(userId ? { userId } : {}),
+      // Exclude cleared test debates
+      NOT: {
+        topic: {
+          startsWith: '[Test Debate - Cleared]'
+        }
+      }
+    },
     orderBy: { createdAt: 'desc' },
     take: 20,
     select: {
