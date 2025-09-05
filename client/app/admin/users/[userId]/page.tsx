@@ -230,7 +230,7 @@ export default function UserDetailPage() {
                   data.user.subscription.plan === 'pro' ? 'bg-purple-100 text-purple-700' :
                   'bg-orange-100 text-orange-700'
                 }`}>
-                  {data.user.subscription.plan}
+                  {data.user.subscription.plan.charAt(0).toUpperCase() + data.user.subscription.plan.slice(1)}
                 </span>
               </div>
               <div className="flex justify-between items-center">

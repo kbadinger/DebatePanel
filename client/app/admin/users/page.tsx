@@ -150,7 +150,7 @@ export default function AdminUsersPage() {
                             user.subscription.plan === 'pro' ? 'bg-purple-100 text-purple-700' :
                             'bg-orange-100 text-orange-700'
                           }`}>
-                            {user.subscription.plan}
+                            {user.subscription.plan.charAt(0).toUpperCase() + user.subscription.plan.slice(1)}
                           </span>
                         ) : (
                           <span className="text-sm text-slate-400">No subscription</span>
