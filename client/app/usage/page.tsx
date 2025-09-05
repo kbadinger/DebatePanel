@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { formatCost } from '@/lib/models/pricing';
-import { SUBSCRIPTION_PLANS } from '@/lib/stripe';
+import { SUBSCRIPTION_PLANS } from '@/lib/subscription-plans';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 
