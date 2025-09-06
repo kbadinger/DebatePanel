@@ -50,6 +50,13 @@ export function rateLimit(config: RateLimitConfig) {
 }
 
 function getClientIdentifier(req: NextRequest): string {
+  // For MCP requests, use the API key hash as identifier for more precise rate limiting
+  const mcpApiKey = req.headers.get('x-mcp-api-key');
+  if (mcpApiKey) {
+    // Use first 16 chars of the key for rate limiting (not the full key for security)
+    return `mcp:${mcpApiKey.substring(0, 16)}`;
+  }
+  
   // Use IP address as identifier (with fallbacks)
   const forwarded = req.headers.get('x-forwarded-for');
   const realIp = req.headers.get('x-real-ip');
@@ -74,6 +81,11 @@ export const RATE_LIMITS = {
   
   // Very strict for webhooks
   webhook: rateLimit({ requests: 100, window: 60000 }), // 100 webhook calls per minute
+  
+  // MCP-specific rate limits (stricter for automated access)
+  mcp: rateLimit({ requests: 20, window: 60000 }), // 20 general MCP requests per minute
+  mcpDebate: rateLimit({ requests: 3, window: 60000 }), // 3 MCP debate creations per minute
+  mcpAdmin: rateLimit({ requests: 50, window: 60000 }), // 50 admin MCP operations per minute
 };
 
 // Helper to create rate limit response
