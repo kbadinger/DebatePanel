@@ -14,6 +14,7 @@ import { Button } from '@/components/ui/button';
 import ModelLimitDialog from '@/components/ui/ModelLimitDialog';
 import { ChevronDown, ChevronRight, Sparkles, AlertTriangle, CheckCircle, Info, Lightbulb, Shield, ShieldAlert } from 'lucide-react';
 import Link from 'next/link';
+import UnverifiedEmailBanner from '@/components/UnverifiedEmailBanner';
 
 export default function Home() {
   const { data: session, status } = useSession();
@@ -181,6 +182,9 @@ Option 3 - Hybrid Model:
             <p className="text-slate-600">Loading available models...</p>
           </div>
         )}
+        
+        {/* Email verification banner for authenticated users */}
+        {session && <UnverifiedEmailBanner />}
         
         {!loading && configuredProviders.length === 0 && (
           <div className="bg-amber-50 border-2 border-amber-200 rounded-lg p-6 mb-6">

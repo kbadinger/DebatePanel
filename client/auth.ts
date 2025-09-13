@@ -70,13 +70,14 @@ export const authOptions: NextAuthOptions = {
       if (session.user && token.userId) {
         session.user.id = token.userId as string;
         
-        // Get user details including admin status
+        // Get user details including admin status and email verification
         const fullUser = await prisma.user.findUnique({
           where: { id: token.userId as string },
-          select: { isAdmin: true }
+          select: { isAdmin: true, emailVerified: true }
         });
         
         session.user.isAdmin = fullUser?.isAdmin || false;
+        session.user.emailVerified = fullUser?.emailVerified;
         
         // Get subscription details
         const subscription = await prisma.subscription.findUnique({

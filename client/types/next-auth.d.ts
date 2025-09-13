@@ -5,6 +5,7 @@ declare module 'next-auth' {
     user: {
       id: string;
       isAdmin?: boolean;
+      emailVerified?: Date | null;
       subscription?: {
         plan: string;
         status: string;

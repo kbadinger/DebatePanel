@@ -210,3 +210,109 @@ Questions? We're here to help: ${EMAIL_CONFIG.replyTo}
     return { success: false, error: 'Failed to send email' };
   }
 }
+
+export async function sendEmailVerification(email: string, token: string, name?: string) {
+  if (!resend) {
+    console.error('Resend not configured - cannot send email verification');
+    return { success: false, error: 'Email service not configured' };
+  }
+
+  const verifyUrl = `${EMAIL_CONFIG.baseUrl}/api/auth/verify-email?token=${token}&email=${encodeURIComponent(email)}`;
+  
+  try {
+    const { data, error } = await resend.emails.send({
+      from: EMAIL_CONFIG.from,
+      to: [email],
+      replyTo: EMAIL_CONFIG.replyTo,
+      subject: 'Verify your DecisionForge email address',
+      html: `
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <meta charset="utf-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Verify Your Email</title>
+          </head>
+          <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; text-align: center; border-radius: 8px 8px 0 0;">
+              <img src="${EMAIL_CONFIG.baseUrl}/logos/png/White logo - no background.png" alt="DecisionForge" style="height: 40px; margin-bottom: 10px;" />
+              <h1 style="color: white; margin: 0; font-size: 24px;">Verify Your Email</h1>
+              <p style="color: #e2e8f0; margin: 10px 0 0 0;">Almost there! Just one more step.</p>
+            </div>
+            
+            <div style="background: white; padding: 30px; border-radius: 0 0 8px 8px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+              <h2 style="color: #1a202c; margin-top: 0;">Confirm your email address</h2>
+              
+              <p>Hi${name ? ` ${name}` : ''},</p>
+              
+              <p>Thanks for signing up for DecisionForge! To complete your account setup and unlock your $5 in free credits, please verify your email address.</p>
+              
+              <div style="text-align: center; margin: 30px 0;">
+                <a href="${verifyUrl}" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">
+                  Verify Email Address
+                </a>
+              </div>
+              
+              <p>If the button doesn't work, copy and paste this link into your browser:</p>
+              <p style="word-break: break-all; color: #4a5568; background: #f7fafc; padding: 10px; border-radius: 4px; font-family: monospace; font-size: 12px;">
+                ${verifyUrl}
+              </p>
+              
+              <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e2e8f0; color: #718096; font-size: 14px;">
+                <p><strong>Why verify?</strong></p>
+                <ul>
+                  <li>Unlock your $5 in free credits to start debating</li>
+                  <li>Receive important updates about your debates and account</li>
+                  <li>Secure your account and enable password recovery</li>
+                </ul>
+                
+                <p><strong>Security Notice:</strong></p>
+                <ul>
+                  <li>This verification link will expire in 24 hours</li>
+                  <li>If you didn't create this account, you can safely ignore this email</li>
+                </ul>
+                
+                <p style="margin-top: 20px;">
+                  Need help? Contact us at <a href="mailto:${EMAIL_CONFIG.replyTo}" style="color: #667eea;">${EMAIL_CONFIG.replyTo}</a>
+                </p>
+              </div>
+            </div>
+          </body>
+        </html>
+      `,
+      text: `
+Verify Your DecisionForge Email Address
+
+Hi${name ? ` ${name}` : ''},
+
+Thanks for signing up for DecisionForge! To complete your account setup and unlock your $5 in free credits, please verify your email address.
+
+Click this link to verify: ${verifyUrl}
+
+Why verify?
+- Unlock your $5 in free credits to start debating
+- Receive important updates about your debates and account  
+- Secure your account and enable password recovery
+
+This verification link will expire in 24 hours.
+
+If you didn't create this account, you can safely ignore this email.
+
+Need help? Contact us at ${EMAIL_CONFIG.replyTo}
+
+- The DecisionForge Team
+      `
+    });
+
+    if (error) {
+      console.error('Failed to send email verification:', error);
+      return { success: false, error: error.message };
+    }
+
+    console.log('Email verification sent successfully:', data?.id);
+    return { success: true, messageId: data?.id };
+  } catch (error) {
+    console.error('Error sending email verification:', error);
+    return { success: false, error: 'Failed to send verification email' };
+  }
+}

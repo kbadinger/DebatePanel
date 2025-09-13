@@ -155,6 +155,17 @@ export async function POST(req: NextRequest) {
               return;
             }
             
+            // Check email verification (except for admin users)
+            if (!user.isAdmin && !user.emailVerified) {
+              controller.enqueue(encoder.encode(safeSSEEncode({
+                type: 'error',
+                error: 'Please verify your email address before creating debates. Check your inbox for a verification email.',
+                requiresEmailVerification: true
+              })));
+              controller.close();
+              return;
+            }
+            
             // Skip balance check for admin users
             if (!user.isAdmin) {
               if (!user.subscription) {

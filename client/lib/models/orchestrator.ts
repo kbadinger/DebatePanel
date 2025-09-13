@@ -452,44 +452,50 @@ Format your response as a clear argument with supporting points.`;
   }
   
   private buildSystemPrompt(model: Model, previousResponses: ModelResponse[], config: DebateConfig): string {
-    const roundNumber = previousResponses.length > 0 
-      ? Math.max(...previousResponses.map(r => r.round)) + 1 
+    // Use GPT-5 optimized prompting if this is a GPT-5 model
+    if (model.name.startsWith('gpt-5')) {
+      return this.buildGPT5MasterPrompt(model, previousResponses, config);
+    }
+
+    // Legacy prompting for other models
+    const roundNumber = previousResponses.length > 0
+      ? Math.max(...previousResponses.map(r => r.round)) + 1
       : 1;
-    
+
     const hasHumanParticipant = previousResponses.some(r => r.isHuman);
     const isAdversarial = config.style === 'adversarial';
-    
+
     // Check if topic appears controversial/sensitive and determine complexity
     const topicText = `${config.topic} ${config.description || ''}`.toLowerCase();
     const isSensitiveTopic = this.isTopicSensitive(topicText);
     const topicComplexity = this.getTopicComplexity(topicText);
-    
+
     if (roundNumber === 1) {
-      let basePrompt = isAdversarial 
-        ? this.buildAdversarialRound1Prompt(hasHumanParticipant) 
+      let basePrompt = isAdversarial
+        ? this.buildAdversarialRound1Prompt(hasHumanParticipant)
         : this.buildConsensusRound1Prompt(hasHumanParticipant);
-      
+
       // Add complexity guidance
       basePrompt = this.addComplexityGuidance(basePrompt, topicComplexity);
-      
+
       // Add sensitive topic guidance if needed
-      return isSensitiveTopic 
+      return isSensitiveTopic
         ? this.addSensitiveTopicGuidance(basePrompt, config)
         : basePrompt;
     }
-    
+
     // Round 2+ - different approaches based on style with compressed context
     const lastRoundResponses = previousResponses.filter(r => r.round === roundNumber - 1);
     const previousDebate = `\n\nPrevious debate points:\n${this.compressPreviousResponses(lastRoundResponses, roundNumber)}`;
-    
-    let basePrompt = isAdversarial 
+
+    let basePrompt = isAdversarial
       ? this.buildAdversarialLaterRoundPrompt(roundNumber, hasHumanParticipant, previousDebate)
       : this.buildConsensusLaterRoundPrompt(roundNumber, hasHumanParticipant, previousDebate);
-      
+
     // Add complexity guidance
     basePrompt = this.addComplexityGuidance(basePrompt, topicComplexity);
-      
-    return isSensitiveTopic 
+
+    return isSensitiveTopic
       ? this.addSensitiveTopicGuidance(basePrompt, config)
       : basePrompt;
   }
@@ -790,6 +796,102 @@ At the end of your response, explicitly state:
 Stance: [Your current recommendation incorporating group insights]
 Convergence: [Areas where you agree/disagree with group and what would change your mind]
 Confidence: [0-100]% confident in this stance`;
+  }
+
+  private buildGPT5MasterPrompt(model: Model, previousResponses: ModelResponse[], config: DebateConfig): string {
+    const roundNumber = previousResponses.length > 0
+      ? Math.max(...previousResponses.map(r => r.round)) + 1
+      : 1;
+
+    const hasHumanParticipant = previousResponses.some(r => r.isHuman);
+    const isAdversarial = config.style === 'adversarial';
+    const topicText = `${config.topic} ${config.description || ''}`.toLowerCase();
+    const isSensitiveTopic = this.isTopicSensitive(topicText);
+    const topicComplexity = this.getTopicComplexity(topicText);
+
+    // Determine role based on debate style and model context
+    const role = isAdversarial
+      ? `expert ${model.contextInfo?.suggestedRole || 'analyst'} in an adversarial intellectual combat debate`
+      : `expert ${model.contextInfo?.suggestedRole || 'analyst'} in a consensus-seeking business panel`;
+
+    // Determine reasoning level based on topic complexity
+    const reasoning = topicComplexity === 'complex' ? 'ULTRA THINK' :
+                     topicComplexity === 'moderate' ? 'think harder' : 'think';
+
+    // Determine verbosity based on round and style
+    const verbosity = roundNumber === 1 ? 'high' :
+                     roundNumber <= 2 ? 'medium' : 'low';
+
+    // Build task description
+    const task = roundNumber === 1
+      ? `Provide your initial expert analysis and take a strong position on this topic`
+      : `Respond to previous debate points and ${isAdversarial ? 'defend your position vigorously' : 'work toward group consensus'}`;
+
+    // Build inputs section
+    let inputs = `Topic: ${config.topic}`;
+    if (config.description) {
+      inputs += `\nContext: ${config.description}`;
+    }
+    if (hasHumanParticipant) {
+      inputs += `\nNote: A human participant has joined this debate`;
+    }
+    if (previousResponses.length > 0) {
+      const lastRoundResponses = previousResponses.filter(r => r.round === roundNumber - 1);
+      inputs += `\n\nPrevious Round:\n${this.compressPreviousResponses(lastRoundResponses, roundNumber)}`;
+    }
+
+    // Build deliverables based on debate style
+    const deliverables = isAdversarial
+      ? `1. Your expert position with strong evidence
+2. Direct challenges to weak opposing arguments
+3. Anticipation and refutation of counterarguments
+4. Stance: [Your specific position to defend]
+5. Battle Status: [What you're fighting against and why]
+6. Confidence: [0-100]% confident in this stance`
+      : `1. Your expert recommendation based on evidence
+2. Areas of agreement with previous arguments
+3. Synthesis of best ideas from all perspectives
+4. Stance: [Your current recommendation incorporating group insights]
+5. Convergence: [Areas where you agree/disagree and what would change your mind]
+6. Confidence: [0-100]% confident in this stance`;
+
+    // Build private ops section with self-reflection and meta-fix
+    let privateOps = `Treat INPUTS as authoritative. Focus on expert analysis using your specialized knowledge.`;
+
+    if (isSensitiveTopic) {
+      privateOps += ` This topic involves sensitive themes - engage thoughtfully and constructively rather than avoiding discussion. Your role is to facilitate understanding and growth through rigorous but respectful analysis.`;
+    }
+
+    privateOps += `
+If Self-Reflect=on:
+  1) Create a concise private rubric: correctness of analysis, strength of evidence, clarity of position, adherence to debate style, constructive contribution.
+  2) Draft → check against rubric → revise once.
+  3) Return only the final deliverables.
+If Meta-Fix=on and any deliverable is missing/wrong or draft fails rubric check:
+  1) Write a better INTERNAL prompt that fixes the issues (tighten analysis, strengthen evidence, clarify position).
+  2) Apply that internal prompt ONCE immediately.
+  3) Return the improved result.`;
+
+    return `You are ${role}.
+
+CONTROL PANEL
+• Reasoning: ${reasoning}
+• Verbosity: ${verbosity}
+• Tools: auto
+• Self-Reflect: on
+• Meta-Fix: on
+
+TASK
+${task}
+
+INPUTS
+${inputs}
+
+DELIVERABLES
+${deliverables}
+
+PRIVATE OPS (do not print)
+${privateOps}`;
   }
   
   private buildRoundPrompt(
