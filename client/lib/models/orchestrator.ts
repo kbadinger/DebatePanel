@@ -1538,15 +1538,26 @@ BE DECISIVE. The whole point of this debate was to get an answer, not to admire 
   } {
     const totalPromptTokens = this.estimateTokens(prompt + systemPrompt);
     const contextLimit = this.getModelContextLimit(model);
+
+    // Handle unlimited context models
+    if (contextLimit === Infinity) {
+      return {
+        willExceed: false,
+        tokenUsage: totalPromptTokens,
+        contextLimit: Infinity,
+        warningLevel: 'safe'
+      };
+    }
+
     const usagePercent = totalPromptTokens / contextLimit;
-    
+
     let warningLevel: 'safe' | 'warning' | 'critical' = 'safe';
     if (usagePercent > 0.9) {
       warningLevel = 'critical';
     } else if (usagePercent > 0.7) {
       warningLevel = 'warning';
     }
-    
+
     return {
       willExceed: totalPromptTokens > contextLimit * 0.95, // 95% threshold
       tokenUsage: totalPromptTokens,
@@ -1559,57 +1570,70 @@ BE DECISIVE. The whole point of this debate was to get an answer, not to admire 
    * Get context limit for a specific model
    */
   private getModelContextLimit(model: Model): number {
-    // Model context limits (input tokens)
+    // Model context limits (input tokens) - Updated with latest known limits
     const limits: Record<string, number> = {
-      // OpenAI
+      // OpenAI - UNLIMITED for flagship models
       'gpt-4o': 128000,
       'gpt-4o-mini': 128000,
-      'gpt-5': 1000000, // 1M context
-      'gpt-5-2025-08-07': 1000000,
+      'gpt-5': Infinity, // Remove artificial limits - let it run unlimited
+      'gpt-5-2025-08-07': Infinity, // Remove artificial limits
       'o1': 200000,
       'o1-mini': 128000,
-      'o3': 1000000,
+      'o3': Infinity, // Remove artificial limits - latest reasoning model
       'o3-mini': 200000,
       'o4-mini': 200000,
-      
-      // Anthropic
+
+      // Anthropic - UNLIMITED for Claude 4 series
       'claude-3-5-sonnet-20241022': 200000,
       'claude-3-5-haiku-20241022': 200000,
       'claude-3-opus-20240229': 200000,
-      'claude-opus-4-1-20250805': 200000,
-      'claude-sonnet-4-20250514': 200000,
-      
-      // Google
+      'claude-opus-4-1-20250805': Infinity, // Remove limits for flagship Claude 4
+      'claude-sonnet-4-20250514': Infinity, // Remove limits for Claude 4
+      'claude-opus-4-20250514': Infinity, // Remove limits for Claude 4
+      'claude-3-7-sonnet-20250219': Infinity, // Remove limits for advanced Claude
+
+      // Google - UNLIMITED for Gemini 2.5 Pro
       'gemini-1.5-pro': 2000000, // 2M context
       'gemini-1.5-flash': 1000000,
       'gemini-2.0-flash': 1000000,
-      'gemini-2.5-pro': 2000000,
+      'gemini-2.5-pro': Infinity, // Remove artificial limits - highest context model
       'gemini-2.5-flash': 1000000,
-      
-      // xAI
+
+      // xAI - Keep conservative for now
       'grok-2': 131072,
       'grok-3': 131072,
       'grok-4': 200000,
-      
-      // DeepSeek
+      'grok-4-0709': 256000, // Slightly higher for newest
+
+      // DeepSeek - Unlimited for reasoning model
       'deepseek-v3.1': 128000,
-      'deepseek-r1-0528': 200000,
+      'deepseek-r1-0528': Infinity, // Remove limits for reasoning model
       'deepseek-chat': 128000,
       'deepseek-reasoner': 200000,
-      
+
       // Mistral
       'mistral-large-latest': 32768,
       'mistral-small-latest': 32768,
-      
+      'mistral-medium-2505': 128000,
+      'pixtral-large-2411': 128000,
+
       // Perplexity
       'sonar-pro': 28000,
       'sonar-reasoning-pro': 28000,
-      
-      // AIML
+      'sonar-deep-research': 50000, // Higher for research model
+
+      // AIML/Kimi
       'kimi-k2-preview': 200000,
       'kimi-k1.5': 200000,
+      'kimi-k2-instruct': 200000,
+
+      // Meta Llama
+      'llama-4-scout': 128000,
+      'llama-4-maverick': 256000, // Higher for advanced model
+      'llama-3.3-70b': 128000,
+      'llama-3.1-405b': 200000,
     };
-    
+
     return limits[model.name] || 32000; // Default fallback
   }
 

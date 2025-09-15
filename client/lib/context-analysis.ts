@@ -78,7 +78,19 @@ export function calculateContextRequirements(config: DebateConfig): {
   config.models.forEach(model => {
     const maxTokens = model.contextInfo?.maxTokens || 128000;
     const finalRoundTokens = totalTokensByRound[config.rounds - 1];
-    
+
+    // Skip warnings for unlimited context models
+    if (maxTokens === Infinity) {
+      // Optional: Add info message for unlimited models
+      warnings.push({
+        modelId: model.id,
+        modelName: model.displayName,
+        warning: `Unlimited context - can handle very long debates`,
+        severity: 'info'
+      });
+      return;
+    }
+
     if (finalRoundTokens > maxTokens) {
       const exceedsAtRound = totalTokensByRound.findIndex(tokens => tokens > maxTokens) + 1;
       warnings.push({

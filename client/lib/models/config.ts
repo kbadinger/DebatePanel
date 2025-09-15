@@ -1,22 +1,55 @@
 import { Model, ModelStrength } from '@/types/debate';
 import { MODEL_PRICING, getCostEmoji } from './pricing';
 
-// Context limits for different model families (in tokens) - Updated September 2025
+// Context limits for different model families (in tokens) - Updated January 2025
 export const MODEL_CONTEXT_LIMITS = {
-  'gpt-5-2025-08-07': 200000,
-  'gpt-5': 200000,
-  'claude-opus-4-1-20250805': 200000,
-  'claude-sonnet-4-20250514': 200000,
-  'claude-opus-4-20250514': 200000,
-  'claude-3-7-sonnet-20250219': 200000,
+  // OpenAI - Unlimited for flagship models
+  'gpt-5-2025-08-07': Infinity, // Remove artificial limits
+  'gpt-5': Infinity, // Remove artificial limits
+  'o3': Infinity, // Latest reasoning model - unlimited
+  'gpt-4o': 128000,
+  'gpt-4o-mini': 128000,
+  'o1': 200000,
+  'o1-mini': 128000,
+  'o3-mini': 200000,
+  'o4-mini': 200000,
+
+  // Anthropic - Unlimited for Claude 4 series
+  'claude-opus-4-1-20250805': Infinity, // Flagship Claude 4 - unlimited
+  'claude-sonnet-4-20250514': Infinity, // Claude 4 - unlimited
+  'claude-opus-4-20250514': Infinity, // Claude 4 - unlimited
+  'claude-3-7-sonnet-20250219': Infinity, // Advanced Claude - unlimited
   'claude-3-5-sonnet-20241022': 200000,
-  'gemini-2.5-pro': 1048576,  // 1M tokens from API
-  'gemini-2.5-flash': 1048576,  // 1M tokens 
-  'gemini-2.0-flash': 1048576,  // 1M tokens
-  'grok-4-0709': 256000,
+  'claude-3-5-sonnet-20240620': 200000,
+  'claude-3-opus-20240229': 200000,
+
+  // Google - Unlimited for Gemini 2.5 Pro
+  'gemini-2.5-pro': Infinity, // Remove artificial limits - highest context model
+  'gemini-2.5-flash': 1048576, // 1M tokens
+  'gemini-2.5-flash-lite': 1048576,
+  'gemini-2.0-flash': 1048576, // 1M tokens
+  'gemini-1.5-pro': 2000000, // 2M tokens
+  'gemini-1.5-flash': 1000000,
+
+  // xAI - Keep conservative for now
+  'grok-4-0709': 256000, // Slightly higher for newest
+  'grok-4': 200000,
   'grok-3': 128000,
+  'grok-2': 131072,
+
+  // DeepSeek - Unlimited for reasoning model
+  'deepseek-r1-0528': Infinity, // Reasoning model - unlimited
+  'deepseek-v3.1': 128000,
+  'deepseek-chat': 128000,
+  'deepseek-reasoner': 200000,
+
+  // Other providers
   'mistral-medium-2505': 128000,
   'pixtral-large-2411': 128000,
+  'kimi-k2-instruct': 200000,
+  'kimi-k1.5': 200000,
+  'llama-4-maverick': 256000,
+  'llama-4-scout': 128000,
 };
 
 // Model strengths and suggested roles - Updated for September 2025
