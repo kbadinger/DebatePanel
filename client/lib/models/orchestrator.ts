@@ -818,9 +818,26 @@ Confidence: [0-100]% confident in this stance`;
     const reasoning = topicComplexity === 'complex' ? 'ULTRA THINK' :
                      topicComplexity === 'moderate' ? 'think harder' : 'think';
 
-    // Determine verbosity based on round and style
-    const verbosity = roundNumber === 1 ? 'high' :
-                     roundNumber <= 2 ? 'medium' : 'low';
+    // Determine verbosity based on round, style, and model context capability
+    let verbosity: string;
+    const hasUnlimitedContext = this.getModelContextLimit(model) === Infinity;
+
+    if (hasUnlimitedContext) {
+      // Unlimited context models can be more verbose, especially for complex topics
+      if (topicComplexity === 'complex') {
+        verbosity = 'high'; // Stay verbose for complex topics
+      } else if (roundNumber === 1) {
+        verbosity = 'high'; // Detailed initial analysis
+      } else if (roundNumber <= 2) {
+        verbosity = 'medium';
+      } else {
+        verbosity = 'medium'; // Stay more verbose than limited models
+      }
+    } else {
+      // Limited context models need to be more conservative
+      verbosity = roundNumber === 1 ? 'high' :
+                  roundNumber <= 2 ? 'medium' : 'low';
+    }
 
     // Build task description
     const task = roundNumber === 1
@@ -858,17 +875,21 @@ Confidence: [0-100]% confident in this stance`;
     // Build private ops section with self-reflection and meta-fix
     let privateOps = `Treat INPUTS as authoritative. Focus on expert analysis using your specialized knowledge.`;
 
+    if (hasUnlimitedContext) {
+      privateOps += ` You have unlimited context capacity - use this advantage to provide comprehensive, detailed analysis without worrying about length constraints.`;
+    }
+
     if (isSensitiveTopic) {
       privateOps += ` This topic involves sensitive themes - engage thoughtfully and constructively rather than avoiding discussion. Your role is to facilitate understanding and growth through rigorous but respectful analysis.`;
     }
 
     privateOps += `
 If Self-Reflect=on:
-  1) Create a concise private rubric: correctness of analysis, strength of evidence, clarity of position, adherence to debate style, constructive contribution.
+  1) Create a concise private rubric: correctness of analysis, strength of evidence, clarity of position, adherence to debate style, constructive contribution${hasUnlimitedContext ? ', thoroughness of exploration' : ''}.
   2) Draft → check against rubric → revise once.
   3) Return only the final deliverables.
 If Meta-Fix=on and any deliverable is missing/wrong or draft fails rubric check:
-  1) Write a better INTERNAL prompt that fixes the issues (tighten analysis, strengthen evidence, clarify position).
+  1) Write a better INTERNAL prompt that fixes the issues (tighten analysis, strengthen evidence, clarify position${hasUnlimitedContext ? ', add more comprehensive details' : ''}).
   2) Apply that internal prompt ONCE immediately.
   3) Return the improved result.`;
 
