@@ -161,25 +161,37 @@ Option 3 - Hybrid Model:
   }
   
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
-      <div className={`${status === 'unauthenticated' ? 'max-w-5xl' : 'max-w-2xl'} mx-auto pt-12 px-4`}>
-        <div className="mb-8 text-center">
-          <img 
-            src="/logos/svg/Color logo - no background.svg" 
-            alt="DecisionForge" 
-            className="h-20 w-auto mx-auto mb-4"
-          />
-          <p className="text-center text-slate-700 text-lg mb-2">
-            AI Decision Platform
-          </p>
+    <div className="min-h-screen gradient-bg-mesh relative overflow-hidden">
+      {/* Animated background orbs */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-20 left-10 w-72 h-72 bg-purple-300 rounded-full mix-blend-multiply filter blur-3xl opacity-10 animate-float"></div>
+        <div className="absolute top-40 right-10 w-72 h-72 bg-yellow-300 rounded-full mix-blend-multiply filter blur-3xl opacity-10 animate-float" style={{ animationDelay: '2s' }}></div>
+        <div className="absolute bottom-20 left-1/2 w-72 h-72 bg-pink-300 rounded-full mix-blend-multiply filter blur-3xl opacity-10 animate-float" style={{ animationDelay: '4s' }}></div>
+      </div>
+      
+      <div className={`${status === 'unauthenticated' ? 'max-w-5xl' : 'max-w-2xl'} mx-auto pt-12 px-4 relative z-10`}>
+        <div className="mb-8 text-center debate-card-enter">
+          <h1 className="text-5xl font-black mb-3">
+            <span className="text-purple-600">AI Decision</span>
+            <span className="text-slate-900"> Platform</span>
+          </h1>
+          <div className="flex items-center justify-center gap-2">
+            <span className="loading-dots">
+              <span></span>
+              <span></span>
+              <span></span>
+            </span>
+            <span className="text-xl font-bold text-slate-900">Thinking together</span>
+          </div>
         </div>
-        <p className="text-center text-slate-600 text-base mb-8 max-w-2xl mx-auto">
-          Harness an AI council of GPT, Claude, Gemini, Grok, and other leading models to analyze complex decisions and forge optimal solutions for your business
+        <p className="text-center text-slate-800 text-lg mb-8 max-w-2xl mx-auto font-medium bg-white/80 backdrop-blur p-6 rounded-2xl debate-card-enter border-2 border-purple-200/30 shadow-xl" style={{ animationDelay: '0.2s' }}>
+          <span className="text-2xl mb-2 block">🧠</span>
+          Harness an AI council of GPT, Claude, Gemini, Grok, and other leading models to analyze complex decisions and forge optimal solutions
         </p>
         
         {loading && (
           <div className="text-center mb-6">
-            <p className="text-slate-600">Loading available models...</p>
+            <p className="text-slate-800 font-medium bg-white/80 backdrop-blur px-4 py-2 rounded-lg inline-block">Loading available models...</p>
           </div>
         )}
         
@@ -203,9 +215,11 @@ Option 3 - Hybrid Model:
         )}
         
         {!loading && configuredProviders.length > 0 && (
-          <div className="text-center mb-6 text-sm text-slate-600">
-            {configuredProviders.length} provider{configuredProviders.length !== 1 ? 's' : ''} configured • 
-            {availableModels.length} model{availableModels.length !== 1 ? 's' : ''} available
+          <div className="text-center mb-6">
+            <span className="inline-block bg-purple-100 text-purple-900 font-bold px-4 py-2 rounded-full text-sm border border-purple-300">
+              {configuredProviders.length} provider{configuredProviders.length !== 1 ? 's' : ''} configured • 
+              {availableModels.length} model{availableModels.length !== 1 ? 's' : ''} available
+            </span>
           </div>
         )}
         
@@ -238,10 +252,12 @@ Option 3 - Hybrid Model:
             </div>
 
             <div className="mb-8">
-              <h3 className="text-center text-lg font-semibold text-slate-800 mb-2">Example Debate Result</h3>
-              <p className="text-center text-sm text-slate-600 mb-6">
-                Here&apos;s what you&apos;ll get from every debate - a judge&apos;s verdict synthesizing all perspectives
-              </p>
+              <h3 className="text-center text-2xl font-black text-slate-900 mb-3">Example Debate Result</h3>
+              <div className="text-center mb-6">
+                <p className="text-base font-semibold text-slate-800 bg-yellow-100 px-4 py-2 rounded-lg inline-block">
+                  Here&apos;s what you&apos;ll get from every debate - a judge&apos;s verdict synthesizing all perspectives
+                </p>
+              </div>
               <div className="bg-white rounded-xl shadow-lg p-6 border border-slate-100">
                 <ExampleDebateResult />
               </div>
@@ -262,7 +278,7 @@ Option 3 - Hybrid Model:
         )}
         
         {session && (
-        <form onSubmit={handleSubmit} className="bg-white rounded-xl shadow-xl p-8 border border-slate-100">
+        <form onSubmit={handleSubmit} className="bg-white/90 backdrop-blur rounded-2xl p-8 hover-lift debate-card-enter border-2 border-purple-200/30 shadow-xl" style={{ animationDelay: '0.3s' }}>
           <div className="mb-6 text-center">
             <Button 
               type="button" 
@@ -275,15 +291,15 @@ Option 3 - Hybrid Model:
           </div>
           
           <div className="mb-4">
-            <label htmlFor="topic" className="block text-sm font-semibold text-slate-700 mb-2">
-              Debate Topic <span className="text-red-500">*</span>
+            <label htmlFor="topic" className="block text-sm font-bold text-gray-800 mb-2 flex items-center gap-2">
+              <span className="text-lg">💭</span> Debate Topic <span className="text-red-500">*</span>
             </label>
             <input
               id="topic"
               type="text"
               value={config.topic}
               onChange={(e) => setConfig({ ...config, topic: e.target.value })}
-              className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-slate-900 bg-white font-medium"
+              className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl shadow-sm focus:outline-none focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 transition-all duration-300 hover:border-purple-400 text-slate-900 bg-white font-medium"
               placeholder="e.g., Should we build a mobile app or web app first?"
               required
             />

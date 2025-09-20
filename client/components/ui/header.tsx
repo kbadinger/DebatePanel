@@ -21,28 +21,28 @@ export function Header() {
   }, [session]);
   
   return (
-    <header className="bg-white shadow-lg border-b border-slate-100">
+    <header className="bg-white/95 backdrop-blur-md border-b-2 border-purple-200/30 sticky top-0 z-50 shadow-lg">
       <div className="max-w-6xl mx-auto px-4 py-4">
         <div className="flex justify-between items-center">
-          <Link href="/" className="flex items-center gap-2">
+          <Link href="/" className="flex items-center gap-2 hover-lift">
             <img 
               src="/logos/svg/Color logo - no background.svg" 
               alt="DecisionForge" 
-              className="h-12 w-auto"
+              className="h-14 w-auto"
             />
           </Link>
           <nav className="flex items-center gap-6">
-            <Link href="/" className="text-slate-700 hover:text-blue-600 font-medium transition-colors">
-              New Debate
+            <Link href="/" className="text-slate-800 hover:text-purple-600 font-bold transition-all hover:scale-105">
+              ⚡ New Debate
             </Link>
-            <Link href="/history" className="text-slate-700 hover:text-blue-600 font-medium transition-colors">
-              History
+            <Link href="/history" className="text-slate-800 hover:text-purple-600 font-bold transition-all hover:scale-105">
+              📚 History
             </Link>
-            <Link href="/usage" className="text-slate-700 hover:text-blue-600 font-medium transition-colors">
-              Usage
+            <Link href="/usage" className="text-slate-800 hover:text-purple-600 font-bold transition-all hover:scale-105">
+              📊 Usage
             </Link>
-            <Link href="/models/vote" className="text-slate-700 hover:text-blue-600 font-medium transition-colors">
-              Vote Models
+            <Link href="/models/vote" className="text-slate-800 hover:text-purple-600 font-bold transition-all hover:scale-105">
+              🗳️ Vote Models
             </Link>
             {session?.user?.isAdmin && (
               <Link href="/admin" className="text-purple-600 hover:text-purple-700 font-medium transition-colors flex items-center gap-1">
@@ -62,12 +62,12 @@ export function Header() {
                   </div>
                 )}
                 {balance !== null && !session.user?.isAdmin && (
-                  <Link href="/billing" className="flex items-center gap-1 text-sm bg-green-50 hover:bg-green-100 px-3 py-1.5 rounded-full transition-colors">
-                    <Coins size={16} className="text-green-600" />
-                    <span className="font-medium text-green-700">{formatCost(balance)}</span>
+                  <Link href="/billing" className="flex items-center gap-1 text-sm bg-green-100 hover:bg-green-200 px-3 py-1.5 rounded-full transition-colors border border-green-300">
+                    <Coins size={16} className="text-green-700" />
+                    <span className="font-bold text-green-800">{formatCost(balance)}</span>
                   </Link>
                 )}
-                <div className="flex items-center gap-2 text-sm text-slate-600">
+                <div className="flex items-center gap-2 text-sm text-slate-800 font-medium">
                   <User size={16} />
                   <span>{session.user?.name || session.user?.email}</span>
                 </div>

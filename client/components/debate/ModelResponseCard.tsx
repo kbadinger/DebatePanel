@@ -115,13 +115,16 @@ export function ModelResponseCard({ response, isStreaming, debateId }: ModelResp
   
   return (
     <div className={clsx(
-      'rounded-xl border-2 p-6 mb-4 transition-all shadow-lg',
+      'rounded-2xl border-2 p-6 mb-4 transition-all shadow-xl hover-lift debate-card-enter relative overflow-hidden',
       isHuman ? 'border-purple-400 bg-gradient-to-br from-purple-50 to-blue-50' : (colorScheme || 'border-slate-400 bg-slate-50'),
       isStreaming && 'animate-pulse'
     )}>
-      <div className="flex justify-between items-start mb-4">
+      {/* Decorative gradient overlay */}
+      <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-purple-500/10 to-transparent rounded-full blur-2xl pointer-events-none" />
+      
+      <div className="flex justify-between items-start mb-4 relative z-10">
         <div className="flex-1">
-          <h3 className="font-bold text-xl text-slate-800 flex items-center gap-2">
+          <h3 className="font-bold text-xl bg-clip-text text-transparent gradient-bg-primary bg-300% flex items-center gap-2">
             {isHuman ? (
               <>
                 <User className="w-5 h-5 text-purple-600" />
@@ -129,6 +132,7 @@ export function ModelResponseCard({ response, isStreaming, debateId }: ModelResp
               </>
             ) : (
               <>
+                <Sparkles className="w-5 h-5 text-purple-600 animate-pulse" />
                 {model?.displayName || response.modelId}
               </>
             )}
