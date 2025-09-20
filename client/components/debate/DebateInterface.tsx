@@ -158,10 +158,18 @@ export function DebateInterface({ config, onComplete }: DebateInterfaceProps) {
         } : undefined
       };
       
-      const response = await fetch('/api/debate', {
+      // Use Railway service in production
+      const apiUrl = process.env.NEXT_PUBLIC_RAILWAY_URL 
+        ? `${process.env.NEXT_PUBLIC_RAILWAY_URL}/api/debate`
+        : '/api/debate';
+      
+      const response = await fetch(apiUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ config: cleanConfig }),
+        body: JSON.stringify({ 
+          config: cleanConfig,
+          userId: session?.user?.id // Pass user ID for Railway service
+        }),
       });
       
       if (!response.ok) {
@@ -351,7 +359,12 @@ export function DebateInterface({ config, onComplete }: DebateInterfaceProps) {
     setModelStatuses(nextRoundStatuses);
     
     try {
-      const response = await fetch('/api/debate/human-input', {
+      // Use Railway service in production
+      const apiUrl = process.env.NEXT_PUBLIC_RAILWAY_URL 
+        ? `${process.env.NEXT_PUBLIC_RAILWAY_URL}/api/debate/human-input`
+        : '/api/debate/human-input';
+      
+      const response = await fetch(apiUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -359,7 +372,9 @@ export function DebateInterface({ config, onComplete }: DebateInterfaceProps) {
           content,
           stance,
           confidence: confidence || 75,
-          position: 'neutral' // This could be made dynamic based on UI
+          position: 'neutral', // This could be made dynamic based on UI
+          userId: session?.user?.id,
+          userName: session?.user?.name || session?.user?.email
         }),
       });
       
