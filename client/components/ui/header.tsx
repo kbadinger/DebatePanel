@@ -21,7 +21,7 @@ export function Header() {
   }, [session]);
   
   return (
-    <header className="bg-white/95 backdrop-blur-md border-b-2 border-purple-200/30 sticky top-0 z-50 shadow-lg">
+    <header className="bg-white/95 backdrop-blur-md border-b-2 border-purple-200/30 sticky top-0 z-50 shadow-lg" suppressHydrationWarning>
       <div className="max-w-6xl mx-auto px-4 py-4">
         <div className="flex justify-between items-center">
           <Link href="/" className="flex items-center gap-2 hover-lift">
@@ -33,16 +33,16 @@ export function Header() {
           </Link>
           <nav className="flex items-center gap-6">
             <Link href="/" className="text-slate-800 hover:text-purple-600 font-bold transition-all hover:scale-105">
-              ⚡ New Debate
+              <span>⚡</span> New Debate
             </Link>
             <Link href="/history" className="text-slate-800 hover:text-purple-600 font-bold transition-all hover:scale-105">
-              📚 History
+              <span>📚</span> History
             </Link>
             <Link href="/usage" className="text-slate-800 hover:text-purple-600 font-bold transition-all hover:scale-105">
-              📊 Usage
+              <span>📊</span> Usage
             </Link>
             <Link href="/models/vote" className="text-slate-800 hover:text-purple-600 font-bold transition-all hover:scale-105">
-              🗳️ Vote Models
+              <span>🗳️</span> Vote Models
             </Link>
             {session?.user?.isAdmin && (
               <Link href="/admin" className="text-purple-600 hover:text-purple-700 font-medium transition-colors flex items-center gap-1">
