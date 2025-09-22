@@ -124,7 +124,7 @@ export function ModelResponseCard({ response, isStreaming, debateId }: ModelResp
       
       <div className="flex justify-between items-start mb-4 relative z-10">
         <div className="flex-1">
-          <h3 className="font-bold text-xl bg-clip-text text-transparent gradient-bg-primary bg-300% flex items-center gap-2">
+          <h3 className="font-bold text-xl text-slate-800 flex items-center gap-2">
             {isHuman ? (
               <>
                 <User className="w-5 h-5 text-purple-600" />

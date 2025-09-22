@@ -14,3 +14,6 @@ export const getDebateEndpoint = (path: string = '') => {
   const baseUrl = getDebateApiUrl();
   return `${baseUrl}/api/debate${path}`;
 };
+
+
+
