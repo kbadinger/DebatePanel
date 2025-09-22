@@ -35,7 +35,11 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         {variant === 'gradient' && (
           <span className="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/20 to-transparent -skew-x-12 animate-shimmer" />
         )}
-        <span className="relative z-10">{props.children}</span>
+        {variant === 'gradient' ? (
+          <span className="relative z-10">{props.children}</span>
+        ) : (
+          props.children
+        )}
       </button>
     );
   }
