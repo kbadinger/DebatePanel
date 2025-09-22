@@ -120,10 +120,10 @@ export default function LoginPage() {
             <Button
               type="button"
               variant="secondary"
-              className="w-full"
+              className="w-full flex items-center justify-center"
               onClick={() => handleOAuthLogin('google')}
             >
-              <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">
+              <svg className="h-4 w-4" viewBox="0 0 24 24">
                 <path
                   d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
                   fill="#4285F4"
@@ -141,17 +141,17 @@ export default function LoginPage() {
                   fill="#EA4335"
                 />
               </svg>
-              Sign in with Google
+              <span className="ml-2">Sign in with Google</span>
             </Button>
 
             <Button
               type="button"
               variant="secondary"
-              className="w-full"
+              className="w-full flex items-center justify-center"
               onClick={() => handleOAuthLogin('github')}
             >
-              <Github className="mr-2 h-4 w-4" />
-              Sign in with GitHub
+              <Github className="h-4 w-4" />
+              <span className="ml-2">Sign in with GitHub</span>
             </Button>
           </div>
 
