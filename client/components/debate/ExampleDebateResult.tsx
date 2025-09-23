@@ -4,17 +4,17 @@ import { ModelResponseCard } from './ModelResponseCard';
 
 export function ExampleDebateResult() {
   const exampleDebate = {
-    topic: "Should you use DebatePanel for important decisions?",
+    topic: "Should cities prioritize bike lanes over parking spaces?",
     judgeAnalysis: {
-      verdict: "Yes, especially for complex or high-stakes decisions",
-      reasoning: "After analyzing multiple AI perspectives, the consensus strongly supports using DebatePanel for important decisions. The key insight is that synthesizing diverse AI viewpoints provides more comprehensive analysis than any single source, while the structured debate format ensures critical perspectives aren't overlooked.",
+      verdict: "Yes, but with a phased implementation approach",
+      reasoning: "After analyzing multiple perspectives, the consensus suggests that bike lanes offer superior long-term benefits for urban mobility, public health, and environmental sustainability. However, successful implementation requires careful planning to address legitimate concerns about parking availability and local business access.",
       keyTakeaways: [
-        "Multiple AI perspectives catch blind spots that single models miss",
-        "Structured debates reveal nuanced trade-offs in complex decisions",
-        "The judge synthesis provides actionable conclusions, not just opinions",
-        "Cost-effective compared to human consultant panels or prolonged research"
+        "Bike lanes reduce traffic congestion more effectively than parking spaces",
+        "Health benefits and reduced emissions provide significant economic value",
+        "Phased rollout with community input minimizes disruption",
+        "Mixed-use streets with both bike lanes and strategic parking work best"
       ],
-      confidence: 92
+      confidence: 78
     },
     responses: [
       {
@@ -22,8 +22,8 @@ export function ExampleDebateResult() {
         modelId: 'gpt-5',
         modelName: 'GPT-5',
         modelProvider: 'openai',
-        content: "DebatePanel offers a unique value proposition for decision-making. By aggregating multiple AI perspectives, it reduces the risk of single-model biases and provides a more robust analysis. For important decisions, having diverse AI viewpoints is like having a panel of expert consultants, each bringing different analytical frameworks. The cost is minimal compared to the potential value of better-informed decisions.",
-        position: 'Strongly Recommend',
+        content: "Cities should prioritize bike lanes as they offer superior returns on infrastructure investment. Studies show that protected bike lanes increase local business revenue by 20-30% due to increased foot traffic, while reducing healthcare costs through improved public health. The space efficiency is compelling: one bike lane can move as many people as four lanes of car traffic during peak hours.",
+        position: 'Strongly Support',
         confidence: 88,
         timestamp: new Date().toISOString()
       },
@@ -32,9 +32,9 @@ export function ExampleDebateResult() {
         modelId: 'claude-sonnet-4',
         modelName: 'Claude Sonnet 4',
         modelProvider: 'anthropic',
-        content: "DebatePanel excels at surfacing considerations you might not think to ask about. When making important decisions, the platform's structured debate format ensures comprehensive coverage of pros, cons, and edge cases. The judge synthesis is particularly valuable - it doesn't just aggregate opinions but identifies patterns and extracts actionable insights. This is especially useful for strategic planning, investment decisions, or policy choices.",
-        position: 'Strongly Recommend',
-        confidence: 90,
+        content: "While bike lanes offer environmental and health benefits, we must consider equity and accessibility. Many residents - elderly, disabled, or those with long commutes - depend on cars. The solution isn't either/or but strategic placement: bike lanes on parallel streets, maintaining parking near essential services, and ensuring public transit connections. Cities like Copenhagen succeeded through gradual, thoughtful implementation.",
+        position: 'Support with Caveats',
+        confidence: 75,
         timestamp: new Date().toISOString()
       },
       {
@@ -42,9 +42,9 @@ export function ExampleDebateResult() {
         modelId: 'gemini-2.5-pro',
         modelName: 'Gemini 2.5 Pro',
         modelProvider: 'google',
-        content: "For decisions with significant consequences, DebatePanel provides an excellent cost-benefit ratio. Traditional approaches like hiring consultants or conducting extensive research can be expensive and time-consuming. DebatePanel delivers similar multi-perspective analysis in minutes rather than weeks. While it shouldn't replace human judgment, it's an invaluable tool for rapidly exploring decision spaces and identifying key considerations.",
-        position: 'Recommend',
-        confidence: 85,
+        content: "The economic data strongly favors bike infrastructure. Portland's investment in bike lanes generated $90 million in annual economic activity while costing only $60 million to build. Parking spaces, conversely, often operate at a loss when considering land value. However, transition planning is crucial - businesses need loading zones, and residents need alternatives before parking is removed.",
+        position: 'Support',
+        confidence: 82,
         timestamp: new Date().toISOString()
       },
       {
@@ -52,9 +52,9 @@ export function ExampleDebateResult() {
         modelId: 'kimi-k2-instruct',
         modelName: 'Kimi K2',
         modelProvider: 'kimi',
-        content: "From a practical standpoint, DebatePanel addresses a real problem in decision-making: cognitive blind spots. Even the most advanced AI models have their own biases and limitations. By creating a structured dialogue between different models, DebatePanel helps surface disagreements and edge cases that might otherwise be missed. For any decision where the stakes justify spending a few dollars on analysis, it's a worthwhile investment.",
-        position: 'Strongly Recommend',
-        confidence: 87,
+        content: "The safety argument is paramount. Cities with extensive bike infrastructure see 40-50% fewer traffic fatalities. Amsterdam and Copenhagen prove this works at scale. However, winter cities face unique challenges - snow removal, ice, and reduced cycling in cold months mean parking remains necessary. The optimal approach varies by climate, density, and existing transit infrastructure.",
+        position: 'Cautious Support',
+        confidence: 72,
         timestamp: new Date().toISOString()
       },
       {
@@ -62,22 +62,22 @@ export function ExampleDebateResult() {
         modelId: 'grok-4',
         modelName: 'Grok 4',
         modelProvider: 'xai',
-        content: "Think of DebatePanel as intellectual arbitrage - you're getting insights from models that cost billions to develop for the price of a coffee. The platform's real genius is in the orchestration: it doesn't just run parallel queries but creates genuine debate dynamics where models respond to each other. For complex decisions involving trade-offs, uncertainty, or multiple stakeholders, this approach consistently surfaces insights that single-model queries miss.",
-        position: 'Strongly Recommend',
-        confidence: 93,
+        content: "Let's be real: cars are inefficient in dense urban cores. A parking space costs $20,000-50,000 to build and serves one person. The same space as bike infrastructure serves 8-10 people. The climate crisis demands bold action - transportation accounts for 29% of emissions. Cities that delay this transition will face worse congestion, pollution, and lose talent to more livable cities.",
+        position: 'Strongly Support',
+        confidence: 91,
         timestamp: new Date().toISOString()
       }
     ],
-    convergenceScore: 89,
+    convergenceScore: 76,
     unanimousPoints: [
-      "Multi-model perspectives reduce bias and blind spots",
-      "Cost-effective compared to traditional consultation",
-      "Valuable for complex or high-stakes decisions"
+      "Bike infrastructure improves public health and reduces emissions",
+      "Strategic planning is essential for successful implementation",
+      "Mixed solutions work better than absolute approaches"
     ],
     divergentPoints: [
-      "Whether it should fully replace human consultants",
-      "Best use cases (strategic vs operational decisions)",
-      "Optimal number of models for different decision types"
+      "Timeline for transition (immediate vs gradual)",
+      "Impact on local businesses during transition",
+      "How to address accessibility concerns"
     ]
   };
 
