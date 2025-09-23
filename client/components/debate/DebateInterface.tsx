@@ -176,7 +176,20 @@ export function DebateInterface({ config, onComplete }: DebateInterfaceProps) {
         const errorText = await response.text();
         console.error('API error response:', errorText);
         clearTimeout(timeoutId);
-        throw new Error(`Failed to start debate: ${response.status} ${response.statusText}`);
+        
+        // Parse error message if it's JSON
+        let errorMessage = `Failed to start debate: ${response.status} ${response.statusText}`;
+        try {
+          const errorJson = JSON.parse(errorText);
+          errorMessage = errorJson.error || errorJson.message || errorMessage;
+        } catch {
+          // If not JSON, use the text directly if it's not empty
+          if (errorText) {
+            errorMessage = errorText;
+          }
+        }
+        
+        throw new Error(errorMessage);
       }
       
       const reader = response.body?.getReader();
@@ -337,7 +350,12 @@ export function DebateInterface({ config, onComplete }: DebateInterfaceProps) {
       setInitTimeout(false);
       // Only show alert if it's not a normal closure
       if (error instanceof Error && !error.message.includes('eventSource')) {
-        alert(`Failed to start debate: ${error.message}`);
+        const message = error.message || 'Unknown error occurred';
+        alert(`Failed to start debate: ${message}`);
+      } else if (typeof error === 'string') {
+        alert(`Failed to start debate: ${error}`);
+      } else {
+        alert('Failed to start debate: Cannot connect to debate service. Please try again later.');
       }
       setIsRunning(false);
       setDebate(null);
