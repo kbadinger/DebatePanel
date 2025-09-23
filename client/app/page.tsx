@@ -101,30 +101,33 @@ export default function Home() {
     flux: 'Flux AI'
   };
 
-  const loadMonetizationDebate = () => {
+  const loadExampleDebate = () => {
     setConfig({
       ...config,
-      topic: 'Should we charge users a fee and provide API keys (keyless), or charge a lower platform fee and let users bring their own keys (BYOK)?',
-      description: `Current Situation:
-- AI debate platform orchestrating discussions between multiple models
-- Target audiences: developers, researchers, businesses, general users
+      topic: 'Should our company switch to a 4-day work week?',
+      description: `Context:
+- Tech company with 150 employees
+- Currently working standard 5-day, 40-hour week
+- Competitors beginning to offer flexible arrangements
+- Recent employee survey shows work-life balance concerns
 
-Option 1 - Keyless ($9.99-24.99/month):
-- We provide all API keys
-- Zero friction onboarding
-- Higher operational costs
-- Larger addressable market
+Option 1 - 4-Day Week (32 hours, same pay):
+- Better work-life balance and employee retention
+- Potential productivity gains from focused work
+- Competitive advantage in hiring
+- Risk of falling behind on deadlines
 
-Option 2 - BYOK ($4.99/month platform fee):
-- Users bring their own API keys
-- Full transparency on costs
-- Power user focused
-- Minimal operational costs
+Option 2 - Compressed 4-Day (40 hours in 4 days):
+- Maintain total work hours
+- 3-day weekends for employees
+- Longer daily hours may cause burnout
+- Customer coverage concerns on Fridays
 
-Option 3 - Hybrid Model:
-- Offer both options
-- Free tier with limits
-- Natural upgrade path`,
+Option 3 - Flexible/Hybrid Approach:
+- Teams choose their own schedule
+- Some roles stay 5-day for coverage
+- Pilot program to test effectiveness
+- Gradual implementation based on results`,
     });
   };
   
@@ -283,10 +286,10 @@ Option 3 - Hybrid Model:
             <Button 
               type="button" 
               variant="secondary" 
-              onClick={loadMonetizationDebate}
+              onClick={loadExampleDebate}
               className="text-sm"
             >
-              Load Example: Monetization Strategy Debate
+              Load Example: 4-Day Work Week Debate
             </Button>
           </div>
           
@@ -300,7 +303,7 @@ Option 3 - Hybrid Model:
               value={config.topic}
               onChange={(e) => setConfig({ ...config, topic: e.target.value })}
               className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl shadow-sm focus:outline-none focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 transition-all duration-300 hover:border-purple-400 text-slate-900 bg-white font-medium"
-              placeholder="e.g., Should we build a mobile app or web app first?"
+              placeholder="e.g., Should we invest in AI automation or hire more staff?"
               required
             />
             <p className="mt-1 text-xs text-slate-500">Frame as a question or decision that needs multiple perspectives</p>
