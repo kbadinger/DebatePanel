@@ -94,7 +94,7 @@ export async function POST(request: NextRequest) {
 
         // Get all previous responses including the human one
         const allResponses = [
-          ...debate.debateRounds.flatMap(r => r.responses),
+          ...(debate.debateRounds?.flatMap(r => r.responses) || []),
           humanResponse
         ];
 

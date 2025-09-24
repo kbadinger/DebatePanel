@@ -353,7 +353,7 @@ export async function POST(req: NextRequest) {
         debate.completedAt = new Date();
         
         // Check if any models failed due to context limits
-        const allResponses = debate.rounds.flatMap(r => r.responses);
+        const allResponses = debate.rounds?.flatMap(r => r.responses) || [];
         const contextFailures = allResponses.filter(r => 
           r.content.includes('⚠️ Context limit exceeded') || 
           r.content.includes('❌ Error:') ||
@@ -367,7 +367,7 @@ export async function POST(req: NextRequest) {
         console.log('Generating synthesis for debate:', {
           id: debate.id,
           rounds: debate.rounds.length,
-          totalResponses: debate.rounds.flatMap(r => r.responses).length
+          totalResponses: debate.rounds?.flatMap(r => r.responses).length || 0
         });
         
         // Generate judge analysis FIRST if enabled (always run for decisive answer)
@@ -782,7 +782,7 @@ function generateSynthesis(debate: Debate): string {
   const hasConsensus = topPosition && totalValidResponses > 0 && topPosition.percentage >= 60;
   
   // Journey context (for reference only)
-  const allResponses = debate.rounds.flatMap(r => r.responses);
+  const allResponses = debate.rounds?.flatMap(r => r.responses) || [];
   const initialRound = debate.rounds[0];
   const initialPositions = new Set(initialRound.responses.map(r => r.position));
   const keyPoints = debate.rounds
