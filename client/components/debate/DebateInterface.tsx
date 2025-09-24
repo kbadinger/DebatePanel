@@ -347,17 +347,38 @@ export function DebateInterface({ config, onComplete }: DebateInterfaceProps) {
       }
     } catch (error) {
       console.error('Debate error:', error);
+      console.error('Error type:', typeof error);
+      console.error('Error details:', {
+        message: error?.message,
+        stack: error?.stack,
+        name: error?.name,
+        toString: error?.toString?.()
+      });
+      
       clearTimeout(timeoutId);
       setInitTimeout(false);
-      // Only show alert if it's not a normal closure
-      if (error instanceof Error && !error.message.includes('eventSource')) {
-        const message = error.message || 'Unknown error occurred';
-        alert(`Failed to start debate: ${message}`);
+      
+      // Determine error message
+      let errorMessage = 'Unknown error occurred';
+      if (error instanceof Error) {
+        errorMessage = error.message || 'Connection failed';
+        // Check for specific error types
+        if (error.message.includes('Failed to fetch')) {
+          errorMessage = 'Cannot connect to debate service. The service may be restarting. Please try again in a moment.';
+        } else if (error.message.includes('CORS')) {
+          errorMessage = 'Cross-origin request blocked. Please wait for the service to update and try again.';
+        }
       } else if (typeof error === 'string') {
-        alert(`Failed to start debate: ${error}`);
-      } else {
-        alert('Failed to start debate: Cannot connect to debate service. Please try again later.');
+        errorMessage = error;
+      } else if (error && typeof error === 'object') {
+        errorMessage = JSON.stringify(error);
       }
+      
+      // Only show alert if it's not a normal closure
+      if (!errorMessage.includes('eventSource')) {
+        alert(`Failed to start debate: ${errorMessage}`);
+      }
+      
       setIsRunning(false);
       setDebate(null);
     }
