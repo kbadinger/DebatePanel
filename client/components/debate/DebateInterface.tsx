@@ -323,6 +323,7 @@ export function DebateInterface({ config, onComplete }: DebateInterfaceProps) {
                 const completedDebate = {
                   ...prevDebate,  // Keep existing rounds and config
                   ...data.data,   // Add final synthesis and judge analysis
+                  rounds: data.data.rounds || prevDebate?.rounds || [],  // Ensure rounds are preserved
                   status: data.data.status || 'completed'
                 };
                 console.log('Setting completed debate state');
@@ -487,7 +488,13 @@ export function DebateInterface({ config, onComplete }: DebateInterfaceProps) {
               console.log('Debate completed (2nd handler):', data.data);
               setIsRunning(false);
               setDebatePhase('completed');
-              setDebate(data.data);
+              // Merge with existing debate to preserve rounds
+              setDebate(prevDebate => ({
+                ...prevDebate,
+                ...data.data,
+                rounds: data.data.rounds || prevDebate?.rounds || [],
+                status: data.data.status || 'completed'
+              }));
               onComplete?.(data.data);
             }
           }
