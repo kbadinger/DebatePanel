@@ -36,27 +36,73 @@ export function DebateInterface({ config, onComplete }: DebateInterfaceProps) {
   const [debateStartTime, setDebateStartTime] = useState<Date | null>(null);
   const [expectedModelsInRound, setExpectedModelsInRound] = useState<string[]>([]);
 
-  const normalizeRound = (round: any): DebateRound => ({
-    roundNumber: round?.roundNumber ?? round?.round ?? 0,
-    responses: Array.isArray(round?.responses) ? round.responses : [],
-    consensus: round?.consensus ?? undefined,
-    keyDisagreements: Array.isArray(round?.keyDisagreements) ? round.keyDisagreements : undefined
-  });
+  const normalizeRound = (round: any): DebateRound => {
+    const roundNumber = typeof round?.roundNumber === 'number'
+      ? round.roundNumber
+      : typeof round?.round === 'number'
+        ? round.round
+        : Number.parseInt(round?.roundNumber ?? round?.round ?? '0', 10) || 0;
 
-  const normalizeRoundsData = (roundsSource: any): DebateRound[] => {
-    if (!roundsSource) {
-      return [];
+    const responses: ModelResponse[] = Array.isArray(round?.responses)
+      ? round.responses.map((response: any): ModelResponse => ({
+          modelId: response?.modelId ?? response?.model_id ?? 'unknown-model',
+          round: roundNumber,
+          content: response?.content ?? '',
+          position: response?.position ?? 'neutral',
+          confidence: typeof response?.confidence === 'number' ? response.confidence : 0,
+          timestamp: response?.createdAt ? new Date(response.createdAt) : new Date(),
+          stance: response?.stance,
+          consensusAlignment: response?.consensusAlignment,
+          isHuman: response?.isHuman ?? false,
+          userId: response?.userId ?? response?.user_id,
+          userName: response?.userName ?? response?.user_name
+        }))
+      : [];
+
+    return {
+      roundNumber,
+      responses,
+      consensus: round?.consensus ?? undefined,
+      keyDisagreements: Array.isArray(round?.keyDisagreements) ? round.keyDisagreements : undefined
+    };
+  };
+
+  const normalizeRoundsData = (candidate: any, fallback?: DebateRound[]): DebateRound[] => {
+    if (Array.isArray(candidate)) {
+      return candidate.map(normalizeRound).filter(round => round.responses.length > 0);
     }
 
-    if (Array.isArray(roundsSource)) {
-      return roundsSource.map(normalizeRound);
+    if (candidate && typeof candidate === 'object') {
+      return Object.values(candidate).map(normalizeRound).filter(round => round.responses.length > 0);
     }
 
-    if (typeof roundsSource === 'object') {
-      return Object.values(roundsSource).map(normalizeRound);
+    return fallback ? fallback.map(normalizeRound) : [];
+  };
+
+  const extractRoundsFromPayload = (payload: any, prevRounds?: DebateRound[]): DebateRound[] => {
+    if (!payload) {
+      return prevRounds ? prevRounds.map(normalizeRound) : [];
     }
 
-    return [];
+    const { rounds, debateRounds } = payload;
+
+    if (Array.isArray(rounds)) {
+      return normalizeRoundsData(rounds);
+    }
+
+    if (Array.isArray(debateRounds)) {
+      return normalizeRoundsData(debateRounds);
+    }
+
+    if (rounds && typeof rounds === 'object') {
+      return normalizeRoundsData(Object.values(rounds));
+    }
+
+    if (debateRounds && typeof debateRounds === 'object') {
+      return normalizeRoundsData(Object.values(debateRounds));
+    }
+
+    return prevRounds ? prevRounds.map(normalizeRound) : [];
   };
 
   
@@ -343,14 +389,13 @@ export function DebateInterface({ config, onComplete }: DebateInterfaceProps) {
               setIsRunning(false);
               setDebatePhase('completed');
               setDebate(prevDebate => {
-                const candidate = data.data.rounds || data.data.debateRounds || prevDebate?.rounds;
-                const roundsData = normalizeRoundsData(candidate);
+                const roundsData = extractRoundsFromPayload(data.data, prevDebate?.rounds);
                 const completedDebate = {
                   ...prevDebate,
                   ...data.data,
                   rounds: roundsData,
                   debateRounds: undefined,
-                  status: data.data.status || 'completed'
+                  status: 'completed'
                 };
                 console.log('Setting completed debate state');
                 console.log('Preserved rounds:', completedDebate.rounds?.length);
@@ -516,13 +561,12 @@ export function DebateInterface({ config, onComplete }: DebateInterfaceProps) {
               setDebatePhase('completed');
               // Merge with existing debate to preserve rounds
               setDebate(prevDebate => {
-                const candidate = data.data.rounds || data.data.debateRounds || prevDebate?.rounds;
                 return {
                   ...prevDebate,
                   ...data.data,
-                  rounds: normalizeRoundsData(candidate),
+                  rounds: extractRoundsFromPayload(data.data, prevDebate?.rounds),
                   debateRounds: undefined,
-                  status: data.data.status || 'completed'
+                  status: 'completed'
                 };
               });
               onComplete?.(data.data);
