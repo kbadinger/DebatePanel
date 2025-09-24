@@ -13,6 +13,7 @@
     "test-grok": "tsx scripts/test-grok-4.ts",
     "test-providers": "tsx scripts/test-all-providers.ts",
     "update-model": "tsx scripts/quick-model-update.ts",
+    "create-test-account": "tsx scripts/create-test-account.ts",
     "fetch-models": "node scripts/fetch-all-models.js",
     "test-model": "tsx scripts/test-single-model.ts",
     "discover-models": "tsx scripts/discover-models.ts",
