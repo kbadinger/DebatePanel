@@ -320,10 +320,13 @@ export function DebateInterface({ config, onComplete }: DebateInterfaceProps) {
               setIsRunning(false);
               setDebatePhase('completed');
               setDebate(prevDebate => {
+                // Transform debateRounds to rounds if needed
+                const roundsData = data.data.rounds || data.data.debateRounds || prevDebate?.rounds || [];
                 const completedDebate = {
                   ...prevDebate,  // Keep existing rounds and config
                   ...data.data,   // Add final synthesis and judge analysis
-                  rounds: data.data.rounds || prevDebate?.rounds || [],  // Ensure rounds are preserved
+                  rounds: roundsData,  // Use transformed rounds
+                  debateRounds: undefined,  // Remove the Prisma property
                   status: data.data.status || 'completed'
                 };
                 console.log('Setting completed debate state');
@@ -489,12 +492,16 @@ export function DebateInterface({ config, onComplete }: DebateInterfaceProps) {
               setIsRunning(false);
               setDebatePhase('completed');
               // Merge with existing debate to preserve rounds
-              setDebate(prevDebate => ({
-                ...prevDebate,
-                ...data.data,
-                rounds: data.data.rounds || prevDebate?.rounds || [],
-                status: data.data.status || 'completed'
-              }));
+              setDebate(prevDebate => {
+                const roundsData = data.data.rounds || data.data.debateRounds || prevDebate?.rounds || [];
+                return {
+                  ...prevDebate,
+                  ...data.data,
+                  rounds: roundsData,
+                  debateRounds: undefined,  // Remove the Prisma property
+                  status: data.data.status || 'completed'
+                };
+              });
               onComplete?.(data.data);
             }
           }
