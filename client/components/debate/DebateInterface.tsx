@@ -215,12 +215,18 @@ export function DebateInterface({ config, onComplete }: DebateInterfaceProps) {
       });
       setModelStatuses(initialStatuses);
       
+      let buffer = '';
+      
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
         
         const chunk = decoder.decode(value);
-        const lines = chunk.split('\n');
+        buffer += chunk;
+        const lines = buffer.split('\n');
+        
+        // Keep the last line in the buffer if it's incomplete
+        buffer = lines.pop() || '';
         
         for (const line of lines) {
           if (line.startsWith('data: ')) {
@@ -231,7 +237,11 @@ export function DebateInterface({ config, onComplete }: DebateInterfaceProps) {
               console.log('Successfully parsed SSE data type:', data.type);
             } catch (parseError) {
               console.error('JSON parse error:', parseError);
-              console.error('Failed to parse line:', line);
+              console.error('Failed to parse line:', line.substring(0, 200));
+              // Try to detect if it's a truncation issue
+              if (line.length > 10000) {
+                console.error('Line appears to be very long and may be truncated');
+              }
               continue;
             }
             
