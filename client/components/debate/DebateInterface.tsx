@@ -235,7 +235,7 @@ export function DebateInterface({ config, onComplete }: DebateInterfaceProps) {
               continue;
             }
             
-            if (data.type === 'response') {
+            if (data.type === 'response' && data.data) {
               console.log('Adding streaming response from:', data.data.modelId, 'round:', data.data.round);
               setStreamingResponses(prev => [...prev, data.data]);
               
@@ -244,7 +244,7 @@ export function DebateInterface({ config, onComplete }: DebateInterfaceProps) {
                 ...prev,
                 [data.data.modelId]: 'completed'
               }));
-            } else if (data.type === 'round-complete') {
+            } else if (data.type === 'round-complete' && data.data) {
               console.log('Round complete:', data.data.roundNumber, 'Adding to debate state');
               setCurrentRound(data.data.roundNumber);
               setStreamingResponses([]);
@@ -298,12 +298,12 @@ export function DebateInterface({ config, onComplete }: DebateInterfaceProps) {
               } else {
                 setDebatePhase('analyzing');
               }
-            } else if (data.type === 'debate-complete') {
+            } else if (data.type === 'debate-complete' && data.data) {
               console.log('Debate completed - Full data:', JSON.stringify(data.data, null, 2));
-              console.log('Debate status:', data.data.status);
-              console.log('Has finalSynthesis:', !!data.data.finalSynthesis);
-              console.log('Synthesis content:', data.data.finalSynthesis?.substring(0, 200));
-              console.log('Has judgeAnalysis:', !!data.data.judgeAnalysis);
+              console.log('Debate status:', data.data?.status);
+              console.log('Has finalSynthesis:', !!data.data?.finalSynthesis);
+              console.log('Synthesis content:', data.data?.finalSynthesis?.substring(0, 200));
+              console.log('Has judgeAnalysis:', !!data.data?.judgeAnalysis);
               console.log('Current debate state before update:', debate);
               
               // Merge completed debate with existing rounds data AND stop running in the same update
@@ -336,7 +336,8 @@ export function DebateInterface({ config, onComplete }: DebateInterfaceProps) {
               return; // Exit the function completely
             } else if (data.type === 'error') {
               console.error('Debate error:', data.data);
-              alert(`Debate Error: ${data.data.message}\n\nPlease ensure all required API keys are configured.`);
+              const errorMessage = data.data?.message || data.data?.error || data.data || 'Unknown error occurred';
+              alert(`Debate Error: ${errorMessage}\n\nPlease ensure all required API keys are configured.`);
               setIsRunning(false);
               reader.cancel();
               return; // Exit the function completely
