@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Debate, DebateConfig, ModelResponse } from '@/types/debate';
+import { Debate, DebateConfig, DebateRound, ModelResponse } from '@/types/debate';
 import { ModelResponseCard } from './ModelResponseCard';
 import { RatingsKey } from './RatingsKey';
 import { HumanInputPanel } from './HumanInputPanel';
@@ -35,6 +35,29 @@ export function DebateInterface({ config, onComplete }: DebateInterfaceProps) {
   const [modelStatuses, setModelStatuses] = useState<Record<string, 'pending' | 'thinking' | 'responding' | 'completed' | 'error'>>({});
   const [debateStartTime, setDebateStartTime] = useState<Date | null>(null);
   const [expectedModelsInRound, setExpectedModelsInRound] = useState<string[]>([]);
+
+  const normalizeRound = (round: any): DebateRound => ({
+    roundNumber: round?.roundNumber ?? round?.round ?? 0,
+    responses: Array.isArray(round?.responses) ? round.responses : [],
+    consensus: round?.consensus ?? undefined,
+    keyDisagreements: Array.isArray(round?.keyDisagreements) ? round.keyDisagreements : undefined
+  });
+
+  const normalizeRoundsData = (roundsSource: any): DebateRound[] => {
+    if (!roundsSource) {
+      return [];
+    }
+
+    if (Array.isArray(roundsSource)) {
+      return roundsSource.map(normalizeRound);
+    }
+
+    if (typeof roundsSource === 'object') {
+      return Object.values(roundsSource).map(normalizeRound);
+    }
+
+    return [];
+  };
 
   
   const handleCopySynthesis = async () => {
@@ -320,13 +343,13 @@ export function DebateInterface({ config, onComplete }: DebateInterfaceProps) {
               setIsRunning(false);
               setDebatePhase('completed');
               setDebate(prevDebate => {
-                // Transform debateRounds to rounds if needed
-                const roundsData = data.data.rounds || data.data.debateRounds || prevDebate?.rounds || [];
+                const candidate = data.data.rounds || data.data.debateRounds || prevDebate?.rounds;
+                const roundsData = normalizeRoundsData(candidate);
                 const completedDebate = {
-                  ...prevDebate,  // Keep existing rounds and config
-                  ...data.data,   // Add final synthesis and judge analysis
-                  rounds: roundsData,  // Use transformed rounds
-                  debateRounds: undefined,  // Remove the Prisma property
+                  ...prevDebate,
+                  ...data.data,
+                  rounds: roundsData,
+                  debateRounds: undefined,
                   status: data.data.status || 'completed'
                 };
                 console.log('Setting completed debate state');
@@ -493,12 +516,12 @@ export function DebateInterface({ config, onComplete }: DebateInterfaceProps) {
               setDebatePhase('completed');
               // Merge with existing debate to preserve rounds
               setDebate(prevDebate => {
-                const roundsData = data.data.rounds || data.data.debateRounds || prevDebate?.rounds || [];
+                const candidate = data.data.rounds || data.data.debateRounds || prevDebate?.rounds;
                 return {
                   ...prevDebate,
                   ...data.data,
-                  rounds: roundsData,
-                  debateRounds: undefined,  // Remove the Prisma property
+                  rounds: normalizeRoundsData(candidate),
+                  debateRounds: undefined,
                   status: data.data.status || 'completed'
                 };
               });
