@@ -181,7 +181,7 @@ export default function DebateViewPage() {
     return null;
   }
 
-  const allResponses = debate.rounds.flatMap(r => r.responses);
+  const allResponses = debate.rounds?.flatMap(r => r.responses) || [];
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
