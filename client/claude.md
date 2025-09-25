@@ -704,6 +704,59 @@ All critical day 1 features now implemented:
 3. **Test complete user flows** in production environment
 4. **Monitor initial usage** and error rates
 
+## Analysis Depth System (2025-01-25)
+
+### Problem Identified
+User wanted to eliminate "yes man" behavior and push debaters toward genius-level answers while avoiding overwhelming simple decisions with unnecessary complexity.
+
+### Solution: Tiered Analysis Depth Control
+
+Added a three-level analysis depth system that matches rigor to user needs:
+
+#### 1. **Practical (Good Enough Solutions)**
+- **Use Case**: Quick, pragmatic analysis for everyday decisions
+- **Example**: "Skippy vs Jif for PB&J sandwiches"
+- **Prompting**: Focus on proven solutions, avoid over-engineering, actionable recommendations
+- **Judge Rewards**: Clear implementation paths, real-world feasibility
+
+#### 2. **Thorough (Better Solutions)**
+- **Use Case**: Professional-level analysis balancing depth with practicality
+- **Example**: "Natural vs processed peanut butter, sugar content, nutritional profiles"
+- **Prompting**: Evidence-based reasoning, multiple factors, nuanced trade-offs
+- **Judge Rewards**: Balanced analysis with specific examples and implementation considerations
+
+#### 3. **Excellence (Best of the Best)**
+- **Use Case**: Exhaustive genius-level analysis pushing boundaries
+- **Example**: "Valencia vs Spanish peanuts, roasting curves, Maillard reactions, salt crystallization"
+- **Prompting**: Molecular/systemic analysis, breakthrough thinking, expert-level knowledge
+- **Judge Rewards**: Sophisticated insights beyond conventional wisdom, game-changing perspectives
+
+### Implementation Details:
+
+#### Files Modified:
+1. **`/types/debate.ts`**: Added `AnalysisDepth` type and field to `DebateConfig`
+2. **`/app/page.tsx`**: Added Analysis Depth UI selector with clear examples
+3. **`/lib/models/orchestrator.ts`**:
+   - Created `addAnalysisDepthGuidance()` with depth-specific prompting
+   - Created `getJudgeDepthGuidance()` for depth-aware scoring
+   - Integrated depth guidance into all system prompts
+4. **`/app/api/debate/route.ts`**: Updated judge analysis calls to pass depth setting
+
+#### Key Features:
+- **Smart Prompting**: Different expectations for each depth level
+- **Mode Awareness**: Depth guidance adapts to consensus vs adversarial styles
+- **Judge Integration**: Rewards appropriate analysis level based on user selection
+- **User Education**: Clear examples help users choose right depth
+
+#### Success Metrics:
+- Simple topics at "Practical" stay focused and actionable
+- Same topics at "Excellence" reveal hidden complexity and breakthrough insights
+- No more "yes man" lazy agreement - models push toward appropriate rigor level
+- Users get depth matching their actual decision-making needs
+
+### Design Philosophy:
+**Match Analysis to Need**: Sometimes you need "good database for startup" (practical), sometimes you need "CAP theorem implications for distributed consensus protocols" (excellence). The system now delivers the appropriate depth without overwhelming or underwhelming users.
+
 ---
 
 ## Development Guidelines for Future Work:
