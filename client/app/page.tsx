@@ -68,6 +68,7 @@ export default function Home() {
     rounds: 3, // Ensure this is always a valid number
     format: 'structured',
     style: 'consensus-seeking', // Default to consensus-seeking
+    analysisDepth: 'thorough', // Default to thorough analysis
     convergenceThreshold: 0.75,
     responseLength: 'standard' as ResponseLength, // Default response length
     judge: {
@@ -772,7 +773,66 @@ Option 3 - Flexible/Hybrid Approach:
               </label>
             </div>
           </div>
-          
+
+          <div className="mb-4">
+            <label className="block text-sm font-semibold text-slate-700 mb-2">
+              Analysis Depth
+            </label>
+            <div className="space-y-3">
+              <label className="flex items-start p-3 border border-slate-300 rounded-lg hover:bg-slate-50 cursor-pointer transition-colors">
+                <input
+                  type="radio"
+                  name="analysis-depth"
+                  value="practical"
+                  checked={config.analysisDepth === 'practical'}
+                  onChange={(e) => setConfig({ ...config, analysisDepth: e.target.value as 'practical' | 'thorough' | 'excellence' })}
+                  className="mr-3 h-4 w-4 text-blue-600 focus:ring-blue-500 mt-1"
+                />
+                <div>
+                  <span className="text-slate-700 font-medium">🎯 Practical (Good Enough)</span>
+                  <p className="text-xs text-slate-500 mt-1">
+                    Quick, pragmatic analysis for everyday decisions. Gets you a solid answer fast.
+                    Example: "Skippy vs Jif for PB&J sandwiches"
+                  </p>
+                </div>
+              </label>
+              <label className="flex items-start p-3 border border-slate-300 rounded-lg hover:bg-slate-50 cursor-pointer transition-colors">
+                <input
+                  type="radio"
+                  name="analysis-depth"
+                  value="thorough"
+                  checked={config.analysisDepth === 'thorough'}
+                  onChange={(e) => setConfig({ ...config, analysisDepth: e.target.value as 'practical' | 'thorough' | 'excellence' })}
+                  className="mr-3 h-4 w-4 text-green-600 focus:ring-green-500 mt-1"
+                />
+                <div>
+                  <span className="text-slate-700 font-medium">🔍 Thorough (Better Solutions)</span>
+                  <p className="text-xs text-slate-500 mt-1">
+                    Detailed exploration with expert considerations. Balances depth with practicality.
+                    Example: "Natural vs processed peanut butter, sugar content, nutritional profiles"
+                  </p>
+                </div>
+              </label>
+              <label className="flex items-start p-3 border border-slate-300 rounded-lg hover:bg-slate-50 cursor-pointer transition-colors">
+                <input
+                  type="radio"
+                  name="analysis-depth"
+                  value="excellence"
+                  checked={config.analysisDepth === 'excellence'}
+                  onChange={(e) => setConfig({ ...config, analysisDepth: e.target.value as 'practical' | 'thorough' | 'excellence' })}
+                  className="mr-3 h-4 w-4 text-purple-600 focus:ring-purple-500 mt-1"
+                />
+                <div>
+                  <span className="text-slate-700 font-medium">🚀 Excellence (Best of the Best)</span>
+                  <p className="text-xs text-slate-500 mt-1">
+                    Exhaustive genius-level analysis. Warning: May discuss peanut varietals, roasting curves, and molecular structures.
+                    Example: "Valencia vs Spanish peanuts, grinding textures, Maillard reactions"
+                  </p>
+                </div>
+              </label>
+            </div>
+          </div>
+
           <div className="mb-4">
             <label className="block text-sm font-semibold text-slate-700 mb-2">
               Participation Mode

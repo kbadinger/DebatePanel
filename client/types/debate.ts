@@ -4,6 +4,8 @@ export type ModelStrength = 'analytical' | 'creative' | 'ethical' | 'technical' 
 
 export type ResponseLength = 'concise' | 'standard' | 'detailed' | 'comprehensive';
 
+export type AnalysisDepth = 'practical' | 'thorough' | 'excellence';
+
 export interface Model {
   id: string;
   provider: ModelProvider;
@@ -30,6 +32,7 @@ export interface DebateConfig {
   rounds: number;
   format: 'free-form' | 'structured' | 'devils-advocate';
   style: DebateStyle; // NEW: Determines if models should seek consensus or argue different sides
+  analysisDepth?: AnalysisDepth; // NEW: Controls how deeply models analyze the topic
   convergenceThreshold?: number;
   responseLength?: ResponseLength; // NEW: Control response length and cost
   judge?: {

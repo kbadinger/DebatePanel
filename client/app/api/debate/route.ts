@@ -432,7 +432,8 @@ export async function POST(req: NextRequest) {
               transformedRounds,
               debate.config.topic,
               judgeModel,
-              debate.config.style === 'consensus-seeking'
+              debate.config.style === 'consensus-seeking',
+              debate.config.analysisDepth || 'thorough'
             );
             
             debate.judgeAnalysis = judgeResult.analysis;

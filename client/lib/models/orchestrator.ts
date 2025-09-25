@@ -478,6 +478,10 @@ Format your response as a clear argument with supporting points.`;
       // Add complexity guidance
       basePrompt = this.addComplexityGuidance(basePrompt, topicComplexity);
 
+      // Add analysis depth guidance
+      const analysisDepth = config.analysisDepth || 'thorough';
+      basePrompt = this.addAnalysisDepthGuidance(basePrompt, analysisDepth, !isAdversarial);
+
       // Add sensitive topic guidance if needed
       return isSensitiveTopic
         ? this.addSensitiveTopicGuidance(basePrompt, config)
@@ -494,6 +498,10 @@ Format your response as a clear argument with supporting points.`;
 
     // Add complexity guidance
     basePrompt = this.addComplexityGuidance(basePrompt, topicComplexity);
+
+    // Add analysis depth guidance for later rounds too
+    const analysisDepth = config.analysisDepth || 'thorough';
+    basePrompt = this.addAnalysisDepthGuidance(basePrompt, analysisDepth, !isAdversarial);
 
     return isSensitiveTopic
       ? this.addSensitiveTopicGuidance(basePrompt, config)
@@ -628,6 +636,110 @@ GOAL: Professional analysis appropriate to the decision's importance.`;
       /At the end of your response, explicitly state:/,
       guidance + '\n\nAt the end of your response, explicitly state:'
     );
+  }
+
+  private addAnalysisDepthGuidance(basePrompt: string, depth: 'practical' | 'thorough' | 'excellence', isConsensus: boolean): string {
+    let guidance = '';
+
+    switch (depth) {
+      case 'practical':
+        guidance = `
+
+ANALYSIS DEPTH: PRACTICAL (GOOD ENOUGH SOLUTIONS)
+Your goal is to provide solid, implementable answers quickly.
+
+DEPTH GUIDANCE:
+✅ Focus on proven, practical solutions that work in the real world
+✅ Consider the most important 2-3 factors that drive success
+✅ Avoid over-engineering or unnecessary complexity
+✅ Provide clear, actionable recommendations
+✅ Reference common best practices and standard approaches
+${isConsensus ? '✅ Push toward decisions that teams can execute confidently' : '✅ Challenge impractical or overly complex suggestions'}
+❌ Don't dive into theoretical edge cases unless they're commonly encountered
+❌ Don't get lost in minor optimizations that don't materially impact outcomes
+❌ Don't suggest solutions that require specialized expertise to implement
+
+GOAL: ${isConsensus ? 'Reach a practical consensus that solves the core problem efficiently.' : 'Defend practical solutions and challenge overly complex approaches.'}`;
+        break;
+
+      case 'excellence':
+        guidance = `
+
+ANALYSIS DEPTH: EXCELLENCE (GENIUS-LEVEL INSIGHTS)
+Your mission is to push the boundaries of what's possible and find breakthrough solutions.
+
+DEPTH GUIDANCE:
+✅ GO DEEP - explore the fundamental principles and mechanisms at work
+✅ Consider cutting-edge approaches that others might miss
+✅ Look for revolutionary insights that could change how this problem is approached
+✅ Reference expert-level knowledge from the field's leading practitioners
+✅ Examine molecular/systemic/theoretical levels when relevant
+✅ Challenge conventional wisdom with evidence-based alternatives
+✅ Consider non-obvious factors that amateurs typically ignore
+${isConsensus ? '✅ Push the group toward solutions that represent genuine breakthroughs' : '✅ Ruthlessly expose the limitations of conventional approaches'}
+❌ Don't settle for "good enough" when excellence is achievable
+❌ Don't accept surface-level analysis - demand deeper understanding
+❌ Don't ignore specialized knowledge that could unlock superior solutions
+❌ Don't let practical constraints prevent exploration of optimal approaches
+
+WARNING: This level may discuss technical details that seem excessive but often reveal game-changing insights.
+
+GOAL: ${isConsensus ? 'Forge consensus around genuinely excellent solutions that represent the best possible approach.' : 'Champion the most sophisticated understanding and expose weaknesses in simpler approaches.'}`;
+        break;
+
+      default: // thorough
+        guidance = `
+
+ANALYSIS DEPTH: THOROUGH (BETTER SOLUTIONS)
+Your objective is balanced excellence - going beyond the obvious while staying grounded in reality.
+
+DEPTH GUIDANCE:
+✅ Push beyond surface-level analysis to examine underlying factors
+✅ Consider multiple scenarios, trade-offs, and edge cases
+✅ Bring professional-level expertise and nuanced understanding
+✅ Balance innovative thinking with practical constraints
+✅ Include specific examples, data points, and evidence
+✅ Address likely objections and complications
+${isConsensus ? '✅ Work toward solutions that are both excellent and implementable' : '✅ Challenge superficial reasoning while offering substantive alternatives'}
+❌ Don't accept the first good answer - explore if there are better alternatives
+❌ Don't ignore important considerations for the sake of simplicity
+❌ Don't make recommendations without considering implementation challenges
+❌ Don't settle for generic advice when specific insights are available
+
+GOAL: ${isConsensus ? 'Build consensus around thoroughly analyzed solutions that balance excellence with practicality.' : 'Advocate for well-reasoned positions while exposing gaps in opponents\' analysis.'}`;
+    }
+
+    // Insert guidance before the final formatting requirements
+    return basePrompt.replace(
+      /At the end of your response, explicitly state:/,
+      guidance + '\n\nAt the end of your response, explicitly state:'
+    );
+  }
+
+  private getJudgeDepthGuidance(depth: 'practical' | 'thorough' | 'excellence'): string {
+    switch (depth) {
+      case 'practical':
+        return `You should REWARD participants who provided practical, implementable solutions over those who overcomplicated things.
+        - Focus on solutions that teams can execute confidently
+        - Value clear, actionable recommendations
+        - Penalize theoretical complexity that doesn't add practical value
+        - Look for evidence of real-world feasibility`;
+
+      case 'excellence':
+        return `You should REWARD participants who demonstrated genuine expertise and breakthrough thinking.
+        - Value sophisticated analysis that goes beyond conventional wisdom
+        - Reward specific technical knowledge and advanced insights
+        - Look for game-changing perspectives that others missed
+        - Penalize surface-level analysis even if well-presented
+        - Expect molecular/systemic level understanding when relevant`;
+
+      default: // thorough
+        return `You should REWARD participants who balanced depth with practicality effectively.
+        - Value thorough analysis that considers multiple factors
+        - Reward evidence-based reasoning with specific examples
+        - Look for nuanced understanding of trade-offs and implementation
+        - Penalize both oversimplification and unnecessary complexity`;
+    }
   }
 
   private addSensitiveTopicGuidance(basePrompt: string, config: DebateConfig): string {
@@ -1102,7 +1214,8 @@ ${privateOps}`;
     debate: DebateRound[],
     topic: string,
     judgeModel: Model,
-    isConsensusMode: boolean = false
+    isConsensusMode: boolean = false,
+    analysisDepth: 'practical' | 'thorough' | 'excellence' = 'thorough'
   ): Promise<{ analysis: string; winner?: { id: string; name: string; type: 'model' | 'human'; reason: string }; scores?: Array<{ id: string; name: string; score: number }> }> {
     
     // Check if we have any debate rounds at all
@@ -1183,9 +1296,12 @@ ${p.model}:
 Your PRIMARY task is to provide THE ANSWER:
 1. Cut through any vagueness - what is the CORRECT answer based on the evidence presented?
 2. If it's "prioritize safety" - say that clearly and explain why
-3. If it's "prioritize innovation" - say that clearly and explain why  
+3. If it's "prioritize innovation" - say that clearly and explain why
 4. If it truly requires balance - specify EXACTLY what that means (e.g., "80% innovation, 20% safety" or "Safety gates at these 3 specific points")
 5. NO WAFFLING - Give the actionable answer someone could implement tomorrow
+
+ANALYSIS DEPTH EXPECTATIONS (${analysisDepth.toUpperCase()}):
+${this.getJudgeDepthGuidance(analysisDepth)}
 
 Your SECONDARY tasks:
 ${isConsensusMode 
