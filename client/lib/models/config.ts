@@ -1,24 +1,26 @@
 import { Model, ModelStrength } from '@/types/debate';
 import { MODEL_PRICING, getCostEmoji } from './pricing';
 
-// Context limits for different model families (in tokens) - Updated January 2025
+// Context limits for different model families (in tokens) - Updated September 2025
 export const MODEL_CONTEXT_LIMITS = {
-  // OpenAI - Unlimited for flagship models
-  'gpt-5-2025-08-07': Infinity, // Remove artificial limits
-  'gpt-5': Infinity, // Remove artificial limits
-  'o3': Infinity, // Latest reasoning model - unlimited
+  // OpenAI - Flagship models have large context windows
+  'gpt-5': 1000000, // 1M token context window
+  'gpt-5-mini': 1000000, // 1M token context window
+  'gpt-5-nano': 128000, // 128k token context window
   'gpt-4o': 128000,
   'gpt-4o-mini': 128000,
   'o1': 200000,
   'o1-mini': 128000,
+  'o3': 200000,
   'o3-mini': 200000,
   'o4-mini': 200000,
 
-  // Anthropic - Unlimited for Claude 4 series
-  'claude-opus-4-1-20250805': Infinity, // Flagship Claude 4 - unlimited
-  'claude-sonnet-4-20250514': Infinity, // Claude 4 - unlimited
-  'claude-opus-4-20250514': Infinity, // Claude 4 - unlimited
-  'claude-3-7-sonnet-20250219': Infinity, // Advanced Claude - unlimited
+  // Anthropic - Large context windows for Claude 4+ series
+  'claude-sonnet-4-5-20250929': 200000, // Claude 4.5 - 200k context
+  'claude-opus-4-1-20250805': 200000, // Flagship Claude 4.1 - 200k context
+  'claude-sonnet-4-20250514': 200000, // Claude 4 - 200k context
+  'claude-opus-4-20250514': 200000, // Claude 4 - 200k context
+  'claude-3-7-sonnet-20250219': 200000, // Advanced Claude - 200k context
   'claude-3-5-sonnet-20241022': 200000,
   'claude-3-5-sonnet-20240620': 200000,
   'claude-3-opus-20240229': 200000,
@@ -55,13 +57,11 @@ export const MODEL_CONTEXT_LIMITS = {
 // Model strengths and suggested roles - Updated for September 2025
 const MODEL_ROLES: Record<string, { strengths: ModelStrength[], role: string }> = {
   // OpenAI - Current Models
+  'gpt-5': { strengths: ['business', 'analytical', 'creative', 'technical'], role: 'Most advanced flagship model - excels across all domains' },
+  'gpt-5-mini': { strengths: ['business', 'analytical', 'general'], role: 'Fast and efficient variant of GPT-5' },
+  'gpt-5-nano': { strengths: ['business', 'general'], role: 'Ultra-efficient GPT-5 for quick tasks' },
   'gpt-4o': { strengths: ['business', 'general', 'creative'], role: 'Balanced business and creative analysis' },
   'gpt-4o-mini': { strengths: ['business', 'general'], role: 'Efficient business considerations' },
-  'gpt-4.1': { strengths: ['business', 'general', 'analytical'], role: 'Advanced general-purpose analysis' },
-  'gpt-4.1-mini': { strengths: ['business', 'general'], role: 'Practical business analysis' },
-  'gpt-4.1-nano': { strengths: ['business'], role: 'Quick business insights' },
-  'gpt-5': { strengths: ['business', 'analytical', 'creative'], role: 'Advanced flagship analysis across all domains' },
-  'gpt-5-2025-08-07': { strengths: ['business', 'analytical', 'creative'], role: 'Latest GPT-5 model with enhanced capabilities' },
   'o4-mini': { strengths: ['analytical'], role: 'Efficient reasoning and analysis' },
   
   // OpenAI - Secondary Tier
@@ -70,7 +70,8 @@ const MODEL_ROLES: Record<string, { strengths: ModelStrength[], role: string }> 
   'o3': { strengths: ['analytical', 'technical'], role: 'Advanced problem-solving and technical analysis' },
   'o3-mini': { strengths: ['analytical'], role: 'Efficient reasoning and problem-solving' },
   
-  // Anthropic - Claude 4.1 and 3.5 Series
+  // Anthropic - Claude 4.5, 4.1 and 3.5 Series
+  'claude-sonnet-4-5-20250929': { strengths: ['technical', 'analytical', 'ethical'], role: 'Best coding model in the world - excels at complex agents and reasoning' },
   'claude-opus-4-1-20250805': { strengths: ['ethical', 'analytical', 'general'], role: 'Most advanced Claude model with superior reasoning and ethical analysis' },
   'claude-sonnet-4-20250514': { strengths: ['ethical', 'analytical', 'general'], role: 'Claude 4 with balanced reasoning and creative capabilities' },
   'claude-opus-4-20250514': { strengths: ['ethical', 'analytical', 'general'], role: 'Claude 4 Opus with deep analytical and ethical reasoning' },
@@ -184,13 +185,19 @@ const FEATURED_MODELS: Model[] = [
     displayName: 'GPT-5'
   }),
   withModelInfo({
-    id: 'gpt-5-2025-08-07',
+    id: 'gpt-5-mini',
     provider: 'openai',
-    name: 'gpt-5-2025-08-07',
-    displayName: 'GPT-5 (Aug 2025)'
+    name: 'gpt-5-mini',
+    displayName: 'GPT-5 Mini'
   }),
   
   // Anthropic - Flagship Models (Curated via Model Discovery System)
+  withModelInfo({
+    id: 'claude-sonnet-4-5-20250929',
+    provider: 'anthropic',
+    name: 'claude-sonnet-4-5-20250929',
+    displayName: 'Claude Sonnet 4.5 (Sep 2025)'
+  }),
   withModelInfo({
     id: 'claude-opus-4-1-20250805',
     provider: 'anthropic',
@@ -249,34 +256,22 @@ const FEATURED_MODELS: Model[] = [
 const EXPANDABLE_MODELS: Record<string, Model[]> = {
   openai: [
     withModelInfo({
+      id: 'gpt-5-nano',
+      provider: 'openai',
+      name: 'gpt-5-nano',
+      displayName: 'GPT-5 Nano'
+    }),
+    withModelInfo({
+      id: 'gpt-4o',
+      provider: 'openai',
+      name: 'gpt-4o',
+      displayName: 'GPT-4o'
+    }),
+    withModelInfo({
       id: 'gpt-4o-mini',
       provider: 'openai',
       name: 'gpt-4o-mini',
       displayName: 'GPT-4o Mini'
-    }),
-    withModelInfo({
-      id: 'gpt-4.1',
-      provider: 'openai',
-      name: 'gpt-4.1',
-      displayName: 'GPT-4.1'
-    }),
-    withModelInfo({
-      id: 'gpt-4.1-mini',
-      provider: 'openai',
-      name: 'gpt-4.1-mini',
-      displayName: 'GPT-4.1 Mini'
-    }),
-    withModelInfo({
-      id: 'gpt-4.1-nano',
-      provider: 'openai',
-      name: 'gpt-4.1-nano',
-      displayName: 'GPT-4.1 Nano'
-    }),
-    withModelInfo({
-      id: 'o4-mini',
-      provider: 'openai',
-      name: 'o4-mini',
-      displayName: 'o4 Mini'
     })
   ],
   anthropic: [

@@ -1,0 +1,172 @@
+name: RSS Feed Monitor
+
+on:
+  schedule:
+    # Run every 6 hours
+    - cron: '0 */6 * * *'
+  workflow_dispatch:
+
+jobs:
+  monitor-feeds:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Check OpenAI Announcements
+        uses: gautamkrishnar/blog-post-workflow@v1
+        with:
+          feed_list: "https://community.openai.com/c/announcements/7.rss"
+          max_post_count: 5
+          template: "$newline- [$title]($url)"
+          comment_tag_name: "OPENAI_FEED"
+          disable_sort: true
+
+      - name: Check Anthropic Blog
+        id: anthropic_check
+        run: |
+          # Fetch Anthropic news page
+          curl -s "https://www.anthropic.com/news" > anthropic.html
+
+          # Check for model-related keywords
+          if grep -i "claude.*model\|new.*release\|api.*available" anthropic.html; then
+            echo "found=true" >> $GITHUB_OUTPUT
+            echo "🚨 Potential new Anthropic announcement detected!"
+          else
+            echo "found=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Check Google AI Blog
+        id: google_check
+        run: |
+          # Fetch Google AI blog
+          curl -s "https://blog.google/technology/ai/" > google.html
+
+          # Check for Gemini model announcements
+          if grep -i "gemini.*model\|new.*release\|api" google.html; then
+            echo "found=true" >> $GITHUB_OUTPUT
+            echo "🚨 Potential new Google AI announcement detected!"
+          else
+            echo "found=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Check X.AI Blog
+        id: xai_check
+        run: |
+          # Fetch X.AI blog
+          curl -s "https://x.ai/blog" > xai.html
+
+          # Check for Grok model announcements
+          if grep -i "grok.*model\|new.*release\|api" xai.html; then
+            echo "found=true" >> $GITHUB_OUTPUT
+            echo "🚨 Potential new X.AI announcement detected!"
+          else
+            echo "found=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create GitHub Issue for Detected Announcements
+        if: |
+          steps.anthropic_check.outputs.found == 'true' ||
+          steps.google_check.outputs.found == 'true' ||
+          steps.xai_check.outputs.found == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const date = new Date().toISOString().split('T')[0];
+            const providers = [];
+
+            if ('${{ steps.anthropic_check.outputs.found }}' === 'true') providers.push('Anthropic');
+            if ('${{ steps.google_check.outputs.found }}' === 'true') providers.push('Google');
+            if ('${{ steps.xai_check.outputs.found }}' === 'true') providers.push('X.AI');
+
+            const title = `🚨 Potential New Model Announcement: ${providers.join(', ')}`;
+            const body = `
+            ## 🤖 RSS Feed Monitor Alert
+
+            The RSS monitor detected potential new model announcements from: **${providers.join(', ')}**
+
+            ### What to do:
+
+            1. Visit the provider websites to confirm:
+               ${providers.includes('Anthropic') ? '- [Anthropic News](https://www.anthropic.com/news)' : ''}
+               ${providers.includes('Google') ? '- [Google AI Blog](https://blog.google/technology/ai/)' : ''}
+               ${providers.includes('X.AI') ? '- [X.AI Blog](https://x.ai/blog)' : ''}
+
+            2. If new models are confirmed, run model discovery:
+               \`\`\`bash
+               npm run scan-models --generate
+               \`\`\`
+
+            3. Follow the model update process documented in MODEL_MANAGEMENT.md
+
+            ### Automated Actions
+
+            - [ ] Confirmed new model exists
+            - [ ] Ran model discovery scan
+            - [ ] Created PR with new models
+            - [ ] Updated pricing
+            - [ ] Tested new models
+
+            ---
+
+            🤖 This issue was created automatically by the RSS Monitor workflow
+            📅 Detected: ${date}
+            `;
+
+            // Create issue
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: title,
+              body: body,
+              labels: ['models', 'announcement', 'needs-review']
+            });
+
+      - name: Weekly Digest
+        if: github.event.schedule == '0 9 * * 1'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const date = new Date().toISOString().split('T')[0];
+
+            const body = `
+            ## 📊 Weekly AI Model Monitoring Digest
+
+            ### Summary
+
+            This is your weekly digest of AI model monitoring activity.
+
+            ### Feed Sources Monitored
+
+            - OpenAI Community Announcements
+            - Anthropic News Blog
+            - Google AI Blog
+            - X.AI Blog
+            - Mistral AI News
+            - Meta AI Blog
+
+            ### Actions This Week
+
+            Check the issues and PRs labeled with \`models\` to see activity.
+
+            ### Recommended Actions
+
+            1. Run full model scan: \`npm run scan-models --generate\`
+            2. Review LATEST_MODELS_STATUS.md for accuracy
+            3. Check pricing changes from providers
+
+            ---
+
+            🤖 Weekly digest generated automatically
+            📅 ${date}
+            `;
+
+            // Create weekly digest issue
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `📊 Weekly Model Monitoring Digest - ${date}`,
+              body: body,
+              labels: ['models', 'digest', 'weekly']
+            });

@@ -1,12 +1,12 @@
-# Latest AI Models Status - January 2025
+# Latest AI Models Status - September 2025
 
 ## ✅ CONFIRMED WORKING MODELS
 
 ### OpenAI
 **GPT-5 Series (August 2025)**
-- ✅ `gpt-5` - Flagship model
-- ✅ `gpt-5-mini` - Smaller, faster variant
-- ✅ `gpt-5-nano` - Ultra-light variant
+- ✅ `gpt-5` - Flagship model ($1.25/$10 per 1M tokens)
+- ✅ `gpt-5-mini` - Smaller, faster variant ($0.25/$2 per 1M tokens)
+- ✅ `gpt-5-nano` - Ultra-light variant ($0.05/$0.40 per 1M tokens)
 
 **o3 Series**
 - ✅ `o3` - Advanced reasoning (requires special params)
@@ -22,16 +22,22 @@
 - ✅ `gpt-4-turbo` - Turbo variant
 
 ### Anthropic
-**Claude 3.5 Series (CURRENT VERIFIED)**
-- ✅ `claude-3-5-sonnet-20241022` - Claude 3.5 Sonnet (October 2024)
-- ✅ `claude-3-5-haiku-20241022` - Claude 3.5 Haiku (October 2024)
+**Claude 4.5 Series (LATEST - September 29, 2025)**
+- ✅ `claude-sonnet-4-5-20250929` - "Best coding model in the world" ($3/$15 per 1M tokens)
 
-**Claude 3.7 Series**
-- ✅ `claude-3-7-sonnet-20250219` - Claude 3.7 (February 2025)
+**Claude 4.1 Series (August 2025)**
+- ✅ `claude-opus-4-1-20250805` - Flagship Claude 4.1 with 30hr autonomous runtime
 
-**Claude 3.5 Series**
-- ✅ `claude-3-5-sonnet-20241022` - Latest 3.5
-- ✅ `claude-3-5-sonnet-20240620` - June version
+**Claude 4 Series (May 2025)**
+- ✅ `claude-sonnet-4-20250514` - Claude Sonnet 4
+- ✅ `claude-opus-4-20250514` - Claude Opus 4
+
+**Claude 3.7 Series (February 2025)**
+- ✅ `claude-3-7-sonnet-20250219` - Claude 3.7 Sonnet
+
+**Claude 3.5 Series (October 2024)**
+- ✅ `claude-3-5-sonnet-20241022` - Claude 3.5 Sonnet (October)
+- ✅ `claude-3-5-sonnet-20240620` - Claude 3.5 Sonnet (June)
 - ✅ `claude-3-5-haiku-20241022` - Fast variant
 
 **Claude 3 Series**
@@ -119,7 +125,9 @@ GitHub Action configured to:
 4. **Use Grok 4** for real-time information needs
 
 ## 🔄 Last Updated
-January 19, 2025 - All models tested and verified
+September 29, 2025 - Claude Sonnet 4.5 added (released today!), GPT-5 variants confirmed
+
+
 
 
 

@@ -18,6 +18,7 @@
     "test-model": "tsx scripts/test-single-model.ts",
     "discover-models": "tsx scripts/discover-models.ts",
     "update-models": "tsx scripts/update-curated-models.ts",
+    "scan-models": "tsx scripts/full-model-scan.ts",
     "deploy": "./scripts/deploy.sh"
   },
   "dependencies": {
