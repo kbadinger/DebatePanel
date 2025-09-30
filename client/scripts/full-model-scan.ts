@@ -104,7 +104,8 @@ async function main() {
 
   console.log(`📋 Current config: ${configModelIds.length} models`);
   console.log(`🆕 New models found: ${comparison.new.length}`);
-  console.log(`⚠️  Missing from API: ${comparison.missing.length}`);
+  console.log(`🗑️  Deprecated (need retirement): ${comparison.deprecated?.length || 0}`);
+  console.log(`⚠️  Missing from API: ${comparison.missing.length - (comparison.deprecated?.length || 0)}`);
   console.log(`✅ Matched: ${comparison.matched.length}`);
   console.log('');
 
