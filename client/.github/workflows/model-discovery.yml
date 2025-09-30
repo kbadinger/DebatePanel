@@ -64,21 +64,24 @@ jobs:
           fi
 
       - name: Create Pull Request
-        if: steps.check_new_models.outputs.new_models == 'true'
+        if: steps.check_changes.outputs.needs_pr == 'true'
         uses: peter-evans/create-pull-request@v6
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          commit-message: "feat: Add newly discovered AI models"
+          commit-message: "feat: Update AI models (new additions and deprecations)"
           branch: model-discovery-${{ github.run_number }}
-          title: "🆕 New AI Models Discovered"
+          title: "🔄 AI Model Updates Detected"
           body: |
             ## 🤖 Automated Model Discovery
 
             This PR was automatically created by the model discovery workflow.
 
-            ### What's New?
+            ### What Changed?
 
-            New models were discovered from provider APIs. See the details below:
+            ${{ steps.check_changes.outputs.new_models == 'true' && '✅ New models discovered' || '' }}
+            ${{ steps.check_changes.outputs.deprecated_models == 'true' && '⚠️ Deprecated models detected' || '' }}
+
+            See the full details below:
 
             ```
             $(cat discovery-report.txt)
@@ -86,12 +89,19 @@ jobs:
 
             ### Manual Steps Required
 
+            #### For New Models:
             - [ ] Review new model IDs and display names
             - [ ] Add pricing information to `lib/models/pricing.ts`
             - [ ] Add model roles/strengths to `MODEL_ROLES` in `config.ts`
             - [ ] Add context limits to `MODEL_CONTEXT_LIMITS`
             - [ ] Test new models in development environment
-            - [ ] Update `LATEST_MODELS_STATUS.md` with new models
+
+            #### For Deprecated Models:
+            - [ ] Remove from `config.ts` or mark as deprecated
+            - [ ] Remove from `pricing.ts`
+            - [ ] Add deprecation note to `LATEST_MODELS_STATUS.md`
+            - [ ] Check if any active debates are using these models
+            - [ ] Consider migration path for existing users
 
             ### Configuration Code
 
