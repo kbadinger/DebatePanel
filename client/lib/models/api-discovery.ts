@@ -458,7 +458,16 @@ export function compareWithConfig(
   const newModels = allDiscovered.filter(m => !configSet.has(m.id) && m.verified);
   const matched = allDiscovered.filter(m => configSet.has(m.id));
 
-  return { missing, new: newModels, matched };
+  // Models that are deprecated: in config but failed verification
+  const deprecated = missing.filter(m => {
+    // Check if model consistently fails across multiple providers
+    const relatedResults = discovered.filter(r =>
+      r.models.some(rm => rm.id === m.id && !rm.verified)
+    );
+    return relatedResults.length > 0;
+  });
+
+  return { missing, new: newModels, matched, deprecated };
 }
 
 /**
