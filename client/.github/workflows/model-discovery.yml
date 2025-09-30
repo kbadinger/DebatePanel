@@ -36,8 +36,8 @@ jobs:
           npm run scan-models --generate > discovery-report.txt
           cat discovery-report.txt
 
-      - name: Check for new models
-        id: check_new_models
+      - name: Check for new models or deprecations
+        id: check_changes
         run: |
           # Check if new models were discovered
           if grep -q "NEW MODELS DISCOVERED" discovery-report.txt; then
@@ -45,7 +45,22 @@ jobs:
             echo "✅ New models found!"
           else
             echo "new_models=false" >> $GITHUB_OUTPUT
-            echo "No new models found"
+          fi
+
+          # Check if deprecated models need retirement
+          if grep -q "DEPRECATED MODELS" discovery-report.txt; then
+            echo "deprecated_models=true" >> $GITHUB_OUTPUT
+            echo "⚠️ Deprecated models found!"
+          else
+            echo "deprecated_models=false" >> $GITHUB_OUTPUT
+          fi
+
+          # Create PR if either condition is true
+          if [ "$new_models" = "true" ] || [ "$deprecated_models" = "true" ]; then
+            echo "needs_pr=true" >> $GITHUB_OUTPUT
+          else
+            echo "needs_pr=false" >> $GITHUB_OUTPUT
+            echo "No changes needed"
           fi
 
       - name: Create Pull Request
