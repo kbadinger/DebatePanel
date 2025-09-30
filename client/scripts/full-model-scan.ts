@@ -120,16 +120,37 @@ async function main() {
     console.log('');
   }
 
-  // Step 5: Show missing models (in config but not discovered)
-  if (comparison.missing.length > 0) {
-    console.log('⚠️  MODELS IN CONFIG BUT NOT FOUND IN API:');
+  // Step 5: Show deprecated models (need retirement)
+  if (comparison.deprecated && comparison.deprecated.length > 0) {
+    console.log('🗑️  DEPRECATED MODELS (SHOULD BE RETIRED):');
     console.log('─'.repeat(70));
 
-    for (const model of comparison.missing) {
-      console.log(`   ${model.id}`);
-      console.log(`   ${' '.repeat(12)} (May be deprecated or require special access)`);
+    for (const model of comparison.deprecated) {
+      console.log(`   ❌ ${model.id}`);
+      console.log(`   ${' '.repeat(12)} Not found in provider API - likely deprecated`);
     }
     console.log('');
+    console.log('⚠️  ACTION REQUIRED: Remove these models from config');
+    console.log('   Or mark as deprecated with a comment');
+    console.log('');
+  }
+
+  // Step 6: Show missing models (in config but not discovered)
+  if (comparison.missing.length > 0) {
+    const nonDeprecated = comparison.missing.filter(
+      m => !comparison.deprecated?.some(d => d.id === m.id)
+    );
+
+    if (nonDeprecated.length > 0) {
+      console.log('⚠️  MODELS IN CONFIG BUT NOT FOUND IN API:');
+      console.log('─'.repeat(70));
+
+      for (const model of nonDeprecated) {
+        console.log(`   ${model.id}`);
+        console.log(`   ${' '.repeat(12)} (May require special access or not yet in API)`);
+      }
+      console.log('');
+    }
   }
 
   // Step 6: Generate configuration code if requested
