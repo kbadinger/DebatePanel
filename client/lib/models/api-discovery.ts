@@ -435,9 +435,10 @@ export function compareWithConfig(
   discovered: ProviderDiscoveryResult[],
   configuredModelIds: string[]
 ): {
-  missing: DiscoveredModel[];  // In config but not discovered
+  missing: DiscoveredModel[];  // In config but not discovered (DEPRECATED)
   new: DiscoveredModel[];      // Discovered but not in config
   matched: DiscoveredModel[];  // In both
+  deprecated: DiscoveredModel[];  // Models that should be retired
 } {
   const configSet = new Set(configuredModelIds);
   const allDiscovered = discovered.flatMap(r => r.models);
