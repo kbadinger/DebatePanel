@@ -2,8 +2,8 @@ name: RSS Feed Monitor
 
 on:
   schedule:
-    # Run every 6 hours
-    - cron: '0 */6 * * *'
+    # Run once daily at 9 AM UTC to avoid rate limiting
+    - cron: '0 9 * * *'
   workflow_dispatch:
 
 jobs:
@@ -14,14 +14,8 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Check OpenAI Announcements
-        uses: gautamkrishnar/blog-post-workflow@v1
-        with:
-          feed_list: "https://community.openai.com/c/announcements/7.rss"
-          max_post_count: 5
-          template: "$newline- [$title]($url)"
-          comment_tag_name: "OPENAI_FEED"
-          disable_sort: true
+      # OpenAI RSS feed removed due to 429 rate limiting issues
+      # Monitor OpenAI announcements via their main blog instead
 
       - name: Check Anthropic Blog
         id: anthropic_check
