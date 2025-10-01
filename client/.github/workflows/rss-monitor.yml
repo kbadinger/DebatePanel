@@ -14,8 +14,19 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # OpenAI RSS feed removed due to 429 rate limiting issues
-      # Monitor OpenAI announcements via their main blog instead
+      - name: Check OpenAI Blog
+        id: openai_check
+        run: |
+          # Fetch OpenAI blog page
+          curl -s "https://openai.com/news/" > openai.html
+
+          # Check for model-related keywords
+          if grep -i "gpt.*model\|o1.*model\|new.*model\|api.*available" openai.html; then
+            echo "found=true" >> $GITHUB_OUTPUT
+            echo "🚨 Potential new OpenAI announcement detected!"
+          else
+            echo "found=false" >> $GITHUB_OUTPUT
+          fi
 
       - name: Check Anthropic Blog
         id: anthropic_check
@@ -61,6 +72,7 @@ jobs:
 
       - name: Create GitHub Issue for Detected Announcements
         if: |
+          steps.openai_check.outputs.found == 'true' ||
           steps.anthropic_check.outputs.found == 'true' ||
           steps.google_check.outputs.found == 'true' ||
           steps.xai_check.outputs.found == 'true'
@@ -70,6 +82,7 @@ jobs:
             const date = new Date().toISOString().split('T')[0];
             const providers = [];
 
+            if ('${{ steps.openai_check.outputs.found }}' === 'true') providers.push('OpenAI');
             if ('${{ steps.anthropic_check.outputs.found }}' === 'true') providers.push('Anthropic');
             if ('${{ steps.google_check.outputs.found }}' === 'true') providers.push('Google');
             if ('${{ steps.xai_check.outputs.found }}' === 'true') providers.push('X.AI');
@@ -83,6 +96,7 @@ jobs:
             ### What to do:
 
             1. Visit the provider websites to confirm:
+               ${providers.includes('OpenAI') ? '- [OpenAI News](https://openai.com/news/)' : ''}
                ${providers.includes('Anthropic') ? '- [Anthropic News](https://www.anthropic.com/news)' : ''}
                ${providers.includes('Google') ? '- [Google AI Blog](https://blog.google/technology/ai/)' : ''}
                ${providers.includes('X.AI') ? '- [X.AI Blog](https://x.ai/blog)' : ''}
