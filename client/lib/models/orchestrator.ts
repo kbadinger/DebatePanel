@@ -478,6 +478,12 @@ Format your response as a clear argument with supporting points.`;
       // Add complexity guidance
       basePrompt = this.addComplexityGuidance(basePrompt, topicComplexity);
 
+      // Add quantitative reasoning guidance (always included)
+      basePrompt = basePrompt.replace(
+        /At the end of your response, explicitly state:/,
+        this.addQuantitativeReasoningGuidance() + '\n\nAt the end of your response, explicitly state:'
+      );
+
       // Add analysis depth guidance
       const analysisDepth = config.analysisDepth || 'thorough';
       basePrompt = this.addAnalysisDepthGuidance(basePrompt, analysisDepth, !isAdversarial);
@@ -498,6 +504,12 @@ Format your response as a clear argument with supporting points.`;
 
     // Add complexity guidance
     basePrompt = this.addComplexityGuidance(basePrompt, topicComplexity);
+
+    // Add quantitative reasoning guidance (always included)
+    basePrompt = basePrompt.replace(
+      /At the end of your response, explicitly state:/,
+      this.addQuantitativeReasoningGuidance() + '\n\nAt the end of your response, explicitly state:'
+    );
 
     // Add analysis depth guidance for later rounds too
     const analysisDepth = config.analysisDepth || 'thorough';
@@ -574,9 +586,46 @@ Format your response as a clear argument with supporting points.`;
     return 'moderate';
   }
 
+  private addQuantitativeReasoningGuidance(): string {
+    return `
+
+CRITICAL: QUANTITATIVE REASONING & SANITY CHECKS
+When numbers, statistics, or quantitative claims appear in this debate, apply Fermi estimation and first-principles thinking:
+
+FERMI ESTIMATION PROTOCOL:
+✅ DO challenge numbers that seem implausible - work backwards to validate them
+✅ DO break down claims to fundamental constraints (time, space, physics, economics)
+✅ DO perform order-of-magnitude sanity checks: "If X is true, that would mean..."
+✅ DO question the methodology behind statistics, especially when sources are vague
+✅ DO calculate what claims would imply in concrete, testable terms
+
+EXAMPLE - CATCHING BAD DATA:
+❌ BAD: "Studies show 3 million active surfers in the US"
+✅ GOOD: "Wait - let's sanity check this. The US has ~12,000 miles of coast suitable for surfing. If 3M people surf actively, that's 250 surfers per mile of coastline. Given typical surf sessions (2 hours) and daylight hours (~8h/day × 365 days), each mile would need to handle ~180,000 surf-hours per year. That would mean each coastal mile is packed with surfers every single day, which clearly doesn't match reality. The real number is likely 50-100K active surfers, not 3M. This '3M' figure is off by 30-60x."
+
+RED FLAGS FOR BAD NUMBERS:
+⚠️ Round numbers without methodology (e.g., "exactly 3 million")
+⚠️ Claims that would require physically impossible conditions
+⚠️ Statistics cited as "studies show" without naming the study
+⚠️ Numbers that don't match observable reality or common experience
+⚠️ Figures that imply absurd per-capita or per-unit metrics
+
+YOUR RESPONSIBILITY:
+- In CONSENSUS mode: Don't let the group converge on flawed assumptions. Surface quantitative problems early.
+- In ADVERSARIAL mode: Ruthlessly attack questionable statistics. Demand evidence and methodology.
+- In EXCELLENCE mode: Expect and provide expert-level quantitative rigor. Show your work.
+
+WHEN YOU SPOT BAD DATA:
+1. State clearly: "This number doesn't pass a basic sanity check"
+2. Show your Fermi calculation: Work backwards from constraints
+3. Estimate what the real figure should be based on first principles
+4. Explain the magnitude of error: "This is inflated by 30x, not just a minor discrepancy"
+5. Demand better data before proceeding: "We need actual methodology to evaluate this claim"`;
+  }
+
   private addComplexityGuidance(basePrompt: string, complexity: 'simple' | 'moderate' | 'complex'): string {
     let guidance = '';
-    
+
     switch (complexity) {
       case 'simple':
         guidance = `
@@ -594,7 +643,7 @@ DEPTH GUIDANCE:
 
 GOAL: Efficient analysis that reaches a clear recommendation quickly.`;
         break;
-        
+
       case 'complex':
         guidance = `
 
@@ -604,7 +653,7 @@ This topic involves significant complexity with multiple variables, risks, and c
 DEPTH GUIDANCE:
 ✅ GO DEEP - this topic warrants comprehensive analysis
 ✅ Consider multiple scenarios, edge cases, and risk factors
-✅ Examine both short-term and long-term implications  
+✅ Examine both short-term and long-term implications
 ✅ Analyze market conditions, competitive factors, and implementation challenges
 ✅ Provide specific examples, data points, and concrete evidence
 ✅ Consider regulatory, financial, and operational constraints
@@ -613,7 +662,7 @@ DEPTH GUIDANCE:
 
 GOAL: Thorough, expert-level analysis worthy of the topic's complexity.`;
         break;
-        
+
       default: // moderate
         guidance = `
 
@@ -630,7 +679,7 @@ DEPTH GUIDANCE:
 
 GOAL: Professional analysis appropriate to the decision's importance.`;
     }
-    
+
     // Insert guidance before the final formatting requirements
     return basePrompt.replace(
       /At the end of your response, explicitly state:/,
@@ -995,13 +1044,16 @@ Confidence: [0-100]% confident in this stance`;
       privateOps += ` This topic involves sensitive themes - engage thoughtfully and constructively rather than avoiding discussion. Your role is to facilitate understanding and growth through rigorous but respectful analysis.`;
     }
 
+    // Add quantitative reasoning guidance for GPT-5
+    privateOps += ` CRITICAL: When numbers/statistics appear, apply Fermi estimation. Sanity-check claims by working backwards from constraints (time, space, physics, economics). Challenge numbers that seem implausible. Example: "3M active surfers in US" = 250 surfers/mile of coast = impossible density. Real number likely 50-100K. Demand methodology for vague statistics.`;
+
     privateOps += `
 If Self-Reflect=on:
-  1) Create a concise private rubric: correctness of analysis, strength of evidence, clarity of position, adherence to debate style, constructive contribution${hasUnlimitedContext ? ', thoroughness of exploration' : ''}.
+  1) Create a concise private rubric: correctness of analysis, strength of evidence, clarity of position, adherence to debate style, constructive contribution, quantitative rigor${hasUnlimitedContext ? ', thoroughness of exploration' : ''}.
   2) Draft → check against rubric → revise once.
   3) Return only the final deliverables.
 If Meta-Fix=on and any deliverable is missing/wrong or draft fails rubric check:
-  1) Write a better INTERNAL prompt that fixes the issues (tighten analysis, strengthen evidence, clarify position${hasUnlimitedContext ? ', add more comprehensive details' : ''}).
+  1) Write a better INTERNAL prompt that fixes the issues (tighten analysis, strengthen evidence, clarify position, validate quantitative claims${hasUnlimitedContext ? ', add more comprehensive details' : ''}).
   2) Apply that internal prompt ONCE immediately.
   3) Return the improved result.`;
 
