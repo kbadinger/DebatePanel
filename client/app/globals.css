@@ -147,8 +147,6 @@ body {
 /* Gradient backgrounds */
 .gradient-bg-primary {
   background: linear-gradient(135deg, var(--primary-gradient-start), var(--primary-gradient-end));
-  background-size: 200% 200%;
-  animation: gradient-shift 15s ease infinite;
 }
 
 .gradient-bg-mesh {
