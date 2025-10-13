@@ -121,15 +121,27 @@ Format your response as a clear argument with supporting points.`;
               case 'openai':
         this.logger.log(`Calling OpenAI model: ${model.name}`);
         const openaiStartTime = Date.now();
-        // GPT-5 models only support default temperature (1.0)
-        const temperature = model.name.startsWith('gpt-5') ? 1.0 : 0.7;
-        result = await generateText({
+        // GPT-5 models have special requirements
+        const isGpt5 = model.name.startsWith('gpt-5');
+        const temperature = isGpt5 ? 1.0 : 0.7;
+
+        // GPT-5 requires maxCompletionTokens instead of maxTokens
+        const openaiParams: any = {
           model: openai(model.name),
           system: systemPrompt,
           prompt,
           temperature,
-          maxTokens,
-        });
+        };
+
+        if (isGpt5) {
+          // Use maxCompletionTokens for GPT-5 models
+          openaiParams.maxCompletionTokens = maxTokens;
+          this.logger.log(`Using maxCompletionTokens=${maxTokens} for GPT-5`);
+        } else {
+          openaiParams.maxTokens = maxTokens;
+        }
+
+        result = await generateText(openaiParams);
         this.logger.log(`OpenAI (${model.name}) responded in ${Date.now() - openaiStartTime}ms`);
         break;
         case 'anthropic':
