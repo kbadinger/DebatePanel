@@ -57,7 +57,7 @@ export const MODEL_CONTEXT_LIMITS = {
 // Model strengths and suggested roles - Updated for September 2025
 const MODEL_ROLES: Record<string, { strengths: ModelStrength[], role: string }> = {
   // OpenAI - Current Models
-  'gpt-5': { strengths: ['business', 'analytical', 'creative', 'technical'], role: 'Most advanced flagship model - excels across all domains' },
+  'gpt-5-chat-latest': { strengths: ['business', 'analytical', 'creative', 'technical'], role: 'Most advanced flagship model - excels across all domains' },
   'gpt-5-mini': { strengths: ['business', 'analytical', 'general'], role: 'Fast and efficient variant of GPT-5' },
   'gpt-5-nano': { strengths: ['business', 'general'], role: 'Ultra-efficient GPT-5 for quick tasks' },
   'gpt-4o': { strengths: ['business', 'general', 'creative'], role: 'Balanced business and creative analysis' },
