@@ -4,7 +4,7 @@ import { MODEL_PRICING, getCostEmoji } from './pricing';
 // Context limits for different model families (in tokens) - Updated September 2025
 export const MODEL_CONTEXT_LIMITS = {
   // OpenAI - Flagship models have large context windows
-  'gpt-5': 1000000, // 1M token context window
+  'gpt-5-chat-latest': 1000000, // 1M token context window (working variant)
   'gpt-5-mini': 1000000, // 1M token context window
   'gpt-5-nano': 128000, // 128k token context window
   'gpt-4o': 128000,
