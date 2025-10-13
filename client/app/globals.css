@@ -1,12 +1,12 @@
 @import "tailwindcss";
 
 :root {
-  /* Custom brand colors with personality */
-  --primary-gradient-start: #667eea;
-  --primary-gradient-end: #764ba2;
-  --accent-neon: #00ff88;
-  --accent-warm: #ff6b6b;
-  --accent-cool: #4ecdc4;
+  /* Professional brand colors */
+  --primary-gradient-start: #3b82f6;
+  --primary-gradient-end: #2563eb;
+  --accent-highlight: #10b981;
+  --accent-warm: #ef4444;
+  --accent-neutral: #6b7280;
   --dark-glass: rgba(15, 23, 42, 0.8);
   --light-glass: rgba(255, 255, 255, 0.1);
   
