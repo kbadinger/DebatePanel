@@ -168,15 +168,15 @@ Option 3 - Flexible/Hybrid Approach:
     <div className="min-h-screen gradient-bg-mesh relative overflow-hidden">
       {/* Animated background orbs */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-20 left-10 w-72 h-72 bg-purple-300 rounded-full mix-blend-multiply filter blur-3xl opacity-10 animate-float"></div>
-        <div className="absolute top-40 right-10 w-72 h-72 bg-yellow-300 rounded-full mix-blend-multiply filter blur-3xl opacity-10 animate-float" style={{ animationDelay: '2s' }}></div>
-        <div className="absolute bottom-20 left-1/2 w-72 h-72 bg-pink-300 rounded-full mix-blend-multiply filter blur-3xl opacity-10 animate-float" style={{ animationDelay: '4s' }}></div>
+        <div className="absolute top-20 left-10 w-72 h-72 bg-blue-200 rounded-full mix-blend-multiply filter blur-3xl opacity-10 animate-float"></div>
+        <div className="absolute top-40 right-10 w-72 h-72 bg-slate-200 rounded-full mix-blend-multiply filter blur-3xl opacity-10 animate-float" style={{ animationDelay: '2s' }}></div>
+        <div className="absolute bottom-20 left-1/2 w-72 h-72 bg-cyan-200 rounded-full mix-blend-multiply filter blur-3xl opacity-10 animate-float" style={{ animationDelay: '4s' }}></div>
       </div>
       
       <div className={`${status === 'unauthenticated' ? 'max-w-5xl' : 'max-w-2xl'} mx-auto pt-12 px-4 relative z-10`}>
         <div className="mb-8 text-center debate-card-enter">
           <h1 className="text-5xl font-black mb-3">
-            <span className="text-purple-600">AI Decision</span>
+            <span className="text-blue-600">AI Decision</span>
             <span className="text-slate-900"> Platform</span>
           </h1>
           <div className="flex items-center justify-center gap-2">
@@ -188,7 +188,7 @@ Option 3 - Flexible/Hybrid Approach:
             <span className="text-xl font-bold text-slate-900">Thinking together</span>
           </div>
         </div>
-        <p className="text-center text-slate-800 text-lg mb-8 max-w-2xl mx-auto font-medium bg-white/80 backdrop-blur p-6 rounded-2xl debate-card-enter border-2 border-purple-200/30 shadow-xl" style={{ animationDelay: '0.2s' }}>
+        <p className="text-center text-slate-800 text-lg mb-8 max-w-2xl mx-auto font-medium bg-white/80 backdrop-blur p-6 rounded-2xl debate-card-enter border-2 border-blue-200/30 shadow-xl" style={{ animationDelay: '0.2s' }}>
           <span className="text-2xl mb-2 block">🧠</span>
           Harness an AI council of GPT, Claude, Gemini, Grok, and other leading models to analyze complex decisions and forge optimal solutions
         </p>
@@ -220,7 +220,7 @@ Option 3 - Flexible/Hybrid Approach:
         
         {!loading && configuredProviders.length > 0 && (
           <div className="text-center mb-6">
-            <span className="inline-block bg-purple-100 text-purple-900 font-bold px-4 py-2 rounded-full text-sm border border-purple-300">
+            <span className="inline-block bg-blue-100 text-blue-900 font-bold px-4 py-2 rounded-full text-sm border border-blue-300">
               {configuredProviders.length} provider{configuredProviders.length !== 1 ? 's' : ''} configured • 
               {availableModels.length} model{availableModels.length !== 1 ? 's' : ''} available
             </span>
@@ -231,7 +231,7 @@ Option 3 - Flexible/Hybrid Approach:
           <>
             <div className="max-w-2xl mx-auto bg-white rounded-xl shadow-xl p-8 border border-slate-100 text-center mb-8">
               <div className="flex justify-center mb-4">
-                <Sparkles className="text-purple-600" size={32} />
+                <Sparkles className="text-blue-600" size={32} />
               </div>
               <h2 className="text-2xl font-semibold text-slate-900 mb-4">See AI Models Debate & Reach Consensus</h2>
               <p className="text-slate-600 mb-6">
@@ -267,10 +267,10 @@ Option 3 - Flexible/Hybrid Approach:
               </div>
             </div>
 
-            <div className="max-w-2xl mx-auto bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl p-8 text-center border border-blue-200">
+            <div className="max-w-2xl mx-auto bg-gradient-to-r from-blue-50 to-cyan-50 rounded-xl p-8 text-center border border-blue-200">
               <h3 className="text-xl font-semibold text-slate-900 mb-4">Ready to explore any topic with AI consensus?</h3>
               <Link href="/signup">
-                <Button size="lg" className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700">
+                <Button size="lg" className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800">
                   Create Free Account
                 </Button>
               </Link>
@@ -282,7 +282,7 @@ Option 3 - Flexible/Hybrid Approach:
         )}
         
         {session && (
-        <form onSubmit={handleSubmit} className="bg-white/90 backdrop-blur rounded-2xl p-8 hover-lift debate-card-enter border-2 border-purple-200/30 shadow-xl" style={{ animationDelay: '0.3s' }}>
+        <form onSubmit={handleSubmit} className="bg-white/90 backdrop-blur rounded-2xl p-8 hover-lift debate-card-enter border-2 border-blue-200/30 shadow-xl" style={{ animationDelay: '0.3s' }}>
           <div className="mb-6 text-center">
             <Button 
               type="button" 
@@ -303,7 +303,7 @@ Option 3 - Flexible/Hybrid Approach:
               type="text"
               value={config.topic}
               onChange={(e) => setConfig({ ...config, topic: e.target.value })}
-              className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl shadow-sm focus:outline-none focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 transition-all duration-300 hover:border-purple-400 text-slate-900 bg-white font-medium"
+              className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl shadow-sm focus:outline-none focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-300 hover:border-blue-400 text-slate-900 bg-white font-medium"
               placeholder="e.g., Should we invest in AI automation or hire more staff?"
               required
             />
@@ -820,7 +820,7 @@ Option 3 - Flexible/Hybrid Approach:
                   value="excellence"
                   checked={config.analysisDepth === 'excellence'}
                   onChange={(e) => setConfig({ ...config, analysisDepth: e.target.value as 'practical' | 'thorough' | 'excellence' })}
-                  className="mr-3 h-4 w-4 text-purple-600 focus:ring-purple-500 mt-1"
+                  className="mr-3 h-4 w-4 text-blue-600 focus:ring-blue-500 mt-1"
                 />
                 <div>
                   <span className="text-slate-700 font-medium">🚀 Excellence (Best of the Best)</span>
@@ -851,17 +851,17 @@ Option 3 - Flexible/Hybrid Approach:
                   <p className="text-xs text-slate-500 mt-1">Watch AI models debate and reach their conclusion</p>
                 </div>
               </label>
-              <label className="flex items-center p-3 border border-slate-300 rounded-lg hover:bg-slate-50 cursor-pointer transition-colors bg-gradient-to-r from-purple-50 to-blue-50 border-purple-300">
+              <label className="flex items-center p-3 border border-slate-300 rounded-lg hover:bg-slate-50 cursor-pointer transition-colors bg-gradient-to-r from-blue-50 to-cyan-50 border-blue-300">
                 <input
                   type="radio"
                   name="participation-mode"
                   checked={config.isInteractive || false}
                   onChange={() => setConfig({ ...config, isInteractive: true })}
-                  className="mr-3 h-4 w-4 text-purple-600 focus:ring-purple-500"
+                  className="mr-3 h-4 w-4 text-blue-600 focus:ring-blue-500"
                 />
                 <div className="flex-1">
                   <span className="text-slate-700 font-medium flex items-center gap-2">
-                    <Sparkles className="w-4 h-4 text-purple-600" />
+                    <Sparkles className="w-4 h-4 text-blue-600" />
                     🎤 Participant Mode
                   </span>
                   <p className="text-xs text-slate-500 mt-1">Join the debate and influence the discussion with your perspective</p>
