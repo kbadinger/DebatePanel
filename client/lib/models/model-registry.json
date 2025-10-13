@@ -44,14 +44,14 @@
           "verified": true
         },
         {
-          "id": "gpt-5",
-          "apiName": "gpt-5",
+          "id": "gpt-5-chat-latest",
+          "apiName": "gpt-5-chat-latest",
           "displayName": "GPT-5",
           "category": "flagship",
           "deprecated": false,
-          "releaseDate": "2025-01",
+          "releaseDate": "2025-08",
           "verified": true,
-          "notes": "The best model for coding and agentic tasks across domains"
+          "notes": "The best model for coding and agentic tasks across domains (using chat-latest variant)"
         },
         {
           "id": "gpt-5-mini",
