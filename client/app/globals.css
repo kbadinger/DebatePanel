@@ -254,16 +254,9 @@ input:focus, textarea:focus, select:focus {
   }
 }
 
-/* Typewriter effect for headers */
+/* Simple text styles */
 .typewriter {
-  overflow: hidden;
-  white-space: nowrap;
-  animation: typewriter 2s steps(40, end);
-}
-
-.typewriter::after {
-  content: '|';
-  animation: blink 1s infinite;
+  /* Removed typewriter animation - too AI-ish */
 }
 
 /* Shimmer effect for buttons */
