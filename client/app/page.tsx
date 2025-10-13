@@ -173,7 +173,7 @@ Option 3 - Flexible/Hybrid Approach:
         <div className="absolute bottom-20 left-1/2 w-72 h-72 bg-cyan-200 rounded-full mix-blend-multiply filter blur-3xl opacity-10 animate-float" style={{ animationDelay: '4s' }}></div>
       </div>
       
-      <div className={`${status === 'unauthenticated' ? 'max-w-5xl' : 'max-w-2xl'} mx-auto pt-12 px-4 relative z-10`}>
+      <div className={`${status === 'unauthenticated' ? 'max-w-5xl' : 'max-w-2xl lg:max-w-4xl xl:max-w-5xl 2xl:max-w-6xl'} mx-auto pt-12 px-4 relative z-10`}>
         <div className="mb-8 text-center debate-card-enter">
           <h1 className="text-5xl font-black mb-3">
             <span className="text-blue-600">AI Decision</span>

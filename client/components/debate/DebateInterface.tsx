@@ -589,7 +589,7 @@ export function DebateInterface({ config, onComplete }: DebateInterfaceProps) {
   ].reverse(); // Newest responses at top
   
   return (
-    <div className="max-w-7xl mx-auto p-6">
+    <div className="max-w-7xl 2xl:max-w-[1600px] mx-auto p-6">
       <div className="mb-8 text-center bg-white rounded-xl shadow-lg p-8 border border-slate-200">
         <h1 className="text-3xl font-bold mb-4 text-gray-900">{config.topic}</h1>
         {config.description && (
