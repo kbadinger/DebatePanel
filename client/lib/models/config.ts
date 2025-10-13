@@ -179,9 +179,9 @@ export interface ProviderExpansion {
 const FEATURED_MODELS: Model[] = [
   // OpenAI - Flagship Models (Curated via Model Discovery System)
   withModelInfo({
-    id: 'gpt-5',
+    id: 'gpt-5-chat-latest',
     provider: 'openai',
-    name: 'gpt-5',
+    name: 'gpt-5-chat-latest',
     displayName: 'GPT-5'
   }),
   withModelInfo({
