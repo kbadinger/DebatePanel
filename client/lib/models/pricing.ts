@@ -11,6 +11,27 @@ export interface ModelPricing {
   platformMarkup: number; // Our markup percentage (e.g., 0.3 for 30%)
 }
 
+/**
+ * MARKUP STRATEGY (Hybrid Routing Architecture)
+ *
+ * Direct API (0.30 = 30% markup):
+ *   - OpenAI, Anthropic, Google, xAI, DeepSeek, Perplexity
+ *   - Best margins, full control, fastest feature access
+ *
+ * OpenRouter - Mainstream (0.40 = 40% markup):
+ *   - Meta Llama, Mistral (major providers without direct integration yet)
+ *   - Popular models via OpenRouter for convenience
+ *   - Monitor usage - if >500 debates/month, build direct integration
+ *
+ * OpenRouter - Fringe (0.50 = 50% markup):
+ *   - Kimi, Qwen, Flux, and other niche providers
+ *   - Lower volume = higher markup justified
+ *   - Fast time-to-market without full integration cost
+ *
+ * Pricing auto-populated by OpenRouter discovery system.
+ * See: lib/models/openrouter-discovery.ts
+ */
+
 // Actual costs from providers (as of September 2025)
 export const MODEL_PRICING: Record<string, ModelPricing> = {
   // OpenAI Models - Current Generation
@@ -94,6 +115,26 @@ export const MODEL_PRICING: Record<string, ModelPricing> = {
     providerBaseCost: 0.00045,
     platformMarkup: 0.3
   },
+  'gpt-5-pro': {
+    modelId: 'gpt-5-pro',
+    costPer1kTokens: {
+      input: 0.002,  // Premium GPT-5 tier
+      output: 0.015
+    },
+    costCategory: 'flagship',
+    providerBaseCost: 0.017,
+    platformMarkup: 0.3
+  },
+  'gpt-5-codex': {
+    modelId: 'gpt-5-codex',
+    costPer1kTokens: {
+      input: 0.00125,  // Coding specialist
+      output: 0.010
+    },
+    costCategory: 'premium',
+    providerBaseCost: 0.01125,
+    platformMarkup: 0.3
+  },
   'o1': {
     modelId: 'o1',
     costPer1kTokens: {
@@ -114,7 +155,27 @@ export const MODEL_PRICING: Record<string, ModelPricing> = {
     providerBaseCost: 0.040,
     platformMarkup: 0.3
   },
-  
+  'o3-deep-research': {
+    modelId: 'o3-deep-research',
+    costPer1kTokens: {
+      input: 0.025,  // Deep research variant
+      output: 0.100
+    },
+    costCategory: 'flagship',
+    providerBaseCost: 0.125,
+    platformMarkup: 0.3
+  },
+  'o4-mini-deep-research': {
+    modelId: 'o4-mini-deep-research',
+    costPer1kTokens: {
+      input: 0.010,  // Efficient deep research
+      output: 0.040
+    },
+    costCategory: 'premium',
+    providerBaseCost: 0.050,
+    platformMarkup: 0.3
+  },
+
   // OpenAI - Secondary Tier (Older Models)
   'o1-mini': {
     modelId: 'o1-mini',
@@ -156,6 +217,16 @@ export const MODEL_PRICING: Record<string, ModelPricing> = {
     },
     costCategory: 'flagship',
     providerBaseCost: 0.018,
+    platformMarkup: 0.3
+  },
+  'claude-haiku-4-5-20251001': {
+    modelId: 'claude-haiku-4-5-20251001',
+    costPer1kTokens: {
+      input: 0.001,  // $1 per 1M input = $0.001 per 1k
+      output: 0.005  // $5 per 1M output = $0.005 per 1k
+    },
+    costCategory: 'standard',
+    providerBaseCost: 0.006,
     platformMarkup: 0.3
   },
   'claude-opus-4-1-20250805': {
@@ -228,7 +299,27 @@ export const MODEL_PRICING: Record<string, ModelPricing> = {
     providerBaseCost: 0.120,
     platformMarkup: 0.3
   },
-  
+  'claude-3-5-haiku-20241022': {
+    modelId: 'claude-3-5-haiku-20241022',
+    costPer1kTokens: {
+      input: 0.001,  // $1 per 1M input
+      output: 0.005  // $5 per 1M output
+    },
+    costCategory: 'standard',
+    providerBaseCost: 0.006,
+    platformMarkup: 0.3
+  },
+  'claude-3-haiku-20240307': {
+    modelId: 'claude-3-haiku-20240307',
+    costPer1kTokens: {
+      input: 0.00025,  // $0.25 per 1M input
+      output: 0.00125  // $1.25 per 1M output
+    },
+    costCategory: 'budget',
+    providerBaseCost: 0.00150,
+    platformMarkup: 0.3
+  },
+
   // Google Gemini Models
   'gemini-2.5-pro': {
     modelId: 'gemini-2.5-pro',
@@ -268,6 +359,26 @@ export const MODEL_PRICING: Record<string, ModelPricing> = {
     },
     costCategory: 'budget',
     providerBaseCost: 0.0005,
+    platformMarkup: 0.3
+  },
+  'gemini-2.0-pro-exp': {
+    modelId: 'gemini-2.0-pro-exp',
+    costPer1kTokens: {
+      input: 0.00125,  // Experimental Pro pricing
+      output: 0.005
+    },
+    costCategory: 'premium',
+    providerBaseCost: 0.00625,
+    platformMarkup: 0.3
+  },
+  'gemini-2.0-flash-thinking-exp': {
+    modelId: 'gemini-2.0-flash-thinking-exp',
+    costPer1kTokens: {
+      input: 0.00015,  // Thinking mode
+      output: 0.0006
+    },
+    costCategory: 'standard',
+    providerBaseCost: 0.00075,
     platformMarkup: 0.3
   },
   'gemini-1.5-pro': {
@@ -342,7 +453,37 @@ export const MODEL_PRICING: Record<string, ModelPricing> = {
     providerBaseCost: 0.010,
     platformMarkup: 0.3
   },
-  
+  'grok-4-fast-reasoning': {
+    modelId: 'grok-4-fast-reasoning',
+    costPer1kTokens: {
+      input: 0.010,  // Fast reasoning variant
+      output: 0.040
+    },
+    costCategory: 'premium',
+    providerBaseCost: 0.050,
+    platformMarkup: 0.3
+  },
+  'grok-4-fast-non-reasoning': {
+    modelId: 'grok-4-fast-non-reasoning',
+    costPer1kTokens: {
+      input: 0.008,  // Fast non-reasoning variant
+      output: 0.032
+    },
+    costCategory: 'premium',
+    providerBaseCost: 0.040,
+    platformMarkup: 0.3
+  },
+  'grok-3-mini': {
+    modelId: 'grok-3-mini',
+    costPer1kTokens: {
+      input: 0.002,  // Mini variant
+      output: 0.008
+    },
+    costCategory: 'standard',
+    providerBaseCost: 0.010,
+    platformMarkup: 0.3
+  },
+
   // Perplexity Models (per search, not tokens)
   'sonar-pro': {
     modelId: 'sonar-pro',
@@ -388,6 +529,16 @@ export const MODEL_PRICING: Record<string, ModelPricing> = {
   // DeepSeek Models (Very competitive pricing)
   'deepseek-v3.1': {
     modelId: 'deepseek-v3.1',
+    costPer1kTokens: {
+      input: 0.00027,  // Extremely cost-effective
+      output: 0.0011
+    },
+    costCategory: 'budget',
+    providerBaseCost: 0.00137,
+    platformMarkup: 0.3
+  },
+  'deepseek-chat-v3.1': {
+    modelId: 'deepseek-chat-v3.1',
     costPer1kTokens: {
       input: 0.00027,  // Extremely cost-effective
       output: 0.0011
@@ -502,6 +653,16 @@ export const MODEL_PRICING: Record<string, ModelPricing> = {
     providerBaseCost: 0.012,
     platformMarkup: 0.3
   },
+  'mistral-small-latest': {
+    modelId: 'mistral-small-latest',
+    costPer1kTokens: {
+      input: 0.001,
+      output: 0.003
+    },
+    costCategory: 'standard',
+    providerBaseCost: 0.004,
+    platformMarkup: 0.3
+  },
   'mistral-medium-2505': {
     modelId: 'mistral-medium-2505',
     costPer1kTokens: {
@@ -536,6 +697,16 @@ export const MODEL_PRICING: Record<string, ModelPricing> = {
   },
   
   // Moonshot Kimi Models
+  'kimi-k2-preview': {
+    modelId: 'kimi-k2-preview',
+    costPer1kTokens: {
+      input: 0.0003,  // Latest K2 preview
+      output: 0.0012
+    },
+    costCategory: 'budget',
+    providerBaseCost: 0.0015,
+    platformMarkup: 0.3
+  },
   'kimi-k2-instruct': {
     modelId: 'kimi-k2-instruct',
     costPer1kTokens: {

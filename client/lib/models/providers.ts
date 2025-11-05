@@ -19,6 +19,24 @@ export const deepseek = createOpenAI({
   apiKey: process.env.DEEPSEEK_API_KEY,
 });
 
+// Meta/Llama via OpenRouter (using OpenAI-compatible API)
+// Note: Meta doesn't have a direct API yet, so we route through OpenRouter
+// This gives us access to Llama models with unified billing
+export const meta = createOpenAI({
+  baseURL: 'https://openrouter.ai/api/v1',
+  apiKey: process.env.OPENROUTER_API_KEY,
+  headers: {
+    'HTTP-Referer': process.env.NEXTAUTH_URL || 'https://debatepanel.com',
+    'X-Title': 'DebatePanel'
+  }
+});
+
+// Kimi/Moonshot AI
+export const kimi = createOpenAI({
+  baseURL: 'https://api.moonshot.cn/v1',
+  apiKey: process.env.KIMI_API_KEY,
+});
+
 // Standard providers
 export { openai } from '@ai-sdk/openai';
 export { anthropic } from '@ai-sdk/anthropic';

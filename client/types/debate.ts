@@ -11,6 +11,7 @@ export interface Model {
   provider: ModelProvider;
   name: string;
   displayName: string;
+  routeVia?: 'direct' | 'openrouter'; // How to route inference requests (default: direct)
   costInfo?: {
     estimatedCostPerResponse: number;
     category: 'budget' | 'standard' | 'premium' | 'luxury';

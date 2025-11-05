@@ -1,42 +1,54 @@
 import { Model, ModelStrength } from '@/types/debate';
 import { MODEL_PRICING, getCostEmoji } from './pricing';
 
-// Context limits for different model families (in tokens) - Updated September 2025
+// Context limits for different model families (in tokens) - Updated November 2025
 export const MODEL_CONTEXT_LIMITS = {
   // OpenAI - Flagship models have large context windows
   'gpt-5-chat-latest': 1000000, // 1M token context window (working variant)
+  'gpt-5-pro': 1000000, // 1M token context window
   'gpt-5-mini': 1000000, // 1M token context window
   'gpt-5-nano': 128000, // 128k token context window
+  'gpt-5-codex': 1000000, // 1M token context window
   'gpt-4o': 128000,
   'gpt-4o-mini': 128000,
   'o1': 200000,
   'o1-mini': 128000,
   'o3': 200000,
   'o3-mini': 200000,
+  'o3-deep-research': 200000, // Deep research variant
   'o4-mini': 200000,
+  'o4-mini-deep-research': 200000, // Deep research variant
 
   // Anthropic - Large context windows for Claude 4+ series
   'claude-sonnet-4-5-20250929': 200000, // Claude 4.5 - 200k context
+  'claude-haiku-4-5-20251001': 200000, // Claude Haiku 4.5 - 200k context
   'claude-opus-4-1-20250805': 200000, // Flagship Claude 4.1 - 200k context
   'claude-sonnet-4-20250514': 200000, // Claude 4 - 200k context
   'claude-opus-4-20250514': 200000, // Claude 4 - 200k context
   'claude-3-7-sonnet-20250219': 200000, // Advanced Claude - 200k context
+  'claude-3-5-haiku-20241022': 200000, // Claude 3.5 Haiku - 200k context
   'claude-3-5-sonnet-20241022': 200000,
   'claude-3-5-sonnet-20240620': 200000,
+  'claude-3-haiku-20240307': 200000, // Claude 3 Haiku - 200k context
   'claude-3-opus-20240229': 200000,
 
   // Google - Unlimited for Gemini 2.5 Pro
   'gemini-2.5-pro': Infinity, // Remove artificial limits - highest context model
   'gemini-2.5-flash': 1048576, // 1M tokens
   'gemini-2.5-flash-lite': 1048576,
+  'gemini-2.0-pro-exp': 1048576, // 1M tokens (experimental)
   'gemini-2.0-flash': 1048576, // 1M tokens
+  'gemini-2.0-flash-thinking-exp': 1048576, // 1M tokens (thinking mode)
   'gemini-1.5-pro': 2000000, // 2M tokens
   'gemini-1.5-flash': 1000000,
 
   // xAI - Keep conservative for now
   'grok-4-0709': 256000, // Slightly higher for newest
   'grok-4': 200000,
+  'grok-4-fast-reasoning': 256000, // Fast reasoning variant
+  'grok-4-fast-non-reasoning': 256000, // Fast non-reasoning variant
   'grok-3': 128000,
+  'grok-3-mini': 128000, // Grok 3 Mini
   'grok-2': 131072,
 
   // DeepSeek - Unlimited for reasoning model
@@ -46,55 +58,69 @@ export const MODEL_CONTEXT_LIMITS = {
   'deepseek-reasoner': 200000,
 
   // Other providers
+  'mistral-large-latest': 128000,
+  'mistral-small-latest': 128000,
   'mistral-medium-2505': 128000,
   'pixtral-large-2411': 128000,
+  'kimi-k2-preview': 200000, // New K2 variant
   'kimi-k2-instruct': 200000,
   'kimi-k1.5': 200000,
   'llama-4-maverick': 256000,
   'llama-4-scout': 128000,
 };
 
-// Model strengths and suggested roles - Updated for September 2025
+// Model strengths and suggested roles - Updated for November 2025
 const MODEL_ROLES: Record<string, { strengths: ModelStrength[], role: string }> = {
   // OpenAI - Current Models
   'gpt-5-chat-latest': { strengths: ['business', 'analytical', 'creative', 'technical'], role: 'Most advanced flagship model - excels across all domains' },
+  'gpt-5-pro': { strengths: ['business', 'analytical', 'creative', 'technical'], role: 'Premium GPT-5 tier with enhanced capabilities' },
   'gpt-5-mini': { strengths: ['business', 'analytical', 'general'], role: 'Fast and efficient variant of GPT-5' },
   'gpt-5-nano': { strengths: ['business', 'general'], role: 'Ultra-efficient GPT-5 for quick tasks' },
+  'gpt-5-codex': { strengths: ['technical', 'analytical'], role: 'Specialized coding and software development model' },
   'gpt-4o': { strengths: ['business', 'general', 'creative'], role: 'Balanced business and creative analysis' },
   'gpt-4o-mini': { strengths: ['business', 'general'], role: 'Efficient business considerations' },
-  'o4-mini': { strengths: ['analytical'], role: 'Efficient reasoning and analysis' },
-  
+  'o4-mini': { strengths: ['analytical', 'technical'], role: 'Latest reasoning model - efficient problem-solving' },
+  'o4-mini-deep-research': { strengths: ['analytical', 'research', 'technical'], role: 'Deep research with efficient reasoning' },
+
   // OpenAI - Secondary Tier
   'o1': { strengths: ['analytical', 'technical'], role: 'Deep logical analysis and complex reasoning' },
   'o1-mini': { strengths: ['analytical'], role: 'Quick logical analysis' },
   'o3': { strengths: ['analytical', 'technical'], role: 'Advanced problem-solving and technical analysis' },
   'o3-mini': { strengths: ['analytical'], role: 'Efficient reasoning and problem-solving' },
-  
+  'o3-deep-research': { strengths: ['analytical', 'research', 'technical'], role: 'Deep research with advanced reasoning' },
+
   // Anthropic - Claude 4.5, 4.1 and 3.5 Series
   'claude-sonnet-4-5-20250929': { strengths: ['technical', 'analytical', 'ethical'], role: 'Best coding model in the world - excels at complex agents and reasoning' },
+  'claude-haiku-4-5-20251001': { strengths: ['general', 'ethical', 'business'], role: 'Fast and efficient Claude 4.5 - excellent value for cost' },
   'claude-opus-4-1-20250805': { strengths: ['ethical', 'analytical', 'general'], role: 'Most advanced Claude model with superior reasoning and ethical analysis' },
   'claude-sonnet-4-20250514': { strengths: ['ethical', 'analytical', 'general'], role: 'Claude 4 with balanced reasoning and creative capabilities' },
   'claude-opus-4-20250514': { strengths: ['ethical', 'analytical', 'general'], role: 'Claude 4 Opus with deep analytical and ethical reasoning' },
   'claude-3-7-sonnet-20250219': { strengths: ['ethical', 'analytical', 'general'], role: 'Advanced Sonnet model with enhanced capabilities' },
+  'claude-3-5-haiku-20241022': { strengths: ['general', 'ethical', 'business'], role: 'Fast and cost-effective Claude 3.5 - great for budget debates' },
   'claude-3-5-sonnet-20241022': { strengths: ['general', 'ethical', 'analytical'], role: 'Balanced perspective with ethical considerations' },
   'claude-3-5-sonnet-20240620': { strengths: ['general', 'ethical', 'analytical'], role: 'Ethical reasoning and nuanced analysis' },
+  'claude-3-haiku-20240307': { strengths: ['general', 'ethical', 'business'], role: 'Original fast Claude 3 model - budget-friendly' },
   'claude-3-opus-20240229': { strengths: ['ethical', 'analytical', 'general'], role: 'Deep ethical implications and comprehensive analysis' },
   
   // Google Gemini
   'gemini-2.5-pro': { strengths: ['research', 'analytical', 'technical'], role: 'Comprehensive research and technical analysis' },
   'gemini-2.5-flash': { strengths: ['research', 'general'], role: 'Efficient research and broad analysis' },
   'gemini-2.5-flash-lite': { strengths: ['research'], role: 'Ultra-efficient research synthesis' },
+  'gemini-2.0-pro-exp': { strengths: ['research', 'analytical', 'technical'], role: 'Experimental Pro 2.0 - cutting-edge capabilities' },
   'gemini-2.0-flash': { strengths: ['research', 'general'], role: 'Research-backed general analysis' },
+  'gemini-2.0-flash-thinking-exp': { strengths: ['analytical', 'research'], role: 'Thinking mode with chain-of-thought reasoning' },
   'gemini-1.5-pro': { strengths: ['research', 'general'], role: 'Broad knowledge and research synthesis' },
   'gemini-1.5-flash': { strengths: ['research'], role: 'Quick research and information synthesis' },
   'gemini-1.5-flash-8b': { strengths: ['research'], role: 'Lightweight research assistance' },
-  
+
   // X.AI Grok
   'grok-4-0709': { strengths: ['creative', 'business', 'research'], role: 'Latest Grok with unconventional thinking and real-time insights' },
   'grok-4': { strengths: ['creative', 'business', 'research'], role: 'Unconventional thinking with real-time search' },
+  'grok-4-fast-reasoning': { strengths: ['creative', 'analytical'], role: 'Fast reasoning with unconventional thinking' },
+  'grok-4-fast-non-reasoning': { strengths: ['creative', 'business'], role: 'Fast general analysis with creative perspectives' },
   'grok-3': { strengths: ['creative', 'business'], role: 'Creative solutions and alternative perspectives' },
   'grok-3-fast': { strengths: ['creative'], role: 'Fast creative analysis and unique perspectives' },
-  'grok-3-mini': { strengths: ['creative'], role: 'Efficient creative thinking and alternative viewpoints' },
+  'grok-3-mini': { strengths: ['creative', 'business'], role: 'Efficient creative thinking and alternative viewpoints' },
   'grok-2': { strengths: ['creative'], role: 'Alternative perspectives and creative approaches' },
   'grok-2-1212': { strengths: ['creative'], role: 'Creative analysis and unique viewpoints' },
   
@@ -105,7 +131,8 @@ const MODEL_ROLES: Record<string, { strengths: ModelStrength[], role: string }> 
   'sonar': { strengths: ['research'], role: 'Web-informed perspectives and current data' },
   
   // DeepSeek
-  'deepseek-v3.1': { strengths: ['analytical', 'technical'], role: 'Hybrid reasoning and technical analysis' },
+  'deepseek-v3.1': { strengths: ['analytical', 'technical'], role: 'Latest hybrid reasoning and technical analysis model' },
+  'deepseek-chat-v3.1': { strengths: ['analytical', 'technical'], role: 'Latest hybrid reasoning and technical analysis model' },
   'deepseek-r1-0528': { strengths: ['analytical', 'technical'], role: 'Enhanced mathematical and logical reasoning' },
   'deepseek-chat': { strengths: ['technical', 'analytical'], role: 'Technical expertise and detailed analysis' },
   'deepseek-reasoner': { strengths: ['analytical', 'technical'], role: 'Mathematical and logical reasoning' },
@@ -117,6 +144,8 @@ const MODEL_ROLES: Record<string, { strengths: ModelStrength[], role: string }> 
   'llama-3.1-405b': { strengths: ['technical', 'analytical'], role: 'Large-scale technical and analytical reasoning' },
   
   // Mistral
+  'mistral-large-latest': { strengths: ['technical', 'business'], role: 'Latest European flagship - technical and business analysis' },
+  'mistral-small-latest': { strengths: ['business', 'general'], role: 'Latest efficient Mistral - cost-effective European perspective' },
   'mistral-large-24-11': { strengths: ['technical', 'business'], role: 'European perspective and technical analysis' },
   'mistral-medium-2505': { strengths: ['business', 'general'], role: 'Balanced European perspective' },
   'pixtral-large-2411': { strengths: ['technical'], role: 'Multimodal analysis and technical insights' },
@@ -125,6 +154,7 @@ const MODEL_ROLES: Record<string, { strengths: ModelStrength[], role: string }> 
   'command-a-03-2025': { strengths: ['business', 'analytical'], role: 'Enterprise-focused business analysis' },
   
   // Moonshot Kimi
+  'kimi-k2-preview': { strengths: ['technical', 'analytical'], role: 'Latest Kimi K2 - advanced coding and technical problem-solving' },
   'kimi-k2-instruct': { strengths: ['technical', 'analytical'], role: 'Advanced coding and technical problem-solving' },
   'kimi-k1.5': { strengths: ['technical'], role: 'Technical analysis with long context' },
   
@@ -185,18 +215,36 @@ const FEATURED_MODELS: Model[] = [
     displayName: 'GPT-5'
   }),
   withModelInfo({
+    id: 'gpt-5-pro',
+    provider: 'openai',
+    name: 'gpt-5-pro',
+    displayName: 'GPT-5 Pro'
+  }),
+  withModelInfo({
     id: 'gpt-5-mini',
     provider: 'openai',
     name: 'gpt-5-mini',
     displayName: 'GPT-5 Mini'
   }),
-  
+  withModelInfo({
+    id: 'o4-mini',
+    provider: 'openai',
+    name: 'o4-mini',
+    displayName: 'o4 Mini'
+  }),
+
   // Anthropic - Flagship Models (Curated via Model Discovery System)
   withModelInfo({
     id: 'claude-sonnet-4-5-20250929',
     provider: 'anthropic',
     name: 'claude-sonnet-4-5-20250929',
     displayName: 'Claude Sonnet 4.5 (Sep 2025)'
+  }),
+  withModelInfo({
+    id: 'claude-haiku-4-5-20251001',
+    provider: 'anthropic',
+    name: 'claude-haiku-4-5-20251001',
+    displayName: 'Claude Haiku 4.5 (Oct 2025)'
   }),
   withModelInfo({
     id: 'claude-opus-4-1-20250805',
@@ -222,7 +270,7 @@ const FEATURED_MODELS: Model[] = [
     name: 'claude-3-7-sonnet-20250219',
     displayName: 'Claude Sonnet 3.7 (Feb 2025)'
   }),
-  
+
   // Google - Flagship Gemini 2.5 Series (Latest Generation)
   withModelInfo({
     id: 'gemini-2.5-pro',
@@ -236,7 +284,13 @@ const FEATURED_MODELS: Model[] = [
     name: 'gemini-2.5-flash',
     displayName: 'Gemini 2.5 Flash'
   }),
-  
+  withModelInfo({
+    id: 'gemini-2.0-flash',
+    provider: 'google',
+    name: 'gemini-2.0-flash',
+    displayName: 'Gemini 2.0 Flash'
+  }),
+
   // xAI - Flagship Grok Models (Discovered via API)
   withModelInfo({
     id: 'grok-4-0709',
@@ -249,12 +303,46 @@ const FEATURED_MODELS: Model[] = [
     provider: 'xai',
     name: 'grok-3',
     displayName: 'Grok 3'
+  }),
+
+  // Perplexity - Research Models
+  withModelInfo({
+    id: 'sonar-pro',
+    provider: 'perplexity',
+    name: 'sonar-pro',
+    displayName: 'Sonar Pro'
+  }),
+
+  // DeepSeek - Flagship Models
+  withModelInfo({
+    id: 'deepseek-v3.1',
+    provider: 'deepseek',
+    name: 'deepseek-chat-v3.1',
+    displayName: 'DeepSeek V3.1'
   })
 ];
 
 // EXPANDABLE MODELS (shown when provider is expanded)
 const EXPANDABLE_MODELS: Record<string, Model[]> = {
   openai: [
+    withModelInfo({
+      id: 'o3-deep-research',
+      provider: 'openai',
+      name: 'o3-deep-research',
+      displayName: 'o3 Deep Research'
+    }),
+    withModelInfo({
+      id: 'o4-mini-deep-research',
+      provider: 'openai',
+      name: 'o4-mini-deep-research',
+      displayName: 'o4 Mini Deep Research'
+    }),
+    withModelInfo({
+      id: 'gpt-5-codex',
+      provider: 'openai',
+      name: 'gpt-5-codex',
+      displayName: 'GPT-5 Codex'
+    }),
     withModelInfo({
       id: 'gpt-5-nano',
       provider: 'openai',
@@ -276,6 +364,18 @@ const EXPANDABLE_MODELS: Record<string, Model[]> = {
   ],
   anthropic: [
     withModelInfo({
+      id: 'claude-3-5-haiku-20241022',
+      provider: 'anthropic',
+      name: 'claude-3-5-haiku-20241022',
+      displayName: 'Claude 3.5 Haiku (Oct 2024)'
+    }),
+    withModelInfo({
+      id: 'claude-3-haiku-20240307',
+      provider: 'anthropic',
+      name: 'claude-3-haiku-20240307',
+      displayName: 'Claude 3 Haiku'
+    }),
+    withModelInfo({
       id: 'claude-3-5-sonnet-20240620',
       provider: 'anthropic',
       name: 'claude-3-5-sonnet-20240620',
@@ -290,15 +390,43 @@ const EXPANDABLE_MODELS: Record<string, Model[]> = {
   ],
   google: [
     withModelInfo({
+      id: 'gemini-2.0-pro-exp',
+      provider: 'google',
+      name: 'gemini-2.0-pro-exp',
+      displayName: 'Gemini 2.0 Pro (Experimental)'
+    }),
+    withModelInfo({
+      id: 'gemini-2.0-flash-thinking-exp',
+      provider: 'google',
+      name: 'gemini-2.0-flash-thinking-exp',
+      displayName: 'Gemini 2.0 Flash Thinking'
+    }),
+    withModelInfo({
       id: 'gemini-2.5-flash-lite',
       provider: 'google',
       name: 'gemini-2.5-flash-lite',
       displayName: 'Gemini 2.5 Flash Lite'
     })
-    // gemini-2.0-flash is in FEATURED_MODELS - don't duplicate here
   ],
   xai: [
-    // Grok 3 is already in FEATURED_MODELS - additional models would go here
+    withModelInfo({
+      id: 'grok-4-fast-reasoning',
+      provider: 'xai',
+      name: 'grok-4-fast-reasoning',
+      displayName: 'Grok 4 Fast (Reasoning)'
+    }),
+    withModelInfo({
+      id: 'grok-4-fast-non-reasoning',
+      provider: 'xai',
+      name: 'grok-4-fast-non-reasoning',
+      displayName: 'Grok 4 Fast (Non-Reasoning)'
+    }),
+    withModelInfo({
+      id: 'grok-3-mini',
+      provider: 'xai',
+      name: 'grok-3-mini',
+      displayName: 'Grok 3 Mini'
+    })
   ],
   perplexity: [
     withModelInfo({
@@ -332,10 +460,36 @@ const EXPANDABLE_MODELS: Record<string, Model[]> = {
   ],
   mistral: [
     withModelInfo({
+      id: 'mistral-large-latest',
+      provider: 'mistral',
+      name: 'mistral-large-latest',
+      displayName: 'Mistral Large (Latest)'
+    }),
+    withModelInfo({
+      id: 'mistral-small-latest',
+      provider: 'mistral',
+      name: 'mistral-small-latest',
+      displayName: 'Mistral Small (Latest)'
+    }),
+    withModelInfo({
       id: 'mistral-medium-2505',
       provider: 'mistral',
       name: 'mistral-medium-2505',
       displayName: 'Mistral Medium 3'
+    })
+  ],
+  kimi: [
+    withModelInfo({
+      id: 'kimi-k2-preview',
+      provider: 'kimi',
+      name: 'kimi-k2-preview',
+      displayName: 'Kimi K2 Preview'
+    }),
+    withModelInfo({
+      id: 'kimi-k2-instruct',
+      provider: 'kimi',
+      name: 'kimi-k2-instruct',
+      displayName: 'Kimi K2 Instruct'
     })
   ]
 };

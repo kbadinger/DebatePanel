@@ -2,20 +2,30 @@
 
 /**
  * Model Discovery Script
- * 
+ *
  * This script discovers all available models from AI providers and can update
  * our configuration files automatically.
- * 
+ *
+ * Uses OpenRouter as primary discovery source for comprehensive model catalog.
+ *
  * Usage:
  * npm run discover-models          # Discover and show results
  * npm run discover-models --update # Discover and update config files
  * npm run discover-models --test   # Test specific models
+ * npm run discover-models --openrouter # Use OpenRouter only
  */
 
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { modelDiscovery, DiscoveredModel, ModelDiscoveryResult } from '../lib/models/discovery.js';
+import {
+  discoverModels as discoverOpenRouterModels,
+  generateModelConfig,
+  generatePricingConfig,
+  generateParameterSchemas,
+  DiscoveryResult as OpenRouterDiscoveryResult
+} from '../lib/models/openrouter-discovery.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -36,15 +46,50 @@ async function main() {
   const args = process.argv.slice(2);
   const shouldUpdate = args.includes('--update');
   const shouldTest = args.includes('--test');
+  const useOpenRouterOnly = args.includes('--openrouter');
 
   console.log('🔍 Discovering available AI models from all providers...\n');
 
   try {
+    let results: ModelDiscoveryResult[];
+    let openRouterResult: OpenRouterDiscoveryResult | null = null;
+
+    // Try OpenRouter first for comprehensive discovery
+    if (useOpenRouterOnly || process.env.OPENROUTER_API_KEY) {
+      console.log('🌐 Using OpenRouter for model discovery...\n');
+      openRouterResult = await discoverOpenRouterModels();
+
+      if (openRouterResult.error) {
+        console.error(`❌ OpenRouter discovery failed: ${openRouterResult.error}`);
+        if (useOpenRouterOnly) {
+          process.exit(1);
+        }
+        console.log('⚠️  Falling back to direct provider APIs...\n');
+      } else {
+        console.log(`✅ OpenRouter discovery successful: ${openRouterResult.stats.total} models found`);
+        console.log(`   • ${openRouterResult.stats.direct} with direct integration`);
+        console.log(`   • ${openRouterResult.stats.openrouter} via OpenRouter routing`);
+        if (openRouterResult.stats.newProviders.length > 0) {
+          console.log(`   • 🆕 New providers: ${openRouterResult.stats.newProviders.join(', ')}`);
+        }
+        console.log('');
+
+        if (useOpenRouterOnly) {
+          // Display OpenRouter results and exit
+          displayOpenRouterResults(openRouterResult);
+          if (shouldUpdate) {
+            await updateConfigFilesFromOpenRouter(openRouterResult);
+          }
+          return;
+        }
+      }
+    }
+
     // Clear cache for fresh discovery
     modelDiscovery.clearCache();
-    
-    // Discover all models
-    const results = await modelDiscovery.discoverAllModels();
+
+    // Discover all models from direct APIs
+    results = await modelDiscovery.discoverAllModels();
     
     // Display results
     console.log('='.repeat(80));
@@ -154,14 +199,156 @@ async function getCurrentConfigModels(): Promise<string[]> {
 }
 
 async function updateConfigFiles(results: ModelDiscoveryResult[]) {
-  // TODO: Implement automatic config file updates
+  // TODO: Implement automatic config file updates for direct provider discovery
   // This would update config.ts, pricing.ts, etc. based on discovered models
-  
-  console.log('⚠️  Automatic config updates not yet implemented.');
+
+  console.log('⚠️  Automatic config updates not yet fully implemented for direct providers.');
+  console.log('💡 Use --openrouter flag for automatic config generation from OpenRouter.');
   console.log('Please manually update the following files based on discovery results:');
   console.log('  • lib/models/config.ts');
   console.log('  • lib/models/pricing.ts');
-  console.log('  • lib/models/model-registry.json');
+  console.log('  • lib/models/parameter-schemas.ts');
+}
+
+function displayOpenRouterResults(result: OpenRouterDiscoveryResult) {
+  console.log('\n' + '='.repeat(80));
+  console.log('📊 OPENROUTER DISCOVERY RESULTS');
+  console.log('='.repeat(80));
+
+  // Group by provider
+  const byProvider = new Map<string, typeof result.models>();
+  for (const model of result.models) {
+    if (!byProvider.has(model.provider)) {
+      byProvider.set(model.provider, []);
+    }
+    byProvider.get(model.provider)!.push(model);
+  }
+
+  // Display by provider
+  for (const [provider, models] of byProvider) {
+    console.log(`\n🏢 ${provider.toUpperCase()}`);
+    console.log('-'.repeat(40));
+    console.log(`Found ${models.length} models`);
+
+    const directModels = models.filter(m => m.routing.recommended === 'direct');
+    const openrouterModels = models.filter(m => m.routing.recommended === 'openrouter');
+
+    if (directModels.length > 0) {
+      console.log(`  ✅ ${directModels.length} with direct integration`);
+    }
+    if (openrouterModels.length > 0) {
+      console.log(`  🌐 ${openrouterModels.length} via OpenRouter routing`);
+    }
+
+    // Show sample models
+    const sample = models.slice(0, 5);
+    for (const model of sample) {
+      const routeIcon = model.routing.recommended === 'direct' ? '✅' : '🌐';
+      const price = `$${model.pricing.input.toFixed(4)}/1k`;
+      console.log(`  ${routeIcon} ${model.id} - ${price}`);
+    }
+
+    if (models.length > 5) {
+      console.log(`  ... and ${models.length - 5} more`);
+    }
+  }
+
+  console.log('\n' + '='.repeat(80));
+  console.log('📈 SUMMARY');
+  console.log('='.repeat(80));
+  console.log(`Total models: ${result.stats.total}`);
+  console.log(`Direct routing: ${result.stats.direct}`);
+  console.log(`OpenRouter routing: ${result.stats.openrouter}`);
+  console.log(`Providers: ${byProvider.size}`);
+  if (result.stats.newProviders.length > 0) {
+    console.log(`New providers detected: ${result.stats.newProviders.join(', ')}`);
+  }
+}
+
+async function updateConfigFilesFromOpenRouter(result: OpenRouterDiscoveryResult) {
+  console.log('\n🔄 GENERATING CONFIGURATION CODE...\n');
+
+  // Filter to only new/updated models (you'd compare with existing config here)
+  const modelsToAdd = result.models.filter(m =>
+    m.routing.recommended === 'direct' || m.routing.recommended === 'openrouter'
+  );
+
+  if (modelsToAdd.length === 0) {
+    console.log('⚠️  No new models to add.');
+    return;
+  }
+
+  // Generate code
+  const configCode = generateModelConfig(modelsToAdd);
+  const pricingCode = generatePricingConfig(modelsToAdd);
+  const schemaCode = generateParameterSchemas(modelsToAdd);
+
+  // Write to output file
+  const outputDir = path.join(__dirname, '../generated');
+  if (!fs.existsSync(outputDir)) {
+    fs.mkdirSync(outputDir, { recursive: true });
+  }
+
+  const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+  const outputFile = path.join(outputDir, `model-updates-${timestamp}.ts`);
+
+  const output = `/**
+ * Auto-generated Model Configuration
+ * Generated: ${new Date().toISOString()}
+ * Source: OpenRouter Discovery
+ * Models: ${modelsToAdd.length}
+ */
+
+// ============================================================================
+// MODELS FOR config.ts
+// ============================================================================
+// Add these to FEATURED_MODELS, EXPANDABLE_MODELS, or SECONDARY_MODELS:
+
+${configCode}
+
+// ============================================================================
+// PRICING FOR pricing.ts
+// ============================================================================
+// Add these to MODEL_PRICING:
+
+${pricingCode}
+
+// ============================================================================
+// PARAMETER SCHEMAS FOR parameter-schemas.ts
+// ============================================================================
+// Add these to PARAMETER_SCHEMAS:
+
+${schemaCode}
+
+// ============================================================================
+// ROUTING SUMMARY
+// ============================================================================
+/*
+Direct API (${modelsToAdd.filter(m => m.routing.recommended === 'direct').length} models):
+${modelsToAdd
+  .filter(m => m.routing.recommended === 'direct')
+  .map(m => `  • ${m.id}`)
+  .join('\n')}
+
+OpenRouter Routing (${modelsToAdd.filter(m => m.routing.recommended === 'openrouter').length} models):
+${modelsToAdd
+  .filter(m => m.routing.recommended === 'openrouter')
+  .map(m => `  • ${m.id} - ${m.routing.reasoning}`)
+  .join('\n')}
+*/
+`;
+
+  fs.writeFileSync(outputFile, output, 'utf8');
+
+  console.log(`✅ Configuration code generated: ${outputFile}`);
+  console.log('\n📋 Next steps:');
+  console.log('1. Review the generated code');
+  console.log('2. Copy relevant sections to:');
+  console.log('   • lib/models/config.ts');
+  console.log('   • lib/models/pricing.ts');
+  console.log('   • lib/models/parameter-schemas.ts');
+  console.log('3. Test the changes locally');
+  console.log('4. Commit and push\n');
 }
 
 async function testModelResponses(results: ModelDiscoveryResult[]) {

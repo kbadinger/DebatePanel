@@ -4,13 +4,39 @@ This guide covers all AI model providers supported by DebatePanel and how to con
 
 ## How It Works
 
-The system **dynamically** shows only models from providers with configured API keys. Simply add an API key to your `.env` file and models from that provider will automatically appear in the interface.
+The system uses a **hybrid routing architecture**:
+- **Direct APIs**: Core providers (OpenAI, Anthropic, Google, etc.) use direct API integrations
+- **OpenRouter**: Fringe models and additional providers route through OpenRouter for convenience
+
+Simply add API keys to your `.env` file and models will automatically appear in the interface.
 
 ## Environment Variables
 
 Add these to your `.env.local` file:
 
-### Primary Providers (Recommended)
+### OpenRouter (Optional but Recommended)
+
+#### OpenRouter
+```env
+OPENROUTER_API_KEY=sk-or-v1-...
+```
+- **Purpose**: Discovery + access to 400+ models from various providers
+- **Get Key**: [OpenRouter API Keys](https://openrouter.ai/keys)
+- **Cost**: Variable (per-model pricing)
+- **Status**: 🌐 Recommended for comprehensive model coverage
+- **Note**: Used for model discovery (weekly automation) + runtime routing for fringe models
+
+**What OpenRouter Provides**:
+- Automatic model discovery and pricing updates
+- Access to models without individual provider API keys
+- Unified API interface for 400+ models
+- Models: Meta Llama, Mistral, Qwen, Kimi, Yi, and many more
+
+**When is it used?**
+1. **Model Discovery** (Weekly GitHub Action): Fetches latest models and pricing
+2. **Runtime** (For OpenRouter-routed models): Models marked with `routeVia: 'openrouter'`
+
+### Primary Providers (Recommended - Direct API)
 
 #### OpenAI
 ```env
@@ -41,6 +67,15 @@ GOOGLE_AI_API_KEY=AIzaSy...
 
 ### Secondary Providers
 
+#### Mistral
+```env
+MISTRAL_API_KEY=...
+```
+- **Models**: Mistral Large/Small Latest, Medium 3
+- **Get Key**: [Mistral La Plateforme](https://console.mistral.ai/)
+- **Cost**: Moderate
+- **Status**: ✅ Direct integration - European alternative with strong technical performance
+
 #### X.AI (Grok)
 ```env
 XAI_API_KEY=xai-...
@@ -68,26 +103,16 @@ DEEPSEEK_API_KEY=sk-...
 - **Cost**: Very Low
 - **Status**: 💰 Best value - excellent reasoning at low cost
 
-#### Meta (Llama)
+#### Meta (Llama) - Via OpenRouter
 ```env
-LLAMA_API_KEY=...
+# Meta models route through OpenRouter (no separate key needed)
+OPENROUTER_API_KEY=sk-or-v1-...
 ```
 - **Models**: Llama 4 Scout/Maverick, Llama 3.3 70B
-- **Get Key**: Multiple options:
-  - [OpenRouter](https://openrouter.ai/keys) (Free tier available)
-  - [Amazon Bedrock](https://aws.amazon.com/bedrock/)
-  - [Cloudflare Workers AI](https://developers.cloudflare.com/workers-ai/)
+- **Routing**: Via OpenRouter (free tier available!)
 - **Cost**: Free to Low
-- **Status**: 🆓 Free options available - good open-source alternative
-
-#### Mistral
-```env
-MISTRAL_API_KEY=...
-```
-- **Models**: Mistral Large 24.11, Mistral Medium 3
-- **Get Key**: [Mistral La Plateforme](https://console.mistral.ai/)
-- **Cost**: Moderate
-- **Status**: 🇪🇺 European alternative, strong technical performance
+- **Status**: 🆓 Free options available via OpenRouter - excellent open-source models
+- **Note**: Meta doesn't have a direct API yet, so we route through OpenRouter for unified access
 
 ### Specialized Providers
 
@@ -219,6 +244,51 @@ The DebatePanel pricing system automatically tracks and charges for actual usage
 - Use smaller/cheaper models for initial testing
 - Consider using GPT-4o-mini instead of GPT-4o for cost savings
 
+## Routing Strategy & Pricing Transparency
+
+DebatePanel uses different markup tiers based on routing method:
+
+### Direct API Routing (30% markup)
+**Providers**: OpenAI, Anthropic, Google, xAI, DeepSeek, Perplexity
+
+**Why lower markup?**
+- Direct API access = lower costs for us
+- Full control over rate limits and features
+- Fastest access to new model capabilities
+- Better margins = better pricing for you
+
+### OpenRouter Mainstream (40% markup)
+**Providers**: Meta Llama, Mistral (major providers without direct integration)
+
+**Why higher markup?**
+- OpenRouter adds their own markup to provider costs
+- Convenience factor - no separate API keys needed
+- Still good value, monitored for direct integration opportunity
+
+### OpenRouter Fringe (50% markup)
+**Providers**: Kimi, Qwen, Yi, Flux, and other niche models
+
+**Why highest markup?**
+- Lower volume models
+- Fast time-to-market without full integration costs
+- Access to rare/experimental models
+
+**Note**: Markups are applied to provider base costs, not your final price. You still get competitive pricing compared to direct provider access.
+
+## Model Discovery
+
+The system automatically discovers new models weekly using OpenRouter's API:
+
+1. **GitHub Action runs** every Monday at 9am UTC
+2. **Fetches** latest models, pricing, and capabilities from OpenRouter
+3. **Classifies** models by routing strategy (direct vs OpenRouter)
+4. **Creates PR** with auto-generated configuration code
+5. **Human reviews** (~15 min) and merges
+
+This means **new models appear within 7 days** of provider release, with zero manual maintenance.
+
+See `OPENROUTER_INTEGRATION.md` for full architecture details.
+
 ## Support
 
 For provider-specific issues:
@@ -226,6 +296,10 @@ For provider-specific issues:
 - Most providers have Discord/forums for API support
 - Some require business verification for higher rate limits
 
+For OpenRouter questions:
+- [OpenRouter Documentation](https://openrouter.ai/docs)
+- [OpenRouter Discord](https://discord.gg/openrouter)
+
 ---
 
-*Last Updated: September 2, 2025*
+*Last Updated: January 5, 2025*

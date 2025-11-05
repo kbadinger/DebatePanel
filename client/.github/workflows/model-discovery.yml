@@ -19,48 +19,38 @@ jobs:
         with:
           node-version: '20'
           cache: 'npm'
+          cache-dependency-path: debate-panel/package-lock.json
 
       - name: Install dependencies
+        working-directory: ./debate-panel
         run: npm ci
 
-      - name: Run model discovery scan
+      - name: Run OpenRouter model discovery
+        working-directory: ./debate-panel
         env:
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-          GOOGLE_AI_API_KEY: ${{ secrets.GOOGLE_AI_API_KEY }}
-          XAI_API_KEY: ${{ secrets.XAI_API_KEY }}
-          DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
-          MISTRAL_API_KEY: ${{ secrets.MISTRAL_API_KEY }}
-          PERPLEXITY_API_KEY: ${{ secrets.PERPLEXITY_API_KEY }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
         run: |
-          npm run scan-models --generate > discovery-report.txt
+          npm run discover-models -- --openrouter --update > discovery-report.txt 2>&1 || true
           cat discovery-report.txt
 
-      - name: Check for new models or deprecations
+      - name: Check for generated config files
         id: check_changes
+        working-directory: ./debate-panel
         run: |
-          # Check if new models were discovered
-          if grep -q "NEW MODELS DISCOVERED" discovery-report.txt; then
-            echo "new_models=true" >> $GITHUB_OUTPUT
-            echo "✅ New models found!"
-          else
-            echo "new_models=false" >> $GITHUB_OUTPUT
-          fi
-
-          # Check if deprecated models need retirement
-          if grep -q "DEPRECATED MODELS" discovery-report.txt; then
-            echo "deprecated_models=true" >> $GITHUB_OUTPUT
-            echo "⚠️ Deprecated models found!"
-          else
-            echo "deprecated_models=false" >> $GITHUB_OUTPUT
-          fi
-
-          # Create PR if either condition is true
-          if [ "$new_models" = "true" ] || [ "$deprecated_models" = "true" ]; then
+          # Check if config was generated
+          if [ -d "generated" ] && ls generated/model-updates-*.ts 1> /dev/null 2>&1; then
             echo "needs_pr=true" >> $GITHUB_OUTPUT
+            echo "✅ New model configurations generated!"
+
+            # Count new models
+            LATEST_FILE=$(ls -t generated/model-updates-*.ts | head -1)
+            NEW_COUNT=$(grep -c "withModelInfo" "$LATEST_FILE" || echo "0")
+            echo "new_count=$NEW_COUNT" >> $GITHUB_OUTPUT
+            echo "config_file=$LATEST_FILE" >> $GITHUB_OUTPUT
           else
             echo "needs_pr=false" >> $GITHUB_OUTPUT
-            echo "No changes needed"
+            echo "new_count=0" >> $GITHUB_OUTPUT
+            echo "No model updates needed"
           fi
 
       - name: Create Pull Request
@@ -72,58 +62,67 @@ jobs:
           branch: model-discovery-${{ github.run_number }}
           title: "🔄 AI Model Updates Detected"
           body: |
-            ## 🤖 Automated Model Discovery
+            ## 🤖 OpenRouter Model Discovery
 
-            This PR was automatically created by the model discovery workflow.
+            This PR was automatically created by the weekly model discovery workflow using OpenRouter.
 
-            ### What Changed?
+            ### 📊 Discovery Summary
 
-            ${{ steps.check_changes.outputs.new_models == 'true' && '✅ New models discovered' || '' }}
-            ${{ steps.check_changes.outputs.deprecated_models == 'true' && '⚠️ Deprecated models detected' || '' }}
+            - **Models Found**: ${{ steps.check_changes.outputs.new_count }} new/updated models
+            - **Source**: OpenRouter API
+            - **Generated Config**: `${{ steps.check_changes.outputs.config_file }}`
 
-            See the full details below:
+            ### 🔧 What's Included?
 
-            ```
-            $(cat discovery-report.txt)
-            ```
+            The auto-generated configuration file includes:
+            - ✅ Model definitions for `config.ts`
+            - ✅ Pricing data for `pricing.ts` (with routing-aware markup)
+            - ✅ Parameter schemas for `parameter-schemas.ts`
+            - ✅ Routing recommendations (direct vs OpenRouter)
 
-            ### Manual Steps Required
+            ### 📋 Manual Review Required (~15 min)
 
-            #### For New Models:
-            - [ ] Review new model IDs and display names
-            - [ ] Add pricing information to `lib/models/pricing.ts`
-            - [ ] Add model roles/strengths to `MODEL_ROLES` in `config.ts`
-            - [ ] Add context limits to `MODEL_CONTEXT_LIMITS`
-            - [ ] Test new models in development environment
+            - [ ] Review the generated config file in `generated/`
+            - [ ] Copy model definitions to appropriate tier in `config.ts`:
+              - FEATURED_MODELS (flagship models shown by default)
+              - EXPANDABLE_MODELS (shown on provider expansion)
+              - SECONDARY_MODELS (shown under "Show all models")
+            - [ ] Copy pricing entries to `pricing.ts`
+            - [ ] Copy parameter schemas to `parameter-schemas.ts`
+            - [ ] Assign model strengths/roles (if not auto-detected)
+            - [ ] Test in development environment
 
-            #### For Deprecated Models:
-            - [ ] Remove from `config.ts` or mark as deprecated
-            - [ ] Remove from `pricing.ts`
-            - [ ] Add deprecation note to `LATEST_MODELS_STATUS.md`
-            - [ ] Check if any active debates are using these models
-            - [ ] Consider migration path for existing users
+            ### 🎯 Routing Strategy
 
-            ### Configuration Code
+            Models are classified as:
+            - **Direct** (30% markup): Providers with direct API integration
+            - **OpenRouter Mainstream** (40% markup): Major providers via OpenRouter
+            - **OpenRouter Fringe** (50% markup): Niche models for fast time-to-market
 
-            The generated configuration code has been saved to `model-updates.ts`.
-            Copy the relevant sections to your configuration files.
+            See `OPENROUTER_INTEGRATION.md` for full architecture details.
+
+            ### 🚀 Deployment
+
+            After merging, Vercel will auto-deploy. New models will be available immediately.
 
             ---
 
-            🤖 This PR was generated automatically by GitHub Actions
+            🤖 Generated by GitHub Actions using OpenRouter API
+            📖 See full discovery report in workflow artifacts
           labels: |
             models
             automated
             needs-review
 
-      - name: Upload discovery report
+      - name: Upload discovery report and generated config
         uses: actions/upload-artifact@v4
         with:
-          name: model-discovery-report
+          name: model-discovery-report-${{ github.run_number }}
           path: |
-            discovery-report.txt
-            model-updates.ts
+            debate-panel/discovery-report.txt
+            debate-panel/generated/*.ts
           retention-days: 30
+          if-no-files-found: warn
 
       - name: Notify on failure
         if: failure()

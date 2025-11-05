@@ -20,11 +20,14 @@ jobs:
         with:
           node-version: '20'
           cache: 'npm'
+          cache-dependency-path: debate-panel/package-lock.json
 
       - name: Install dependencies
+        working-directory: ./debate-panel
         run: npm ci
 
       - name: Verify all configured models
+        working-directory: ./debate-panel
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
@@ -35,13 +38,14 @@ jobs:
           PERPLEXITY_API_KEY: ${{ secrets.PERPLEXITY_API_KEY }}
         run: |
           echo "Running model verification with API calls..."
-          npm run scan-models --verify > verification-report.txt
+          npm run scan-models -- --verify > verification-report.txt 2>&1 || true
           cat verification-report.txt
 
       - name: Check for errors
         id: check_errors
+        working-directory: ./debate-panel
         run: |
-          if grep -q "❌" verification-report.txt; then
+          if [ -f verification-report.txt ] && grep -q "❌" verification-report.txt; then
             echo "errors=true" >> $GITHUB_OUTPUT
             echo "::warning::Some models failed verification"
           else
@@ -55,8 +59,15 @@ jobs:
         with:
           script: |
             const fs = require('fs');
-            const report = fs.readFileSync('verification-report.txt', 'utf8');
-            const hasErrors = process.env.ERRORS === 'true';
+            const path = require('path');
+            const reportPath = path.join('debate-panel', 'verification-report.txt');
+            
+            let report = 'No verification report available.';
+            if (fs.existsSync(reportPath)) {
+              report = fs.readFileSync(reportPath, 'utf8');
+            }
+            
+            const hasErrors = '${{ steps.check_errors.outputs.errors }}' === 'true';
 
             const body = hasErrors
               ? `## ⚠️ Model Verification - Some Issues Found\n\n\`\`\`\n${report}\n\`\`\``
@@ -68,12 +79,10 @@ jobs:
               repo: context.repo.repo,
               body: body
             });
-        env:
-          ERRORS: ${{ steps.check_errors.outputs.errors }}
 
       - name: Upload verification report
         uses: actions/upload-artifact@v4
         with:
           name: model-verification-report
-          path: verification-report.txt
+          path: debate-panel/verification-report.txt
           retention-days: 7

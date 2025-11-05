@@ -1,6 +1,6 @@
 import { generateText } from 'ai';
 import { Model, ModelResponse, DebateConfig, DebateRound } from '@/types/debate';
-import { openai, anthropic, google, mistral, xai, perplexity, deepseek } from './providers';
+import { openai, anthropic, google, mistral, xai, perplexity, deepseek, meta, kimi } from './providers';
 import { RESPONSE_LENGTH_OPTIONS } from '@/lib/tokenization';
 import { PrismaClient } from '@prisma/client';
 import { DebateLogger } from '@/lib/logger';
@@ -170,6 +170,26 @@ Format your response as a clear argument with supporting points.`;
         case 'mistral':
           result = await generateText({
             model: mistral(model.name),
+            system: systemPrompt,
+            prompt,
+            temperature: 0.7,
+            maxTokens,
+          });
+          break;
+        case 'meta':
+          this.logger.log(`Calling Meta/Llama model: ${model.name}`);
+          result = await generateText({
+            model: meta(model.name),
+            system: systemPrompt,
+            prompt,
+            temperature: 0.7,
+            maxTokens,
+          });
+          break;
+        case 'kimi':
+          this.logger.log(`Calling Kimi model: ${model.name}`);
+          result = await generateText({
+            model: kimi(model.name),
             system: systemPrompt,
             prompt,
             temperature: 0.7,
@@ -1582,6 +1602,8 @@ BE DECISIVE. The whole point of this debate was to get an answer, not to admire 
       case 'anthropic': return anthropic(model.name);
       case 'google': return google(model.name);
       case 'mistral': return mistral(model.name);
+      case 'meta': return meta(model.name);
+      case 'kimi': return kimi(model.name);
       case 'xai': return xai(model.name);
       case 'perplexity': return perplexity(model.name);
       case 'deepseek': return deepseek(model.name);

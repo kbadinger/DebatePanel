@@ -105,30 +105,35 @@ export default function Home() {
   const loadExampleDebate = () => {
     setConfig({
       ...config,
-      topic: 'Should our company switch to a 4-day work week?',
+      topic: 'Should companies start replacing junior software developers with AI coding assistants?',
       description: `Context:
-- Tech company with 150 employees
-- Currently working standard 5-day, 40-hour week
-- Competitors beginning to offer flexible arrangements
-- Recent employee survey shows work-life balance concerns
+With tools like GitHub Copilot, ChatGPT, Cursor, and emerging AI agents like Devin becoming increasingly capable, some companies are considering reducing junior developer hiring or restructuring their engineering teams.
 
-Option 1 - 4-Day Week (32 hours, same pay):
-- Better work-life balance and employee retention
-- Potential productivity gains from focused work
-- Competitive advantage in hiring
-- Risk of falling behind on deadlines
+Key Considerations:
 
-Option 2 - Compressed 4-Day (40 hours in 4 days):
-- Maintain total work hours
-- 3-day weekends for employees
-- Longer daily hours may cause burnout
-- Customer coverage concerns on Fridays
+Technical Capabilities:
+- AI can generate boilerplate code, fix bugs, write tests
+- AI struggles with system architecture, complex debugging, and novel solutions
+- Code quality and security implications of AI-generated code
+- Current limitations vs future trajectory
 
-Option 3 - Flexible/Hybrid Approach:
-- Teams choose their own schedule
-- Some roles stay 5-day for coverage
-- Pilot program to test effectiveness
-- Gradual implementation based on results`,
+Business Impact:
+- Cost savings from reduced hiring and faster development
+- Risk of technical debt accumulation
+- Impact on code review culture and quality standards
+- Competitive advantage vs talent pipeline concerns
+
+Human Development:
+- Junior developers learn through repetitive tasks AI now handles
+- Mentorship and knowledge transfer between senior and junior devs
+- Career progression pathways in an AI-augmented world
+- Skill development and maintaining human expertise
+
+Industry & Society:
+- Employment impact and economic inequality
+- Innovation and breakthrough thinking that requires human creativity
+- Long-term health of the software engineering profession
+- Ethical considerations around technological unemployment`,
     });
   };
   
@@ -284,13 +289,13 @@ Option 3 - Flexible/Hybrid Approach:
         {session && (
         <form onSubmit={handleSubmit} className="bg-white/90 backdrop-blur rounded-2xl p-8 hover-lift debate-card-enter border-2 border-blue-200/30 shadow-xl" style={{ animationDelay: '0.3s' }}>
           <div className="mb-6 text-center">
-            <Button 
-              type="button" 
-              variant="secondary" 
+            <Button
+              type="button"
+              variant="secondary"
               onClick={loadExampleDebate}
               className="text-sm"
             >
-              Load Example: 4-Day Work Week Debate
+              Load Example: AI Replacing Junior Developers
             </Button>
           </div>
           

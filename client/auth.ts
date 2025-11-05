@@ -29,33 +29,50 @@ export const authOptions: NextAuthOptions = {
         password: { label: 'Password', type: 'password' },
       },
       async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) {
-          throw new Error('Invalid credentials');
+        try {
+          if (!credentials?.email || !credentials?.password) {
+            console.error('[Auth] Missing credentials');
+            throw new Error('Invalid credentials');
+          }
+
+          console.log('[Auth] Attempting login for:', credentials.email);
+
+          const user = await prisma.user.findUnique({
+            where: { email: credentials.email as string },
+          });
+
+          if (!user) {
+            console.error('[Auth] User not found:', credentials.email);
+            throw new Error('Invalid credentials');
+          }
+
+          if (!user.password) {
+            console.error('[Auth] User has no password (OAuth only?):', credentials.email);
+            throw new Error('Invalid credentials');
+          }
+
+          const isValid = await bcrypt.compare(
+            credentials.password as string,
+            user.password
+          );
+
+          if (!isValid) {
+            console.error('[Auth] Invalid password for:', credentials.email);
+            throw new Error('Invalid credentials');
+          }
+
+          console.log('[Auth] Login successful for:', credentials.email);
+
+          return {
+            id: user.id,
+            email: user.email,
+            name: user.name,
+            image: user.image,
+          };
+        } catch (error) {
+          console.error('[Auth] Authorization error:', error);
+          throw error;
         }
-
-        const user = await prisma.user.findUnique({
-          where: { email: credentials.email as string },
-        });
-
-        if (!user || !user.password) {
-          throw new Error('Invalid credentials');
-        }
-
-        const isValid = await bcrypt.compare(
-          credentials.password as string,
-          user.password
-        );
-
-        if (!isValid) {
-          throw new Error('Invalid credentials');
-        }
-
-        return {
-          id: user.id,
-          email: user.email,
-          name: user.name,
-          image: user.image,
-        };
       },
     }),
   ],
