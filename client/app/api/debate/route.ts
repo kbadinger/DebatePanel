@@ -23,15 +23,13 @@ function safeSSEEncode(data: any, isStreamingUpdate: boolean = false): string {
     // Deep clone and truncate if needed
     const processedData = JSON.parse(JSON.stringify(data, (key, value) => {
       if (typeof value === 'string') {
-        // First, clean up any problematic characters
+        // Clean up control characters (JSON.stringify will handle quote escaping)
         let cleanValue = value
-          .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '') // Remove control characters
-          .replace(/\\/g, '\\\\') // Escape backslashes
-          .replace(/"/g, '\\"'); // Escape quotes
-        
+          .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, ''); // Remove control characters
+
         // Then truncate if too long (but only for streaming, not storage)
         if (cleanValue.length > MAX_RESPONSE_LENGTH && key === 'content') {
-          const truncationMessage = isStreamingUpdate 
+          const truncationMessage = isStreamingUpdate
             ? `... [Response continues - see full version in download]`
             : `... [Truncated for streaming - full response available after debate completes]`;
           console.warn(`Truncating large ${key} field from ${cleanValue.length} to ${MAX_RESPONSE_LENGTH} chars for ${isStreamingUpdate ? 'streaming update' : 'final completion'}`);
