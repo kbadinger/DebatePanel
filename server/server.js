@@ -13,11 +13,6 @@ const humanInputRouter = require('./routes/human-input');
 const app = express();
 const prisma = new PrismaClient();
 
-// Sentry request handler must be the first middleware (only if Sentry is enabled)
-if (sentryModule.isSentryEnabled && sentryModule.Handlers) {
-  app.use(sentryModule.Handlers.requestHandler());
-}
-
 // CORS configuration - allow multiple origins
 const allowedOrigins = [
   'http://localhost:3000',
@@ -60,20 +55,15 @@ app.get('/health', (req, res) => {
 app.use('/api/debate', debateRouter);
 app.use('/api/debate/human-input', humanInputRouter);
 
-// Sentry tracing and error handlers (only if Sentry is enabled)
-if (sentryModule.isSentryEnabled && sentryModule.Handlers) {
-  app.use(sentryModule.Handlers.tracingHandler());
-  app.use(sentryModule.Handlers.errorHandler());
+// Sentry error handler (must be before other error handlers but after routes)
+// In @sentry/node v10+, use setupExpressErrorHandler
+if (sentryModule.isSentryEnabled && sentryModule.Sentry) {
+  sentryModule.Sentry.setupExpressErrorHandler(app);
 }
 
-// Error handling
+// Custom error handling (must be after Sentry error handler)
 app.use((err, req, res, next) => {
   console.error('Server error:', err);
-
-  // Send error to Sentry if enabled and not already sent
-  if (sentryModule.isSentryEnabled && !res.headersSent) {
-    sentryModule.Sentry.captureException(err);
-  }
 
   res.status(500).json({
     error: 'Internal server error',
