@@ -799,10 +799,10 @@ function generateSynthesis(debate: Debate): string {
         if (!modelArguments[response.modelId]) {
           modelArguments[response.modelId] = [];
         }
-        // Extract first meaningful sentence or stance
+        // Extract first meaningful sentence or stance (full first line, no truncation)
         const lines = response.content.split('\n').filter(l => l.trim().length > 20);
         if (lines.length > 0) {
-          modelArguments[response.modelId].push(lines[0].substring(0, 200));
+          modelArguments[response.modelId].push(lines[0]); // Keep full first line
         }
       }
     });
