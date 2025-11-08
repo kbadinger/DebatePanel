@@ -1,0 +1,308 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  emailVerified DateTime?
+  name          String?
+  image         String?
+  password      String?   // For credentials auth
+  isAdmin       Boolean   @default(false) // Admin flag for unlimited access
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  // Authentication
+  accounts      Account[]
+  sessions      Session[]
+  
+  // Subscription
+  subscription  Subscription?
+  apiKeys       ApiKey[]
+  mcpApiKeys    McpApiKey[]
+  
+  // Usage tracking
+  debates       Debate[]
+  usageRecords  UsageRecord[]
+  participations Participant[]
+  
+  // Model requests and voting
+  modelRequests ModelRequest[]
+  modelRequestVotes ModelRequestVote[]
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+  
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+  
+  @@unique([identifier, token])
+}
+
+model Subscription {
+  id                    String   @id @default(cuid())
+  userId                String   @unique
+  plan                  String   // 'free', 'starter', 'pro', 'teams'
+  status                String   // 'active', 'canceled', 'past_due'
+  monthlyAllowance      Float    // Dollar amount included in plan
+  currentBalance        Float    // Current available balance
+  rolloverBalance       Float    @default(0) // Amount rolled from previous month
+  rolloverExpiry        DateTime? // When rollover expires
+  currentPeriodStart    DateTime
+  currentPeriodEnd      DateTime
+  stripeCustomerId      String?  @unique
+  stripePriceId         String?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+  
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model ApiKey {
+  id          String   @id @default(cuid())
+  userId      String
+  provider    String   // 'openai', 'anthropic', etc.
+  encryptedKey String  @db.Text
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId, provider])
+}
+
+model UsageRecord {
+  id              String   @id @default(cuid())
+  userId          String
+  debateId        String
+  roundNumber     Int
+  modelId         String
+  modelProvider   String
+  inputTokens     Int
+  outputTokens    Int
+  apiCost         Float    // What we paid the provider (legacy - now estimated or actual)
+  platformFee     Float    // Our markup
+  totalCost       Float    // What user pays
+  createdAt       DateTime @default(now())
+  
+  // Enhanced dual cost tracking - TEMPORARILY DISABLED FOR BACKWARD COMPATIBILITY
+  // Will be re-enabled after production database migration
+  // estimatedApiCost    Float?   // Our calculated estimate (nullable during migration)
+  // actualApiCost       Float?   // Real cost from provider (if available)
+  // costDelta          Float?   // Difference (actual - estimated)
+  // costAccuracy       Float?   // Accuracy percentage (0-1)
+  // hasActualCost      Boolean  @default(false)
+  // providerCostData   Json?    // Raw cost data from provider
+  // costSource         String?  // 'estimated', 'actual', 'manual', 'api_fetch'
+  
+  // Reconciliation tracking
+  providerCostFetched   Boolean @default(false)
+  providerCostFetchedAt DateTime?
+  reconciliationNotes   String?
+  
+  // Provider-reported token counts (for reconciliation)
+  providerInputTokens   Int?     // Tokens reported by provider API
+  providerOutputTokens  Int?     // Tokens reported by provider API
+  providerReportedCost  Float?   // Cost reported directly by provider API
+  importSource          String?  // 'api_response', 'csv_import', 'manual', 'billing_api'
+  
+  user   User   @relation(fields: [userId], references: [id])
+  debate Debate @relation(fields: [debateId], references: [id])
+  
+  @@index([userId, createdAt])
+  @@index([debateId, roundNumber])
+  // @@index([hasActualCost, modelProvider])  // For cost analysis queries - DISABLED
+}
+
+model Debate {
+  id                   String           @id @default(cuid())
+  topic                String
+  description          String?
+  format               String           @default("structured")
+  rounds               Int
+  convergenceThreshold Float?
+  status               String           @default("active")
+  isInteractive        Boolean          @default(false)
+  createdAt            DateTime         @default(now())
+  completedAt          DateTime?
+  finalSynthesis       String?
+  judgeAnalysis        String?
+  winnerId             String?          // ID of winning model or participant
+  winnerName           String?          // Display name of winner
+  winnerType           String?          // 'model' or 'human'
+  victoryReason        String?          // Why they won
+  userId               String?
+  user                 User?            @relation(fields: [userId], references: [id])
+  debateRounds         DebateRound[]
+  modelSelections      ModelSelection[]
+  usageRecords         UsageRecord[]
+  participants         Participant[]
+  scores               DebateScore[]
+}
+
+model DebateRound {
+  id               String          @id @default(cuid())
+  debateId         String
+  roundNumber      Int
+  consensus        String?
+  keyDisagreements String[]
+  createdAt        DateTime        @default(now())
+  debate           Debate          @relation(fields: [debateId], references: [id])
+  responses        ModelResponse[]
+
+  @@unique([debateId, roundNumber])
+}
+
+model ModelResponse {
+  id            String      @id @default(cuid())
+  roundId       String
+  modelId       String
+  modelProvider String
+  content       String      @db.Text
+  position      String
+  confidence    Int
+  isHuman       Boolean     @default(false)
+  userId        String?
+  argumentScore Float?      // Score for argument quality (0-100)
+  createdAt     DateTime    @default(now())
+  round         DebateRound @relation(fields: [roundId], references: [id])
+
+  @@index([roundId, modelId])
+}
+
+model ModelSelection {
+  id       String @id @default(cuid())
+  debateId String
+  modelId  String
+  provider String
+  name     String
+  debate   Debate @relation(fields: [debateId], references: [id])
+
+  @@unique([debateId, modelId])
+}
+
+model Participant {
+  id            String   @id @default(cuid())
+  debateId      String
+  userId        String
+  joinedAt      DateTime @default(now())
+  role          String   @default("participant") // 'participant', 'observer'
+  status        String   @default("active") // 'active', 'left', 'kicked'
+  debate        Debate   @relation(fields: [debateId], references: [id])
+  user          User     @relation(fields: [userId], references: [id])
+
+  @@unique([debateId, userId])
+}
+
+model DebateScore {
+  id              String   @id @default(cuid())
+  debateId        String
+  participantId   String   // Model ID or User ID
+  participantType String   // 'model' or 'human'
+  participantName String
+  totalScore      Float    @default(0)
+  argumentQuality Float    @default(0) // Average quality of arguments
+  persuasiveness  Float    @default(0) // How convincing the arguments were
+  evidenceScore   Float    @default(0) // Quality of evidence provided
+  logicalScore    Float    @default(0) // Logical consistency
+  influenceScore  Float    @default(0) // How much they influenced others
+  createdAt       DateTime @default(now())
+  debate          Debate   @relation(fields: [debateId], references: [id])
+
+  @@unique([debateId, participantId])
+  @@index([debateId, totalScore])
+}
+
+model ModelRequest {
+  id           String   @id @default(cuid())
+  userId       String
+  provider     String   // e.g., "openai", "anthropic", "google"
+  modelName    String   // e.g., "gpt-5-thinking", "claude-4-pro"
+  displayName  String?  // Optional display name
+  description  String   // Why they want this model
+  useCase      String   // "reasoning", "coding", "creative", etc.
+  status       String   @default("pending") // "pending", "approved", "rejected", "added"
+  adminNotes   String?  // Admin comments
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  
+  user  User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  votes ModelRequestVote[]
+  
+  @@unique([provider, modelName]) // Prevent duplicate requests
+  @@index([status, createdAt])
+  @@index([userId])
+}
+
+model ModelRequestVote {
+  id        String   @id @default(cuid())
+  requestId String
+  userId    String
+  voteType  String   // "up" or "down"
+  createdAt DateTime @default(now())
+  
+  request ModelRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  user    User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@unique([requestId, userId]) // One vote per user per request
+  @@index([requestId])
+  @@index([userId])
+}
+
+model McpApiKey {
+  id          String    @id @default(cuid())
+  userId      String    @unique  // Only one MCP key per user (admin only initially)
+  keyHash     String    @unique  // SHA-256 hash of the actual key
+  name        String              // Human-readable name like "Admin Testing Key"
+  permissions Json                // ["read", "write", "debate_create", "admin"]
+  lastUsedAt  DateTime?
+  expiresAt   DateTime            // Keys expire for security
+  isActive    Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([keyHash])
+  @@index([userId, isActive])
+  @@index([expiresAt, isActive])
+}
