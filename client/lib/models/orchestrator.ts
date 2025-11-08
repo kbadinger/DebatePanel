@@ -123,7 +123,6 @@ Format your response as a clear argument with supporting points.`;
         const openaiStartTime = Date.now();
         // GPT-5 models have special requirements
         const isGpt5 = model.name.startsWith('gpt-5');
-        const temperature = isGpt5 ? 1.0 : 0.7;
 
         // GPT-5 Pro requires Responses API, others use Chat Completions API
         const usesResponsesAPI = model.name === 'gpt-5-pro';
@@ -133,8 +132,13 @@ Format your response as a clear argument with supporting points.`;
           model: usesResponsesAPI ? openai.responses(model.name) : openai(model.name),
           system: systemPrompt,
           prompt,
-          temperature,
         };
+
+        // Responses API doesn't support temperature parameter
+        if (!usesResponsesAPI) {
+          const temperature = isGpt5 ? 1.0 : 0.7;
+          openaiParams.temperature = temperature;
+        }
 
         if (isGpt5) {
           // Use maxCompletionTokens for GPT-5 models
