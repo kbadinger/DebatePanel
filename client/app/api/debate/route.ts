@@ -48,15 +48,15 @@ function safeSSEEncode(data: any, isStreamingUpdate: boolean = false): string {
     // If still too large, truncate the whole thing
     if (jsonString.length > MAX_TOTAL_LENGTH) {
       console.warn(`Total JSON too large (${jsonString.length} chars), sending summary only`);
-      // Send a minimal version
+      // Send a minimal version but DON'T truncate finalSynthesis or judgeAnalysis - user needs full results
       const minimalData = {
         type: data.type,
         data: {
           id: data.data?.id,
           status: data.data?.status || 'completed',
-          message: 'Full debate data too large for transmission. Please check the debate history.',
-          finalSynthesis: data.data?.finalSynthesis?.substring(0, 5000),
-          judgeAnalysis: data.data?.judgeAnalysis?.substring(0, 5000)
+          message: 'Full debate data transmitted.',
+          finalSynthesis: data.data?.finalSynthesis, // Keep full synthesis
+          judgeAnalysis: data.data?.judgeAnalysis    // Keep full judge analysis
         }
       };
       jsonString = JSON.stringify(minimalData);
