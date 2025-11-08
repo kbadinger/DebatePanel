@@ -214,12 +214,14 @@ const FEATURED_MODELS: Model[] = [
     name: 'gpt-5-chat-latest',
     displayName: 'GPT-5'
   }),
-  withModelInfo({
-    id: 'gpt-5-pro',
-    provider: 'openai',
-    name: 'gpt-5-pro',
-    displayName: 'GPT-5 Pro'
-  }),
+  // GPT-5 Pro uses /v1/responses API which is not compatible with AI SDK's generateText
+  // Removed until we add Responses API support
+  // withModelInfo({
+  //   id: 'gpt-5-pro',
+  //   provider: 'openai',
+  //   name: 'gpt-5-pro',
+  //   displayName: 'GPT-5 Pro'
+  // }),
   withModelInfo({
     id: 'gpt-5-mini',
     provider: 'openai',
