@@ -14,8 +14,8 @@ const app = express();
 const prisma = new PrismaClient();
 
 // Sentry request handler must be the first middleware (only if Sentry is enabled)
-if (sentryModule.isSentryEnabled) {
-  app.use(sentryModule.Sentry.Handlers.requestHandler());
+if (sentryModule.isSentryEnabled && sentryModule.Handlers) {
+  app.use(sentryModule.Handlers.requestHandler());
 }
 
 // CORS configuration - allow multiple origins
@@ -61,9 +61,9 @@ app.use('/api/debate', debateRouter);
 app.use('/api/debate/human-input', humanInputRouter);
 
 // Sentry tracing and error handlers (only if Sentry is enabled)
-if (sentryModule.isSentryEnabled) {
-  app.use(sentryModule.Sentry.Handlers.tracingHandler());
-  app.use(sentryModule.Sentry.Handlers.errorHandler());
+if (sentryModule.isSentryEnabled && sentryModule.Handlers) {
+  app.use(sentryModule.Handlers.tracingHandler());
+  app.use(sentryModule.Handlers.errorHandler());
 }
 
 // Error handling
