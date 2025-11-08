@@ -482,13 +482,13 @@ const EXPANDABLE_MODELS: Record<string, Model[]> = {
     withModelInfo({
       id: 'kimi-k2-preview',
       provider: 'kimi',
-      name: 'kimi-k2-preview',
+      name: 'kimi-k2-0905-preview',
       displayName: 'Kimi K2 Preview'
     }),
     withModelInfo({
       id: 'kimi-k2-instruct',
       provider: 'kimi',
-      name: 'kimi-k2-instruct',
+      name: 'kimi-k2-0711-preview',
       displayName: 'Kimi K2 Instruct'
     })
   ]

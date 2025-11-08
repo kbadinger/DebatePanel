@@ -33,7 +33,7 @@ export const meta = createOpenAI({
 
 // Kimi/Moonshot AI
 export const kimi = createOpenAI({
-  baseURL: 'https://api.moonshot.cn/v1',
+  baseURL: 'https://api.moonshot.ai/v1',
   apiKey: process.env.KIMI_API_KEY,
 });
 
