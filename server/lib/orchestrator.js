@@ -644,13 +644,21 @@ BE DECISIVE. The whole point of this debate was to get an answer.`;
       // Call the judge model
       let judgeResponse;
 
+      console.log(`[Judge] Using judge model: ${judgeModel}`);
+
       // Normalize judge model name (handle shorthand names)
       let normalizedJudgeModel = judgeModel;
       if (judgeModel === 'claude-3-5-sonnet') {
-        normalizedJudgeModel = 'claude-3-5-sonnet-20241022';
+        // Use the June version which is widely available
+        normalizedJudgeModel = 'claude-3-5-sonnet-20240620';
       } else if (judgeModel === 'gpt-4o') {
         normalizedJudgeModel = 'gpt-4o';
+      } else if (judgeModel && judgeModel.includes('gpt-5')) {
+        // GPT-5 models pass through as-is
+        normalizedJudgeModel = judgeModel;
       }
+
+      console.log(`[Judge] Normalized to: ${normalizedJudgeModel}`);
 
       if (normalizedJudgeModel.includes('claude')) {
         if (!this.anthropic) {
@@ -676,10 +684,9 @@ BE DECISIVE. The whole point of this debate was to get an answer.`;
         judgeResponse = response.choices[0].message.content;
       } else {
         // Default to first available client
-        // Fix: use full model name for Anthropic
         if (this.anthropic) {
           const response = await this.anthropic.messages.create({
-            model: 'claude-3-5-sonnet-20241022',
+            model: 'claude-3-5-sonnet-20240620',
             messages: [{ role: 'user', content: prompt }],
             max_tokens: 2000,
             temperature: 0.3
