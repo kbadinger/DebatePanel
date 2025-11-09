@@ -141,6 +141,7 @@ router.post('/', async (req, res) => {
   let logger = null;
   let debateTimeout = null;
   let debate = null;
+  let keepaliveInterval = null;
 
   try {
     logger = new DebateLogger();
@@ -249,6 +250,23 @@ router.post('/', async (req, res) => {
     }, config.rounds * 10 * 60 * 1000);
 
     console.log(`Starting debate ${debate.id} with ${config.rounds} rounds`);
+
+    // Set up keepalive to prevent stream timeout during long model API calls
+    // Send SSE comment every 15 seconds to keep connection alive
+    keepaliveInterval = setInterval(() => {
+      if (!streamClosed) {
+        try {
+          res.write(': keepalive\n\n');
+        } catch (err) {
+          console.warn('Keepalive write failed, stream likely closed');
+          clearInterval(keepaliveInterval);
+        }
+      } else {
+        clearInterval(keepaliveInterval);
+      }
+    }, 15000);
+
+    console.log('✓ Keepalive heartbeat enabled (15s interval)');
 
     // Initialize orchestrator
     const orchestrator = new Orchestrator(config.models);
@@ -489,6 +507,7 @@ router.post('/', async (req, res) => {
   } finally {
     logger?.endDebate();
     if (debateTimeout) clearTimeout(debateTimeout);
+    if (keepaliveInterval) clearInterval(keepaliveInterval);
     res.end();
   }
 });
