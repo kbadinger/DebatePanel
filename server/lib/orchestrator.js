@@ -667,7 +667,7 @@ BE DECISIVE. The whole point of this debate was to get an answer.`;
         const response = await this.anthropic.messages.create({
           model: normalizedJudgeModel,
           messages: [{ role: 'user', content: prompt }],
-          max_tokens: 2000,
+          max_tokens: 1500,
           temperature: 0.3
         });
         judgeResponse = response.content[0].text;
@@ -682,7 +682,7 @@ BE DECISIVE. The whole point of this debate was to get an answer.`;
           const response = await this.openai.responses.create({
             model: normalizedJudgeModel,
             input: prompt,
-            max_output_tokens: 4000
+            max_output_tokens: 2500
           });
           judgeResponse = response.output_text || '';
           if (!judgeResponse && response.output && Array.isArray(response.output)) {
@@ -693,7 +693,7 @@ BE DECISIVE. The whole point of this debate was to get an answer.`;
           const response = await this.openai.chat.completions.create({
             model: normalizedJudgeModel,
             messages: [{ role: 'user', content: prompt }],
-            max_tokens: 2000,
+            max_tokens: 1500,
             temperature: 0.3
           });
           judgeResponse = response.choices[0].message.content;
@@ -704,7 +704,7 @@ BE DECISIVE. The whole point of this debate was to get an answer.`;
           const response = await this.anthropic.messages.create({
             model: 'claude-sonnet-4-20250514',
             messages: [{ role: 'user', content: prompt }],
-            max_tokens: 2000,
+            max_tokens: 1500,
             temperature: 0.3
           });
           judgeResponse = response.content[0].text;
@@ -712,7 +712,7 @@ BE DECISIVE. The whole point of this debate was to get an answer.`;
           const response = await this.openai.chat.completions.create({
             model: 'gpt-4o',
             messages: [{ role: 'user', content: prompt }],
-            max_tokens: 2000,
+            max_tokens: 1500,
             temperature: 0.3
           });
           judgeResponse = response.choices[0].message.content;

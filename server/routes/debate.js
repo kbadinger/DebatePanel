@@ -9,60 +9,72 @@ const sentryModule = require('../lib/sentry');
 const router = express.Router();
 const prisma = new PrismaClient();
 
-// Helper function to safely encode JSON for SSE
+// Helper function to safely encode JSON for SSE with chunking for large messages
 function safeSSEEncode(data, isStreamingUpdate = false) {
   try {
     console.log(`Encoding SSE data of type: ${data.type}, streaming: ${isStreamingUpdate}`);
-    
-    // Different limits for streaming vs final completion
-    const MAX_RESPONSE_LENGTH = isStreamingUpdate ? 8000 : 10000;
-    const MAX_TOTAL_LENGTH = isStreamingUpdate ? 50000 : 100000;
-    
+
+    // Safe chunk size for HTTP/2 frames (well under 16KB limit)
+    const MAX_CHUNK_SIZE = 15000;
+
     // Clean the data object
     const cleanData = JSON.parse(JSON.stringify(data, (key, value) => {
       if (typeof value === 'string') {
         // Clean up control characters (JSON.stringify will handle quote escaping)
-        let cleanValue = value
-          .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, ''); // Remove control characters
-
-        // Then truncate if too long (but only for streaming, not storage)
-        if (cleanValue.length > MAX_RESPONSE_LENGTH && key === 'content') {
-          const truncationMessage = isStreamingUpdate
-            ? `... [Response continues - see full version in download]`
-            : `... [Truncated for streaming - full response available after debate completes]`;
-          console.warn(`Truncating large ${key} field from ${cleanValue.length} to ${MAX_RESPONSE_LENGTH} chars`);
-          return cleanValue.substring(0, MAX_RESPONSE_LENGTH) + truncationMessage;
-        }
-        return cleanValue;
+        return value.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '');
       }
       return value;
     }));
-    
+
     let jsonString = JSON.stringify(cleanData);
-    
-    // Check total size and send minimal version if necessary
-    if (jsonString.length > MAX_TOTAL_LENGTH) {
-      console.warn(`Total JSON too large (${jsonString.length} chars), sending minimal update with full synthesis`);
-      // Send minimal data but preserve finalSynthesis and judgeAnalysis - users need complete results
-      jsonString = JSON.stringify({
-        type: data.type,
-        data: {
-          id: data.data?.id,
-          status: data.data?.status || 'completed',
-          message: 'Full debate data transmitted.',
-          finalSynthesis: data.data?.finalSynthesis, // Keep full synthesis
-          judgeAnalysis: data.data?.judgeAnalysis    // Keep full judge analysis
-        }
-      });
-    }
-    
+
     // Extra safety: ensure no raw newlines that could break SSE format
     jsonString = jsonString.replace(/\n/g, '\\n').replace(/\r/g, '\\r');
-    
-    return `data: ${jsonString}\n\n`;
+
+    // If data is small enough, send as single message
+    if (jsonString.length <= MAX_CHUNK_SIZE) {
+      return [`data: ${jsonString}\n\n`];
+    }
+
+    // For large data, chunk it
+    console.warn(`Large payload (${jsonString.length} chars), chunking into ${Math.ceil(jsonString.length / MAX_CHUNK_SIZE)} parts for HTTP/2 safety`);
+
+    const chunks = [];
+    const chunkId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    const totalChunks = Math.ceil(jsonString.length / MAX_CHUNK_SIZE);
+
+    // Send metadata first
+    chunks.push(`data: ${JSON.stringify({
+      type: 'chunk-start',
+      chunkId,
+      originalType: data.type,
+      totalChunks
+    }).replace(/\n/g, '\\n').replace(/\r/g, '\\r')}\n\n`);
+
+    // Send data in chunks
+    for (let i = 0; i < jsonString.length; i += MAX_CHUNK_SIZE) {
+      const chunk = jsonString.slice(i, i + MAX_CHUNK_SIZE);
+      const index = Math.floor(i / MAX_CHUNK_SIZE);
+      chunks.push(`data: ${JSON.stringify({
+        type: 'chunk-data',
+        chunkId,
+        index,
+        data: chunk
+      }).replace(/\n/g, '\\n').replace(/\r/g, '\\r')}\n\n`);
+      console.log(`Prepared chunk ${index + 1}/${totalChunks} (${chunk.length} chars)`);
+    }
+
+    // Send completion marker
+    chunks.push(`data: ${JSON.stringify({
+      type: 'chunk-complete',
+      chunkId
+    }).replace(/\n/g, '\\n').replace(/\r/g, '\\r')}\n\n`);
+
+    return chunks;
+
   } catch (error) {
     console.error('Failed to encode SSE data:', error);
-    return `data: ${JSON.stringify({ type: 'error', message: 'Encoding error' })}\n\n`;
+    return [`data: ${JSON.stringify({ type: 'error', message: 'Encoding error' })}\n\n`];
   }
 }
 
@@ -77,16 +89,52 @@ router.post('/', async (req, res) => {
   });
 
   const { config, userId } = req.body;
-  
+
+  let streamClosed = false;
+
+  // Handle stream errors
+  res.on('error', (err) => {
+    console.error('SSE stream error:', err);
+    streamClosed = true;
+  });
+
+  res.on('close', () => {
+    console.log('SSE stream closed by client');
+    streamClosed = true;
+  });
+
+  // Helper to safely write to stream with chunking support
+  const safeWrite = (data, isStreamingUpdate = false) => {
+    if (streamClosed) {
+      console.warn('Attempted write to closed stream, skipping');
+      return false;
+    }
+    try {
+      const chunks = safeSSEEncode(data, isStreamingUpdate);
+      for (const chunk of chunks) {
+        if (streamClosed) {
+          console.warn('Stream closed during chunk write');
+          return false;
+        }
+        res.write(chunk);
+      }
+      return true;
+    } catch (err) {
+      console.error('Write error:', err);
+      streamClosed = true;
+      return false;
+    }
+  };
+
   if (!userId) {
     console.log('No userId provided in request - authentication required');
-    res.write(safeSSEEncode({
+    safeWrite({
       type: 'error',
       data: {
         message: 'Authentication required. Please log in to start a debate.',
         error: 'UNAUTHENTICATED'
       }
-    }));
+    });
     return res.end();
   }
 
@@ -104,46 +152,46 @@ router.post('/', async (req, res) => {
 
     if (!user) {
       console.log('User not found for userId:', userId);
-      res.write(safeSSEEncode({
+      safeWrite({
         type: 'error',
         data: {
           message: 'User not found. Please log in again.',
           error: 'USER_NOT_FOUND'
         }
-      }));
+      });
       return res.end();
     }
 
     // Check email verification
     if (!user.isAdmin && !user.emailVerified) {
-      res.write(safeSSEEncode({
+      safeWrite({
         type: 'error',
         data: {
           message: 'Please verify your email address before creating debates',
           error: 'EMAIL_NOT_VERIFIED',
           requiresEmailVerification: true
         }
-      }));
+      });
       return res.end();
     }
 
     // Check subscription and balance
     if (!user.isAdmin) {
       if (!user.subscription) {
-        res.write(safeSSEEncode({
+        safeWrite({
           type: 'error',
           data: {
             message: 'No subscription found. Please sign up for a plan.',
             error: 'NO_SUBSCRIPTION'
           }
-        }));
+        });
         return res.end();
       }
 
       const estimatedCost = calculateDebateCost(config);
-      
+
       if (user.subscription.currentBalance < estimatedCost) {
-        res.write(safeSSEEncode({
+        safeWrite({
           type: 'error',
           data: {
             message: `Insufficient credits. Estimated cost: $${estimatedCost.toFixed(2)}, Available: $${user.subscription.currentBalance.toFixed(2)}`,
@@ -151,7 +199,7 @@ router.post('/', async (req, res) => {
             estimatedCost,
             availableBalance: user.subscription.currentBalance
           }
-        }));
+        });
         return res.end();
       }
     }
@@ -192,10 +240,10 @@ router.post('/', async (req, res) => {
     // Set up debate timeout (10 minutes per round)
     debateTimeout = setTimeout(() => {
       console.error('Debate timeout - taking too long');
-      res.write(safeSSEEncode({
+      safeWrite({
         type: 'error',
         data: { message: 'Debate timeout - the debate took too long to complete' }
-      }));
+      });
       res.end();
     }, config.rounds * 10 * 60 * 1000);
 
@@ -249,7 +297,10 @@ router.post('/', async (req, res) => {
             round: i
           }
         };
-        res.write(safeSSEEncode(update, true));
+        if (!safeWrite(update, true)) {
+          console.warn('Stream closed, stopping response streaming');
+          return;
+        }
         console.log(`Streamed response from ${response.modelId}`);
       }
 
@@ -258,7 +309,10 @@ router.post('/', async (req, res) => {
         type: 'round-complete',
         data: savedRound
       };
-      res.write(safeSSEEncode(roundUpdate, true));
+      if (!safeWrite(roundUpdate, true)) {
+        console.warn('Stream closed, stopping round streaming');
+        return;
+      }
       console.log(`Completed round ${i}`);
     }
 
@@ -340,6 +394,26 @@ router.post('/', async (req, res) => {
             });
           }
         }
+
+        // Send judge analysis as separate event to reduce final payload size
+        if (judgeAnalysis) {
+          const judgeUpdate = {
+            type: 'judge-analysis',
+            data: {
+              id: debate.id,
+              judgeAnalysis,
+              winnerId: judgeResult.winner?.id || judgeResult.winner,
+              winnerName: judgeResult.winner?.name || judgeResult.winner,
+              winnerType: judgeResult.winner?.type || 'model',
+              victoryReason: judgeResult.winner?.reason
+            }
+          };
+          if (!safeWrite(judgeUpdate)) {
+            console.warn('Stream closed, could not send judge analysis');
+            return;
+          }
+          console.log('Sent judge analysis separately to reduce final payload');
+        }
       } catch (error) {
         console.error('Failed to generate judge analysis:', error);
       }
@@ -350,7 +424,7 @@ router.post('/', async (req, res) => {
       await trackUsage(user.id, debate.id, config);
     }
 
-    // Send final update
+    // Send final update (without judgeAnalysis which was sent separately)
     const finalDebate = await prisma.debate.findUnique({
       where: { id: debate.id },
       include: {
@@ -362,11 +436,20 @@ router.post('/', async (req, res) => {
       }
     });
 
+    // Remove judgeAnalysis from final payload to reduce size (already sent separately)
+    const { judgeAnalysis: _removedJudgeAnalysis, ...finalDebateWithoutJudge } = finalDebate;
+
     const finalUpdate = {
       type: 'debate-complete',
-      data: finalDebate
+      data: {
+        ...finalDebateWithoutJudge,
+        message: 'Debate completed. Judge analysis sent separately.'
+      }
     };
-    res.write(safeSSEEncode(finalUpdate));
+    if (!safeWrite(finalUpdate)) {
+      console.warn('Stream closed, could not send final update');
+      return;
+    }
     console.log('Debate completed successfully');
 
   } catch (error) {
@@ -390,12 +473,12 @@ router.post('/', async (req, res) => {
       });
     }
 
-    res.write(safeSSEEncode({
+    safeWrite({
       type: 'error',
       data: {
         message: error.message || 'An error occurred during the debate'
       }
-    }));
+    });
   } finally {
     logger?.endDebate();
     if (debateTimeout) clearTimeout(debateTimeout);

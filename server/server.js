@@ -73,12 +73,19 @@ app.use((err, req, res, next) => {
 
 const PORT = process.env.PORT || 3001;
 
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log(`🚀 Debate processor running on port ${PORT}`);
   console.log(`📡 Allowed origins:`);
   allowedOrigins.forEach(origin => console.log(`   - ${origin}`));
   console.log(`🗄️  Database: ${process.env.DATABASE_URL ? 'Connected' : 'Not configured'}`);
 });
+
+// Configure server timeouts for long-running debates
+server.timeout = 20 * 60 * 1000; // 20 minutes (debates can take time)
+server.keepAliveTimeout = 65000; // 65 seconds (higher than typical ALB idle timeout)
+server.headersTimeout = 66000; // Slightly higher than keepAliveTimeout to avoid race conditions
+
+console.log(`⏱️  Server timeout: ${server.timeout / 1000}s`);
 
 // Graceful shutdown
 process.on('SIGTERM', async () => {
