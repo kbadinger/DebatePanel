@@ -320,6 +320,7 @@ router.post('/', async (req, res) => {
           console.log(`[Round ${i}] Model ${responseData.modelId} completed, streaming immediately`);
 
           // Stream response immediately (natural keepalive)
+          // If stream is closed, just log it - debate continues in background for polling
           const update = {
             type: 'response',
             data: {
@@ -329,8 +330,8 @@ router.post('/', async (req, res) => {
           };
 
           if (!safeWrite(update, true)) {
-            console.warn('Stream closed during model response streaming');
-            throw new Error('Stream closed');
+            console.warn(`[Round ${i}] Stream closed, client disconnected - continuing debate in background`);
+            // Don't throw - debate will complete and polling will pick up result
           }
         }
       );
@@ -340,14 +341,16 @@ router.post('/', async (req, res) => {
         type: 'round-complete',
         data: {
           ...savedRound,
-          responses: roundResponses
+          responses: roundResponses,
+          debateId: debate.id // Include debate ID for polling fallback
         }
       };
       if (!safeWrite(roundUpdate, true)) {
-        console.warn('Stream closed, stopping round streaming');
-        return;
+        console.warn(`[Round ${i}] Stream closed, client disconnected - continuing to next round`);
+        // Don't return - continue debate for remaining rounds
+      } else {
+        console.log(`Completed round ${i} with ${roundResponses.length} responses`);
       }
-      console.log(`Completed round ${i} with ${roundResponses.length} responses`);
     }
 
     // Clear timeout
@@ -443,10 +446,11 @@ router.post('/', async (req, res) => {
             }
           };
           if (!safeWrite(judgeUpdate)) {
-            console.warn('Stream closed, could not send judge analysis');
-            return;
+            console.warn('Stream closed, could not send judge analysis - debate still saved to database');
+            // Continue - judge analysis is already in database, polling will retrieve it
+          } else {
+            console.log('Sent judge analysis separately to reduce final payload');
           }
-          console.log('Sent judge analysis separately to reduce final payload');
         }
       } catch (error) {
         console.error('Failed to generate judge analysis:', error);
@@ -481,10 +485,13 @@ router.post('/', async (req, res) => {
       }
     };
     if (!safeWrite(finalUpdate)) {
-      console.warn('Stream closed, could not send final update');
-      return;
+      console.warn('Stream closed, could not send final update - debate saved to database, polling will retrieve it');
+      // Don't return - let finally block clean up properly
+    } else {
+      console.log('Debate completed successfully via stream');
     }
-    console.log('Debate completed successfully');
+
+    console.log(`[DEBATE COMPLETE] ID: ${debate.id}, All data saved to database`);
 
   } catch (error) {
     console.error('Debate error:', error);
