@@ -285,7 +285,8 @@ export function DebateInterface({ config, onComplete }: DebateInterfaceProps) {
       setModelStatuses(initialStatuses);
       
       let buffer = '';
-      
+      let capturedDebateId: string | null = null;
+
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
@@ -317,13 +318,18 @@ export function DebateInterface({ config, onComplete }: DebateInterfaceProps) {
             if (data.type === 'response' && data.data) {
               console.log('Adding streaming response from:', data.data.modelId, 'round:', data.data.round);
               setStreamingResponses(prev => [...prev, data.data]);
-              
+
               // Update model status to completed
               setModelStatuses(prev => ({
                 ...prev,
                 [data.data.modelId]: 'completed'
               }));
             } else if (data.type === 'round-complete' && data.data) {
+              // Capture debate ID for polling fallback
+              if (data.data.debateId && !capturedDebateId) {
+                capturedDebateId = data.data.debateId;
+                console.log('Captured debate ID for polling:', capturedDebateId);
+              }
               console.log('Round complete:', data.data.roundNumber, 'Adding to debate state');
               setCurrentRound(data.data.roundNumber);
               setStreamingResponses([]);
@@ -427,6 +433,71 @@ export function DebateInterface({ config, onComplete }: DebateInterfaceProps) {
           }
         }
       }
+
+      // If stream closed but debate hasn't completed yet, poll for result
+      // (handles 15min proxy timeout for long debates)
+      const debateId = capturedDebateId || debate?.id;
+      console.log('Stream ended. Debate status:', debate?.status, 'Debate ID:', debateId);
+      if (debateId && (!debate || debate.status !== 'completed')) {
+        console.log('Stream closed before completion - starting polling fallback');
+        setDebatePhase('analyzing');
+
+        const pollForCompletion = async () => {
+          let attempts = 0;
+          const maxAttempts = 60; // Poll for up to 5 minutes (60 * 5s)
+
+          while (attempts < maxAttempts) {
+            try {
+              console.log(`Polling for debate ${debateId} completion (attempt ${attempts + 1}/${maxAttempts})`);
+              const response = await fetch(`/api/debate?debateId=${debateId}`);
+
+              if (!response.ok) {
+                console.warn('Poll failed:', response.status);
+                await new Promise(resolve => setTimeout(resolve, 5000));
+                attempts++;
+                continue;
+              }
+
+              const data = await response.json();
+              console.log('Polled debate status:', data.status);
+
+              if (data.status === 'completed') {
+                console.log('Debate completed via polling! Updating state...');
+                setIsRunning(false);
+                setDebatePhase('completed');
+                setDebate(prevDebate => {
+                  const roundsData = extractRoundsFromPayload(data, prevDebate?.rounds);
+                  return {
+                    ...prevDebate,
+                    ...data,
+                    rounds: roundsData,
+                    debateRounds: undefined,
+                    status: 'completed'
+                  };
+                });
+                onComplete?.(data);
+                break;
+              }
+
+              await new Promise(resolve => setTimeout(resolve, 5000));
+              attempts++;
+            } catch (pollError) {
+              console.error('Polling error:', pollError);
+              attempts++;
+              await new Promise(resolve => setTimeout(resolve, 5000));
+            }
+          }
+
+          if (attempts >= maxAttempts) {
+            console.error('Polling timeout - debate may still be running');
+            alert('Lost connection to debate. It may still be running. Check your debate history in a few minutes.');
+            setIsRunning(false);
+          }
+        };
+
+        await pollForCompletion();
+      }
+
     } catch (error) {
       console.error('Debate error:', error);
       console.error('Error type:', typeof error);
