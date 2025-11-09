@@ -749,16 +749,29 @@ export async function DELETE(req: NextRequest) {
       );
     }
 
+    console.log('[DELETE] Request to delete:', idsToDelete.length, 'debates');
+    console.log('[DELETE] User ID from session:', session.user.id);
+
     // Verify user owns all debates before deleting
     const debates = await prisma.debate.findMany({
       where: {
         id: { in: idsToDelete },
         userId: session.user.id
       },
-      select: { id: true }
+      select: { id: true, userId: true }
     });
 
+    console.log('[DELETE] Found', debates.length, 'debates owned by user');
+
     if (debates.length !== idsToDelete.length) {
+      // Check which debates exist but aren't owned by user
+      const allDebates = await prisma.debate.findMany({
+        where: { id: { in: idsToDelete } },
+        select: { id: true, userId: true }
+      });
+      console.log('[DELETE] Total debates found:', allDebates.length);
+      console.log('[DELETE] Debate ownership:', allDebates.map(d => ({ id: d.id, userId: d.userId })));
+
       return Response.json(
         { error: 'One or more debates not found or unauthorized' },
         { status: 403 }
