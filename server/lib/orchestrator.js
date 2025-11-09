@@ -50,9 +50,9 @@ class Orchestrator {
       : null;
   }
 
-  async runRound(roundNumber, topic, description, isConsensusMode = false) {
+  async runRound(roundNumber, topic, description, isConsensusMode = false, onModelComplete = null) {
     const responses = [];
-    
+
     for (const model of this.models) {
       try {
         const response = await this.getModelResponse(
@@ -62,17 +62,23 @@ class Orchestrator {
           description,
           isConsensusMode
         );
-        
-        responses.push({
+
+        const responseData = {
           modelId: model.id,
           provider: model.provider,
           content: response.content,
           position: response.position || 'neutral',
           confidence: response.confidence || 75,
           round: roundNumber
-        });
-        
+        };
+
+        responses.push(responseData);
         this.responses.push(response);
+
+        // Call callback immediately after model completes (keeps stream alive)
+        if (onModelComplete) {
+          await onModelComplete(responseData);
+        }
       } catch (error) {
         console.error(`Error getting response from ${model.id}:`, error);
 
@@ -94,17 +100,24 @@ class Orchestrator {
           });
         }
 
-        responses.push({
+        const errorResponse = {
           modelId: model.id,
           provider: model.provider,
           content: `Error: Unable to get response - ${error.message}`,
           position: 'error',
           confidence: 0,
           round: roundNumber
-        });
+        };
+
+        responses.push(errorResponse);
+
+        // Call callback for error responses too
+        if (onModelComplete) {
+          await onModelComplete(errorResponse);
+        }
       }
     }
-    
+
     return { responses };
   }
 

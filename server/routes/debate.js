@@ -255,65 +255,71 @@ router.post('/', async (req, res) => {
     // Run debate rounds
     for (let i = 1; i <= config.rounds; i++) {
       console.log(`Starting round ${i}`);
-      
-      const roundData = await orchestrator.runRound(
-        i,
-        config.topic,
-        config.description,
-        config.style === 'consensus-seeking'
-      );
 
-      // Save round to database
+      // Create round record first (responses will be added as models complete)
       const savedRound = await prisma.debateRound.create({
         data: {
           debateId: debate.id,
-          roundNumber: i,
-          responses: {
-            create: roundData.responses.map(response => {
-              // Find the model's provider from the config
-              const model = config.models.find(m => m.id === response.modelId);
-              return {
-                modelId: response.modelId,
-                modelProvider: model?.provider || response.provider || 'unknown',
-                content: response.content,
-                position: response.position,
-                confidence: response.confidence,
-                isHuman: false
-              };
-            })
-          }
-        },
-        include: {
-          responses: true
+          roundNumber: i
         }
       });
 
-      // Stream each response
-      for (const response of savedRound.responses) {
-        const update = {
-          type: 'response',
-          data: {
-            ...response,
-            round: i
-          }
-        };
-        if (!safeWrite(update, true)) {
-          console.warn('Stream closed, stopping response streaming');
-          return;
-        }
-        console.log(`Streamed response from ${response.modelId}`);
-      }
+      // Track responses as they arrive
+      const roundResponses = [];
 
-      // Stream round completion
+      // Run round with callback that streams each response immediately as models complete
+      await orchestrator.runRound(
+        i,
+        config.topic,
+        config.description,
+        config.style === 'consensus-seeking',
+        async (responseData) => {
+          // Save response to database immediately
+          const savedResponse = await prisma.debateResponse.create({
+            data: {
+              debateRoundId: savedRound.id,
+              modelId: responseData.modelId,
+              modelProvider: responseData.provider || 'unknown',
+              content: responseData.content,
+              position: responseData.position,
+              confidence: responseData.confidence,
+              isHuman: false
+            }
+          });
+
+          roundResponses.push(savedResponse);
+
+          console.log(`[Round ${i}] Model ${responseData.modelId} completed, streaming immediately`);
+
+          // Stream response immediately (natural keepalive)
+          const update = {
+            type: 'response',
+            data: {
+              ...savedResponse,
+              round: i
+            }
+          };
+
+          if (!safeWrite(update, true)) {
+            console.warn('Stream closed during model response streaming');
+            throw new Error('Stream closed');
+          }
+        }
+      );
+
+      // All models completed, send round-complete
       const roundUpdate = {
         type: 'round-complete',
-        data: savedRound
+        data: {
+          ...savedRound,
+          responses: roundResponses
+        }
       };
       if (!safeWrite(roundUpdate, true)) {
         console.warn('Stream closed, stopping round streaming');
         return;
       }
-      console.log(`Completed round ${i}`);
+      console.log(`Completed round ${i} with ${roundResponses.length} responses`);
     }
 
     // Clear timeout
