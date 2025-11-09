@@ -172,6 +172,13 @@ class Orchestrator {
             }
           }
 
+          // Log the extracted content (consistent with other providers)
+          console.log(`[OpenAI Responses] ${model.name} final content length:`, content.length);
+          if (content.length > 0 && content.length < 200) {
+            // For short content, log the full text (might indicate an error)
+            console.log(`[OpenAI Responses] ${model.name} content:`, content);
+          }
+
           if (!content || content.length === 0) {
             console.error(`[OpenAI Responses] ${model.name} no content - full response:`, JSON.stringify(completion));
             content = '(No content returned - response may have been incomplete)';
