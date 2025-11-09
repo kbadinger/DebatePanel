@@ -547,39 +547,255 @@ ${conclusion}`;
   }
 
   async generateJudgeAnalysis(debateId, judgeModel, isConsensusMode) {
-    const analysis = isConsensusMode
-      ? `## Leading Contributor Analysis
+    try {
+      // Get all debate responses from database
+      const { PrismaClient } = require('@prisma/client');
+      const prisma = new PrismaClient();
 
-Based on the quality of contributions and collaborative approach, the leading contributor demonstrated:
-- Clear and constructive reasoning
-- Ability to build on others' ideas
-- Focus on finding common ground
+      const debate = await prisma.debate.findUnique({
+        where: { id: debateId },
+        include: {
+          debateRounds: {
+            include: { responses: true },
+            orderBy: { roundNumber: 'asc' }
+          }
+        }
+      });
 
-### Contribution Scores:
-${this.models.map(m => `- ${m.displayName}: ${Math.floor(Math.random() * 20) + 70}/100`).join('\n')}
+      if (!debate || debate.debateRounds.length === 0) {
+        return {
+          analysis: `Unable to provide judge analysis: No debate rounds were completed.`
+        };
+      }
 
-### Final Assessment:
-All participants contributed valuable perspectives to reaching consensus.`
-      : `## Judge's Verdict
+      // Get the latest round with valid responses
+      const isValidResponse = (r) => {
+        return r &&
+               !r.content.includes('Error:') &&
+               !r.content.includes('Timeout') &&
+               r.confidence > 0;
+      };
 
-After careful analysis of all arguments presented:
+      let analysisRound = null;
+      for (let i = debate.debateRounds.length - 1; i >= 0; i--) {
+        const round = debate.debateRounds[i];
+        const validResponses = round.responses.filter(isValidResponse);
+        if (validResponses.length > 0) {
+          analysisRound = round;
+          break;
+        }
+      }
 
-### Winning Position:
-The most compelling argument was presented with strong evidence and reasoning.
+      if (!analysisRound) {
+        return {
+          analysis: `Unable to provide judge analysis: All models failed to complete the debate successfully.`
+        };
+      }
 
-### Scoring:
-${this.models.map(m => `- ${m.displayName}: ${Math.floor(Math.random() * 20) + 70}/100`).join('\n')}
+      const validResponses = analysisRound.responses.filter(isValidResponse);
+      const failedCount = analysisRound.responses.length - validResponses.length;
 
-### Rationale:
-The winning position demonstrated superior logic and evidence.`;
+      // Build comprehensive judge prompt
+      const finalPositions = validResponses.map(r => ({
+        model: r.modelId,
+        position: r.position || 'Not specified',
+        confidence: r.confidence,
+        content: r.content
+      }));
 
-    return {
-      analysis,
-      winner: this.models[0].id, // Simplified - just pick first model
-      scores: Object.fromEntries(
-        this.models.map(m => [m.id, Math.floor(Math.random() * 20) + 70])
-      )
-    };
+      const prompt = `As the judge, provide the DEFINITIVE ANSWER to this debate question.
+
+Topic: ${debate.topic}
+
+${failedCount > 0 ? `Note: ${failedCount} model(s) failed to respond. Analysis based on ${validResponses.length} successful participant(s).\n\n` : ''}Available Round ${analysisRound.roundNumber} Positions:
+${finalPositions.map(p => `
+${p.model}:
+- Position: ${p.position}
+- Confidence: ${p.confidence}%
+- Full Argument: ${p.content.substring(0, 500)}...
+`).join('\n')}
+
+Your PRIMARY task is to provide THE ANSWER:
+1. Cut through any vagueness - what is the CORRECT answer based on the evidence presented?
+2. Give the actionable answer someone could implement
+3. NO WAFFLING - Be decisive and specific
+
+Your SECONDARY tasks:
+${isConsensusMode
+  ? `4. IDENTIFY LEADING CONTRIBUTOR: Which participant contributed most effectively to reaching consensus?
+5. Score each participant (0-100) based on:
+   - How well they facilitated consensus
+   - Quality of their collaborative reasoning
+   - Clarity of their synthesis`
+  : `4. DECLARE A WINNER: Which participant made the BEST case for the correct answer?
+5. Score each participant (0-100) based on:
+   - How close they got to the right answer
+   - Quality of their reasoning
+   - Strength of their evidence`}
+
+Provide:
+- THE DEFINITIVE ANSWER (in 1-2 clear sentences)
+- WHY this is the correct answer (brief justification)
+- ${isConsensusMode ? 'LEADING CONTRIBUTOR: Who facilitated the best consensus' : 'WINNER: Who argued best for this position'}
+- SCORES: Rate each participant (format: "ModelName: XX/100")
+
+BE DECISIVE. The whole point of this debate was to get an answer.`;
+
+      // Call the judge model
+      let judgeResponse;
+      if (judgeModel.includes('claude')) {
+        if (!this.anthropic) {
+          throw new Error('Anthropic API not configured for judge model');
+        }
+        const response = await this.anthropic.messages.create({
+          model: judgeModel,
+          messages: [{ role: 'user', content: prompt }],
+          max_tokens: 2000,
+          temperature: 0.3
+        });
+        judgeResponse = response.content[0].text;
+      } else if (judgeModel.includes('gpt')) {
+        if (!this.openai) {
+          throw new Error('OpenAI API not configured for judge model');
+        }
+        const response = await this.openai.chat.completions.create({
+          model: judgeModel,
+          messages: [{ role: 'user', content: prompt }],
+          max_tokens: 2000,
+          temperature: 0.3
+        });
+        judgeResponse = response.choices[0].message.content;
+      } else {
+        // Default to first available client
+        if (this.anthropic) {
+          const response = await this.anthropic.messages.create({
+            model: 'claude-3-5-sonnet-20241022',
+            messages: [{ role: 'user', content: prompt }],
+            max_tokens: 2000,
+            temperature: 0.3
+          });
+          judgeResponse = response.content[0].text;
+        } else if (this.openai) {
+          const response = await this.openai.chat.completions.create({
+            model: 'gpt-4o',
+            messages: [{ role: 'user', content: prompt }],
+            max_tokens: 2000,
+            temperature: 0.3
+          });
+          judgeResponse = response.choices[0].message.content;
+        } else {
+          throw new Error('No AI API configured for judge analysis');
+        }
+      }
+
+      // Add note about partial results if some models failed
+      if (failedCount > 0) {
+        judgeResponse += `\n\n---\n*Note: This analysis is based on ${validResponses.length} of ${analysisRound.responses.length} models due to ${failedCount} failure(s) in Round ${analysisRound.roundNumber}.*`;
+      }
+
+      // Extract winner and scores
+      const winner = this.extractWinner(judgeResponse, finalPositions);
+      const scores = this.extractScores(judgeResponse, finalPositions);
+
+      await prisma.$disconnect();
+
+      return {
+        analysis: judgeResponse,
+        winner,
+        scores
+      };
+
+    } catch (error) {
+      console.error('Error generating judge analysis:', error);
+      return {
+        analysis: `Error generating judge analysis: ${error.message}`
+      };
+    }
+  }
+
+  extractWinner(analysisText, participants) {
+    const winnerPatterns = [
+      /WINNER:\s*([^\n]+)/i,
+      /Winner:\s*([^\n]+)/i,
+      /The winner is:\s*([^\n]+)/i,
+      /LEADING CONTRIBUTOR:\s*([^\n]+)/i,
+      /Leading Contributor:\s*([^\n]+)/i,
+      /best arguments?.*presented by\s+([^\n,]+)/i
+    ];
+
+    for (const pattern of winnerPatterns) {
+      const match = analysisText.match(pattern);
+      if (match) {
+        const winnerName = match[1].trim();
+
+        const participant = participants.find(p =>
+          p.model.toLowerCase().includes(winnerName.toLowerCase()) ||
+          winnerName.toLowerCase().includes(p.model.toLowerCase())
+        );
+
+        if (participant) {
+          const reasonMatch = analysisText.match(new RegExp(`${winnerName}[^.]*because([^.]+)`, 'i'));
+          const reason = reasonMatch ? reasonMatch[1].trim() : 'Best overall arguments and reasoning';
+
+          return {
+            id: participant.model,
+            name: participant.model,
+            type: 'model',
+            reason
+          };
+        }
+      }
+    }
+
+    // Fallback: highest confidence
+    const highestConfidence = participants.reduce((max, p) =>
+      p.confidence > max.confidence ? p : max
+    );
+
+    if (highestConfidence && highestConfidence.confidence > 80) {
+      return {
+        id: highestConfidence.model,
+        name: highestConfidence.model,
+        type: 'model',
+        reason: 'Highest conviction and confidence'
+      };
+    }
+
+    return undefined;
+  }
+
+  extractScores(analysisText, participants) {
+    const scores = {};
+
+    const scorePatterns = [
+      /([^\n:]+):\s*(\d+)(?:\/100|\s*points?)?/g,
+      /Score.*?([^\n:]+):\s*(\d+)/gi,
+      /([^\n]+)\s*-\s*(\d+)%/g
+    ];
+
+    for (const pattern of scorePatterns) {
+      const matches = [...analysisText.matchAll(pattern)];
+      for (const match of matches) {
+        const name = match[1].trim();
+        const score = parseInt(match[2]);
+
+        if (score >= 0 && score <= 100) {
+          const participant = participants.find(p => {
+            const modelName = p.model.toLowerCase();
+            const scoreName = name.toLowerCase().trim();
+            return modelName === scoreName ||
+                   modelName.includes(scoreName) ||
+                   scoreName.includes(modelName);
+          });
+
+          if (participant && !scores[participant.model]) {
+            scores[participant.model] = score;
+          }
+        }
+      }
+    }
+
+    return scores;
   }
 }
 
