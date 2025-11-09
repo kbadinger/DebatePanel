@@ -90,6 +90,7 @@ router.post('/', async (req, res) => {
   });
 
   const { config, userId } = req.body;
+  const streamStartTime = Date.now();
 
   let streamClosed = false;
 
@@ -100,7 +101,8 @@ router.post('/', async (req, res) => {
   });
 
   res.on('close', () => {
-    console.log('SSE stream closed by client');
+    const duration = Date.now() - streamStartTime;
+    console.log(`SSE stream closed by client after ${Math.round(duration / 1000)}s (${Math.round(duration / 60000)}m)`);
     streamClosed = true;
   });
 
@@ -254,15 +256,21 @@ router.post('/', async (req, res) => {
 
     // Set up keepalive to prevent stream timeout during long model API calls
     // Send SSE comment every 15 seconds to keep connection alive
+    let keepaliveCount = 0;
     keepaliveInterval = setInterval(() => {
       if (!streamClosed) {
         try {
-          res.write(': keepalive\n\n');
+          keepaliveCount++;
+          res.write(`: keepalive ${keepaliveCount}\n\n`);
+          if (keepaliveCount % 4 === 0) { // Log every minute
+            console.log(`[Keepalive] ${keepaliveCount} heartbeats sent (${keepaliveCount * 15}s elapsed)`);
+          }
         } catch (err) {
           console.warn('Keepalive write failed, stream likely closed');
           clearInterval(keepaliveInterval);
         }
       } else {
+        console.log(`[Keepalive] Stopped after ${keepaliveCount} heartbeats`);
         clearInterval(keepaliveInterval);
       }
     }, 15000);
