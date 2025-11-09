@@ -661,7 +661,9 @@ export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const userId = searchParams.get('userId');
   const debateId = searchParams.get('debateId');
-  
+  const limit = parseInt(searchParams.get('limit') || '20', 10);
+  const offset = parseInt(searchParams.get('offset') || '0', 10);
+
   if (debateId) {
     const debate = await prisma.debate.findUnique({
       where: { id: debateId },
@@ -677,22 +679,28 @@ export async function GET(req: NextRequest) {
         }
       }
     });
-    
+
     return Response.json(debate);
   }
-  
-  const debates = await prisma.debate.findMany({
-    where: {
-      ...(userId ? { userId } : {}),
-      // Exclude cleared test debates
-      NOT: {
-        topic: {
-          startsWith: '[Test Debate - Cleared]'
-        }
+
+  const whereClause = {
+    ...(userId ? { userId } : {}),
+    // Exclude cleared test debates
+    NOT: {
+      topic: {
+        startsWith: '[Test Debate - Cleared]'
       }
-    },
+    }
+  };
+
+  // Get total count for pagination metadata
+  const total = await prisma.debate.count({ where: whereClause });
+
+  const debates = await prisma.debate.findMany({
+    where: whereClause,
     orderBy: { createdAt: 'desc' },
-    take: 20,
+    take: limit,
+    skip: offset,
     select: {
       id: true,
       topic: true,
@@ -706,8 +714,76 @@ export async function GET(req: NextRequest) {
       }
     }
   });
-  
-  return Response.json(debates);
+
+  // Return with pagination metadata
+  return Response.json({
+    debates,
+    total,
+    hasMore: offset + debates.length < total,
+    offset,
+    limit
+  });
+}
+
+export async function DELETE(req: NextRequest) {
+  try {
+    const session = await getServerSession(authOptions);
+
+    if (!session?.user?.id) {
+      return Response.json(
+        { error: 'Unauthorized - please log in' },
+        { status: 401 }
+      );
+    }
+
+    const body = await req.json();
+    const { debateId, debateIds } = body;
+
+    // Support both single and bulk delete
+    const idsToDelete = debateIds || [debateId];
+
+    if (!idsToDelete || idsToDelete.length === 0) {
+      return Response.json(
+        { error: 'No debate IDs provided' },
+        { status: 400 }
+      );
+    }
+
+    // Verify user owns all debates before deleting
+    const debates = await prisma.debate.findMany({
+      where: {
+        id: { in: idsToDelete },
+        userId: session.user.id
+      },
+      select: { id: true }
+    });
+
+    if (debates.length !== idsToDelete.length) {
+      return Response.json(
+        { error: 'One or more debates not found or unauthorized' },
+        { status: 403 }
+      );
+    }
+
+    // Delete debates (cascade will handle related records)
+    const result = await prisma.debate.deleteMany({
+      where: {
+        id: { in: idsToDelete },
+        userId: session.user.id
+      }
+    });
+
+    return Response.json({
+      success: true,
+      deletedCount: result.count
+    });
+  } catch (error) {
+    console.error('Error deleting debate(s):', error);
+    return Response.json(
+      { error: 'Failed to delete debate(s)' },
+      { status: 500 }
+    );
+  }
 }
 
 function extractKeyArguments(response: any): string[] {

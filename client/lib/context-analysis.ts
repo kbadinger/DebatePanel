@@ -296,3 +296,73 @@ export function getSmartRecommendations(
     reasoning
   };
 }
+
+// Calculate estimated debate duration and detect slow thinking models
+export function calculateDebateDuration(config: DebateConfig): {
+  estimatedMinutes: number;
+  slowModels: Model[];
+  warnings: Array<{
+    message: string;
+    severity: 'info' | 'warning' | 'critical';
+    suggestion?: string;
+  }>;
+} {
+  const slowModels = config.models.filter(m => m.contextInfo?.isSlowThinking);
+  const warnings: Array<{
+    message: string;
+    severity: 'info' | 'warning' | 'critical';
+    suggestion?: string;
+  }> = [];
+
+  if (slowModels.length === 0) {
+    // No slow models, estimate ~1 minute per round (fast models running in parallel)
+    return {
+      estimatedMinutes: Math.ceil(config.rounds * 1),
+      slowModels: [],
+      warnings: []
+    };
+  }
+
+  // Find slowest model (models run sequentially in current implementation)
+  const slowestModel = slowModels.reduce((slowest, model) => {
+    const currentTime = model.contextInfo?.avgTimePerRound || 30;
+    const slowestTime = slowest.contextInfo?.avgTimePerRound || 30;
+    return currentTime > slowestTime ? model : slowest;
+  });
+
+  const avgTimePerRound = slowestModel.contextInfo?.avgTimePerRound || 120;
+  const totalSeconds = config.rounds * avgTimePerRound;
+  const estimatedMinutes = Math.ceil(totalSeconds / 60);
+
+  // Generate warnings based on estimated time
+  if (estimatedMinutes > 15) {
+    warnings.push({
+      message: `Estimated ${estimatedMinutes} minutes - exceeds 15-minute proxy timeout`,
+      severity: 'critical',
+      suggestion: 'Stream will disconnect at 15 minutes, but polling will recover the result'
+    });
+  }
+
+  if (config.rounds > 3 && slowModels.length > 0) {
+    warnings.push({
+      message: `Using ${slowModels.length} reasoning model${slowModels.length > 1 ? 's' : ''} (${slowModels.map(m => m.displayName).join(', ')}) with ${config.rounds} rounds`,
+      severity: estimatedMinutes > 15 ? 'critical' : 'warning',
+      suggestion: config.rounds > 3 ? 'Consider reducing to 3 or fewer rounds for faster results' : undefined
+    });
+  }
+
+  // Info about specific slow models
+  if (slowModels.some(m => m.id === 'gpt-5-pro')) {
+    warnings.push({
+      message: 'GPT-5 Pro uses advanced reasoning and takes ~6 minutes per round',
+      severity: 'info',
+      suggestion: 'High quality responses but slower than other models'
+    });
+  }
+
+  return {
+    estimatedMinutes,
+    slowModels,
+    warnings
+  };
+}

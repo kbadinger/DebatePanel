@@ -146,7 +146,7 @@ model UsageRecord {
   importSource          String?  // 'api_response', 'csv_import', 'manual', 'billing_api'
   
   user   User   @relation(fields: [userId], references: [id])
-  debate Debate @relation(fields: [debateId], references: [id])
+  debate Debate @relation(fields: [debateId], references: [id], onDelete: Cascade)
   
   @@index([userId, createdAt])
   @@index([debateId, roundNumber])
@@ -186,7 +186,7 @@ model DebateRound {
   consensus        String?
   keyDisagreements String[]
   createdAt        DateTime        @default(now())
-  debate           Debate          @relation(fields: [debateId], references: [id])
+  debate           Debate          @relation(fields: [debateId], references: [id], onDelete: Cascade)
   responses        ModelResponse[]
 
   @@unique([debateId, roundNumber])
@@ -204,7 +204,7 @@ model ModelResponse {
   userId        String?
   argumentScore Float?      // Score for argument quality (0-100)
   createdAt     DateTime    @default(now())
-  round         DebateRound @relation(fields: [roundId], references: [id])
+  round         DebateRound @relation(fields: [roundId], references: [id], onDelete: Cascade)
 
   @@index([roundId, modelId])
 }
@@ -215,7 +215,7 @@ model ModelSelection {
   modelId  String
   provider String
   name     String
-  debate   Debate @relation(fields: [debateId], references: [id])
+  debate   Debate @relation(fields: [debateId], references: [id], onDelete: Cascade)
 
   @@unique([debateId, modelId])
 }
@@ -227,7 +227,7 @@ model Participant {
   joinedAt      DateTime @default(now())
   role          String   @default("participant") // 'participant', 'observer'
   status        String   @default("active") // 'active', 'left', 'kicked'
-  debate        Debate   @relation(fields: [debateId], references: [id])
+  debate        Debate   @relation(fields: [debateId], references: [id], onDelete: Cascade)
   user          User     @relation(fields: [userId], references: [id])
 
   @@unique([debateId, userId])
@@ -246,7 +246,7 @@ model DebateScore {
   logicalScore    Float    @default(0) // Logical consistency
   influenceScore  Float    @default(0) // How much they influenced others
   createdAt       DateTime @default(now())
-  debate          Debate   @relation(fields: [debateId], references: [id])
+  debate          Debate   @relation(fields: [debateId], references: [id], onDelete: Cascade)
 
   @@unique([debateId, participantId])
   @@index([debateId, totalScore])

@@ -169,16 +169,47 @@ const MODEL_ROLES: Record<string, { strengths: ModelStrength[], role: string }> 
   'default': { strengths: ['general'], role: 'General analysis and balanced perspective' }
 };
 
+// Model performance characteristics for slow thinking/reasoning models
+const MODEL_PERFORMANCE_CHARACTERISTICS: Record<string, { isSlowThinking: boolean, avgTimePerRound: number }> = {
+  // OpenAI Reasoning Models - Very slow but high quality
+  'gpt-5-pro': { isSlowThinking: true, avgTimePerRound: 360 }, // ~6 minutes per round
+  'o1': { isSlowThinking: true, avgTimePerRound: 180 }, // ~3 minutes per round
+  'o1-mini': { isSlowThinking: true, avgTimePerRound: 120 }, // ~2 minutes per round
+  'o3': { isSlowThinking: true, avgTimePerRound: 180 }, // ~3 minutes per round
+  'o3-mini': { isSlowThinking: true, avgTimePerRound: 120 }, // ~2 minutes per round
+  'o3-deep-research': { isSlowThinking: true, avgTimePerRound: 240 }, // ~4 minutes per round
+  'o4-mini': { isSlowThinking: true, avgTimePerRound: 120 }, // ~2 minutes per round
+  'o4-mini-deep-research': { isSlowThinking: true, avgTimePerRound: 240 }, // ~4 minutes per round
+
+  // DeepSeek Reasoning Models - Moderately slow
+  'deepseek-r1-0528': { isSlowThinking: true, avgTimePerRound: 90 }, // ~1.5 minutes per round
+  'deepseek-reasoner': { isSlowThinking: true, avgTimePerRound: 90 }, // ~1.5 minutes per round
+
+  // Google Thinking Models
+  'gemini-2.0-flash-thinking-exp': { isSlowThinking: true, avgTimePerRound: 120 }, // ~2 minutes per round
+
+  // Perplexity Reasoning
+  'sonar-reasoning-pro': { isSlowThinking: true, avgTimePerRound: 150 }, // ~2.5 minutes per round
+  'sonar-deep-research': { isSlowThinking: true, avgTimePerRound: 150 }, // ~2.5 minutes per round
+
+  // xAI Fast Reasoning (still slower than standard models)
+  'grok-4-fast-reasoning': { isSlowThinking: true, avgTimePerRound: 90 }, // ~1.5 minutes per round
+};
+
 // Helper to add cost info and context info to models
 function withModelInfo(model: Omit<Model, 'costInfo' | 'contextInfo'>): Model {
   const pricing = MODEL_PRICING[model.id];
+  const performance = MODEL_PERFORMANCE_CHARACTERISTICS[model.id];
+
   let result: Model = {
     ...model,
     costInfo: undefined,
     contextInfo: {
       maxTokens: MODEL_CONTEXT_LIMITS[model.id] || 128000,
       strengths: MODEL_ROLES[model.id]?.strengths || ['general'],
-      suggestedRole: MODEL_ROLES[model.id]?.role || 'General analysis and balanced perspective'
+      suggestedRole: MODEL_ROLES[model.id]?.role || 'General analysis and balanced perspective',
+      isSlowThinking: performance?.isSlowThinking || false,
+      avgTimePerRound: performance?.avgTimePerRound || 30 // Default to 30 seconds for normal models
     }
   };
   

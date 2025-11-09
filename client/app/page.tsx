@@ -7,12 +7,12 @@ import { DebateInterface } from '@/components/debate/DebateInterface';
 import { ExampleDebateResult } from '@/components/debate/ExampleDebateResult';
 import { AVAILABLE_MODELS, MODEL_TIERS, PROVIDER_MODELS } from '@/lib/models/config';
 import { calculateDebateCost, formatCost } from '@/lib/models/pricing';
-import { calculateContextRequirements, analyzePanelDiversity, getSmartRecommendations } from '@/lib/context-analysis';
+import { calculateContextRequirements, analyzePanelDiversity, getSmartRecommendations, calculateDebateDuration } from '@/lib/context-analysis';
 import { analyzeTopicSafety, getTopicSuggestions } from '@/lib/topic-filter';
 import { RESPONSE_LENGTH_OPTIONS, ResponseLength } from '@/lib/tokenization';
 import { Button } from '@/components/ui/button';
 import ModelLimitDialog from '@/components/ui/ModelLimitDialog';
-import { ChevronDown, ChevronRight, Sparkles, AlertTriangle, CheckCircle, Info, Lightbulb, Shield, ShieldAlert } from 'lucide-react';
+import { ChevronDown, ChevronRight, Sparkles, AlertTriangle, CheckCircle, Info, Lightbulb, Shield, ShieldAlert, Clock } from 'lucide-react';
 import Link from 'next/link';
 import UnverifiedEmailBanner from '@/components/UnverifiedEmailBanner';
 
@@ -610,6 +610,7 @@ Industry & Society:
                 {(() => {
                   const diversityAnalysis = analyzePanelDiversity(config.models);
                   const contextAnalysis = calculateContextRequirements(config);
+                  const durationAnalysis = calculateDebateDuration(config);
                   const recommendations = getSmartRecommendations(config, availableModels);
                   
                   return (
@@ -689,12 +690,46 @@ Industry & Society:
                           </div>
                         </div>
                       )}
+
+                      {/* Debate Duration Warning (for slow thinking models) */}
+                      {durationAnalysis.warnings.length > 0 && (
+                        <div className="mt-4 p-4 bg-purple-50 rounded-lg border border-purple-200">
+                          <div className="flex items-center gap-2 text-sm font-semibold text-purple-900 mb-2">
+                            <Clock size={16} />
+                            Estimated Debate Duration
+                          </div>
+                          <div className="text-sm text-purple-700 mb-2">
+                            ⏱️ Estimated time: ~<strong>{durationAnalysis.estimatedMinutes} minutes</strong>
+                            {durationAnalysis.slowModels.length > 0 && (
+                              <span className="text-xs text-purple-600 ml-2">
+                                (using {durationAnalysis.slowModels.length} reasoning model{durationAnalysis.slowModels.length > 1 ? 's' : ''})
+                              </span>
+                            )}
+                          </div>
+                          {durationAnalysis.warnings.map((warning, idx) => (
+                            <div key={idx} className={`flex items-start gap-2 text-sm mb-2 ${
+                              warning.severity === 'critical' ? 'text-red-700' :
+                              warning.severity === 'warning' ? 'text-amber-700' : 'text-purple-600'
+                            }`}>
+                              {warning.severity === 'critical' ? <AlertTriangle size={14} className="mt-0.5" /> :
+                               warning.severity === 'warning' ? <Info size={14} className="mt-0.5" /> :
+                               <Info size={14} className="mt-0.5" />}
+                              <div>
+                                <div>{warning.message}</div>
+                                {warning.suggestion && (
+                                  <div className="text-xs mt-1 text-purple-600">💡 {warning.suggestion}</div>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </>
                   );
                 })()}
               </>
             )}
-            
+
             {config.models.length > 0 && (
               <div className="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
                 <div className="text-sm font-semibold text-blue-900 mb-2">Estimated Debate Cost</div>

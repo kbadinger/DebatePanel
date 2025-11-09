@@ -21,6 +21,8 @@ export interface Model {
     maxTokens: number; // Maximum context window in tokens
     strengths: ModelStrength[]; // What this model is best at
     suggestedRole?: string; // Suggested role in debates
+    isSlowThinking?: boolean; // Reasoning model (takes longer per response)
+    avgTimePerRound?: number; // Estimated seconds per round
   };
 }
 
