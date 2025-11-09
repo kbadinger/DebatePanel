@@ -643,23 +643,32 @@ BE DECISIVE. The whole point of this debate was to get an answer.`;
 
       // Call the judge model
       let judgeResponse;
-      if (judgeModel.includes('claude')) {
+
+      // Normalize judge model name (handle shorthand names)
+      let normalizedJudgeModel = judgeModel;
+      if (judgeModel === 'claude-3-5-sonnet') {
+        normalizedJudgeModel = 'claude-3-5-sonnet-20241022';
+      } else if (judgeModel === 'gpt-4o') {
+        normalizedJudgeModel = 'gpt-4o';
+      }
+
+      if (normalizedJudgeModel.includes('claude')) {
         if (!this.anthropic) {
           throw new Error('Anthropic API not configured for judge model');
         }
         const response = await this.anthropic.messages.create({
-          model: judgeModel,
+          model: normalizedJudgeModel,
           messages: [{ role: 'user', content: prompt }],
           max_tokens: 2000,
           temperature: 0.3
         });
         judgeResponse = response.content[0].text;
-      } else if (judgeModel.includes('gpt')) {
+      } else if (normalizedJudgeModel.includes('gpt')) {
         if (!this.openai) {
           throw new Error('OpenAI API not configured for judge model');
         }
         const response = await this.openai.chat.completions.create({
-          model: judgeModel,
+          model: normalizedJudgeModel,
           messages: [{ role: 'user', content: prompt }],
           max_tokens: 2000,
           temperature: 0.3
@@ -667,6 +676,7 @@ BE DECISIVE. The whole point of this debate was to get an answer.`;
         judgeResponse = response.choices[0].message.content;
       } else {
         // Default to first available client
+        // Fix: use full model name for Anthropic
         if (this.anthropic) {
           const response = await this.anthropic.messages.create({
             model: 'claude-3-5-sonnet-20241022',
