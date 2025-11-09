@@ -14,8 +14,9 @@ function safeSSEEncode(data, isStreamingUpdate = false) {
   try {
     console.log(`Encoding SSE data of type: ${data.type}, streaming: ${isStreamingUpdate}`);
 
-    // Safe chunk size for HTTP/2 frames (well under 16KB limit)
-    const MAX_CHUNK_SIZE = 15000;
+    // Chunk size for extreme cases only (we have keepalive now, so timeout isn't the issue)
+    // HTTP/2 will handle frame splitting automatically for most messages
+    const MAX_CHUNK_SIZE = 150000; // 150KB - only chunk truly massive payloads
 
     // Clean the data object
     const cleanData = JSON.parse(JSON.stringify(data, (key, value) => {
