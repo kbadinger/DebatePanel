@@ -140,6 +140,7 @@ router.post('/', async (req, res) => {
 
   let logger = null;
   let debateTimeout = null;
+  let debate = null;
 
   try {
     logger = new DebateLogger();
@@ -205,7 +206,7 @@ router.post('/', async (req, res) => {
     }
 
     // Create debate in database
-    const debate = await prisma.debate.create({
+    debate = await prisma.debate.create({
       data: {
         userId: user.id,
         topic: config.topic,
@@ -275,9 +276,9 @@ router.post('/', async (req, res) => {
         config.style === 'consensus-seeking',
         async (responseData) => {
           // Save response to database immediately
-          const savedResponse = await prisma.debateResponse.create({
+          const savedResponse = await prisma.modelResponse.create({
             data: {
-              debateRoundId: savedRound.id,
+              roundId: savedRound.id,
               modelId: responseData.modelId,
               modelProvider: responseData.provider || 'unknown',
               content: responseData.content,
