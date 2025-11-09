@@ -649,8 +649,8 @@ BE DECISIVE. The whole point of this debate was to get an answer.`;
       // Normalize judge model name (handle shorthand names)
       let normalizedJudgeModel = judgeModel;
       if (judgeModel === 'claude-3-5-sonnet') {
-        // Use the June version which is widely available
-        normalizedJudgeModel = 'claude-3-5-sonnet-20240620';
+        // Use latest Claude 4 Sonnet (Claude 3.5 may not be available on all API keys)
+        normalizedJudgeModel = 'claude-sonnet-4-20250514';
       } else if (judgeModel === 'gpt-4o') {
         normalizedJudgeModel = 'gpt-4o';
       } else if (judgeModel && judgeModel.includes('gpt-5')) {
@@ -675,18 +675,34 @@ BE DECISIVE. The whole point of this debate was to get an answer.`;
         if (!this.openai) {
           throw new Error('OpenAI API not configured for judge model');
         }
-        const response = await this.openai.chat.completions.create({
-          model: normalizedJudgeModel,
-          messages: [{ role: 'user', content: prompt }],
-          max_tokens: 2000,
-          temperature: 0.3
-        });
-        judgeResponse = response.choices[0].message.content;
+
+        // GPT-5 Pro uses Responses API
+        if (normalizedJudgeModel === 'gpt-5-pro') {
+          console.log('[Judge] Using Responses API for gpt-5-pro');
+          const response = await this.openai.responses.create({
+            model: normalizedJudgeModel,
+            input: prompt,
+            max_output_tokens: 4000
+          });
+          judgeResponse = response.output_text || '';
+          if (!judgeResponse && response.output && Array.isArray(response.output)) {
+            judgeResponse = response.output.map(part => part.text || part.content || '').join('\n');
+          }
+        } else {
+          // Standard Chat Completions API for other GPT models
+          const response = await this.openai.chat.completions.create({
+            model: normalizedJudgeModel,
+            messages: [{ role: 'user', content: prompt }],
+            max_tokens: 2000,
+            temperature: 0.3
+          });
+          judgeResponse = response.choices[0].message.content;
+        }
       } else {
         // Default to first available client
         if (this.anthropic) {
           const response = await this.anthropic.messages.create({
-            model: 'claude-3-5-sonnet-20240620',
+            model: 'claude-sonnet-4-20250514',
             messages: [{ role: 'user', content: prompt }],
             max_tokens: 2000,
             temperature: 0.3

@@ -282,9 +282,14 @@ router.post('/', async (req, res) => {
     let judgeAnalysis = null;
     if (config.judge?.enabled !== false) {
       try {
+        // Extract model name from judge model object (frontend sends full model object)
+        const judgeModelName = config.judge?.model?.name || config.judge?.model || 'claude-3-5-sonnet';
+        console.log('[Debate] Judge model from config:', config.judge?.model);
+        console.log('[Debate] Extracted judge model name:', judgeModelName);
+
         const judgeResult = await orchestrator.generateJudgeAnalysis(
           debate.id,
-          config.judge?.model || 'claude-3-5-sonnet',
+          judgeModelName,
           config.style === 'consensus-seeking'
         );
         
