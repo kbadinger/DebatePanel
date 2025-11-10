@@ -2,6 +2,7 @@
 
 import { useSession, signOut } from 'next-auth/react';
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { User, LogOut, Coins, Shield } from 'lucide-react';
@@ -9,8 +10,9 @@ import { formatCost } from '@/lib/models/pricing';
 
 export function Header() {
   const { data: session, status } = useSession();
+  const router = useRouter();
   const [balance, setBalance] = useState<number | null>(null);
-  
+
   useEffect(() => {
     if (session) {
       fetch('/api/subscription')
@@ -32,18 +34,30 @@ export function Header() {
             />
           </Link>
           <nav className="flex items-center gap-6">
-            <Link href="/" className="text-slate-800 hover:text-purple-600 font-bold transition-all hover:scale-105">
+            <button
+              onClick={() => router.push('/')}
+              className="text-slate-800 hover:text-purple-600 font-bold transition-all hover:scale-105 cursor-pointer"
+            >
               <span>⚡</span> New Debate
-            </Link>
-            <Link href="/history" className="text-slate-800 hover:text-purple-600 font-bold transition-all hover:scale-105">
+            </button>
+            <button
+              onClick={() => router.push('/history')}
+              className="text-slate-800 hover:text-purple-600 font-bold transition-all hover:scale-105 cursor-pointer"
+            >
               <span>📚</span> History
-            </Link>
-            <Link href="/usage" className="text-slate-800 hover:text-purple-600 font-bold transition-all hover:scale-105">
+            </button>
+            <button
+              onClick={() => router.push('/usage')}
+              className="text-slate-800 hover:text-purple-600 font-bold transition-all hover:scale-105 cursor-pointer"
+            >
               <span>📊</span> Usage
-            </Link>
-            <Link href="/models/vote" className="text-slate-800 hover:text-purple-600 font-bold transition-all hover:scale-105">
+            </button>
+            <button
+              onClick={() => router.push('/models/vote')}
+              className="text-slate-800 hover:text-purple-600 font-bold transition-all hover:scale-105 cursor-pointer"
+            >
               <span>🗳️</span> Vote Models
-            </Link>
+            </button>
             {session?.user?.isAdmin && (
               <Link href="/admin" className="text-purple-600 hover:text-purple-700 font-medium transition-colors flex items-center gap-1">
                 <Shield size={16} />
