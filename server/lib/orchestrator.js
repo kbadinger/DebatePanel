@@ -469,101 +469,123 @@ class Orchestrator {
     if (!this.responses || this.responses.length === 0) {
       return 'No responses available for synthesis.';
     }
-    
-    const labelForPosition = (position) => {
-      switch (position) {
-        case 'strongly-agree':
-          return 'Strong agreement';
-        case 'agree':
-          return 'Agreement';
-        case 'neutral':
-          return 'Neutral perspective';
-        case 'disagree':
-          return 'Disagreement';
-        case 'strongly-disagree':
-          return 'Strong disagreement';
-        case 'error':
-          return 'Error / unavailable';
-        default:
-          return position ? position.replace('-', ' ') : 'Perspective';
+
+    try {
+      // Get debate from database to get topic
+      const { PrismaClient } = require('@prisma/client');
+      const prisma = new PrismaClient();
+
+      const debate = await prisma.debate.findUnique({
+        where: { id: debateId },
+        include: {
+          debateRounds: {
+            include: { responses: true },
+            orderBy: { roundNumber: 'asc' }
+          }
+        }
+      });
+
+      if (!debate || debate.debateRounds.length === 0) {
+        return 'No debate rounds available for synthesis.';
       }
-    };
 
-    const extractSnippet = (text, maxLength = 500) => {
-      if (!text) return 'No statement available.';
-      const cleaned = text.replace(/\s+/g, ' ').trim();
-      // Get first complete sentence or paragraph
-      const sentenceMatch = cleaned.match(/[^.!?]+[.!?]/);
-      const candidate = sentenceMatch ? sentenceMatch[0] : cleaned.slice(0, maxLength + 20);
-      const snippet = candidate.trim();
-      // Only truncate if significantly longer than max length
-      return snippet.length > maxLength ? `${snippet.slice(0, maxLength)}...` : snippet;
-    };
+      // Get valid responses from the latest round
+      const isValidResponse = (r) => {
+        return r &&
+               !r.content.includes('Error:') &&
+               !r.content.includes('Timeout') &&
+               r.confidence > 0;
+      };
 
-    const keyPoints = this.responses
-      .map((response, index) => {
-        const label = labelForPosition(response.position);
-        const snippet = extractSnippet(response.content);
-        return `- ${label}: ${snippet}`;
-      })
-      .slice(0, 8);
+      let latestRound = null;
+      for (let i = debate.debateRounds.length - 1; i >= 0; i--) {
+        const round = debate.debateRounds[i];
+        const validResponses = round.responses.filter(isValidResponse);
+        if (validResponses.length > 0) {
+          latestRound = round;
+          break;
+        }
+      }
 
-    const positionCounts = this.responses.reduce((acc, response) => {
-      if (!response.position) return acc;
-      acc[response.position] = (acc[response.position] || 0) + 1;
-      return acc;
-    }, {});
+      if (!latestRound) {
+        return 'No valid responses available for synthesis.';
+      }
 
-    const agreementEntries = Object.entries(positionCounts)
-      .filter(([, count]) => count > 1)
-      .sort((a, b) => b[1] - a[1]);
+      const validResponses = latestRound.responses.filter(isValidResponse);
 
-    const disagreementEntries = Object.entries(positionCounts)
-      .filter(([, count]) => count === 1)
-      .sort((a, b) => a[0].localeCompare(b[0]));
+      // Build synthesis prompt - focused on extracting THE ANSWER
+      const participantArguments = validResponses.map(r => `
+${r.modelId}:
+${r.content.substring(0, 1000)}${r.content.length > 1000 ? '...' : ''}
+`).join('\n---\n');
 
-    const agreementSection = agreementEntries.length > 0
-      ? agreementEntries
-          .slice(0, 4)
-          .map(([position, count]) => `- ${labelForPosition(position)} surfaced in ${count} responses`)
-      : ['- Limited consensus emerged; participants examined the topic from multiple angles.'];
+      const prompt = `Synthesize this debate into a clear, actionable summary.
 
-    const disagreementSection = disagreementEntries.length > 0
-      ? disagreementEntries
-          .slice(0, 4)
-          .map(([position]) => `- ${labelForPosition(position)} offered a contrasting perspective`)
-      : ['- Participants largely aligned in their viewpoints during this debate.'];
+Topic: ${debate.topic}
 
-    const totalResponses = this.responses.length;
-    const leadingAgreement = agreementEntries[0];
-    const leadingDisagreement = disagreementEntries[0];
+Participant Arguments:
+${participantArguments}
 
-    let conclusion;
-    if (leadingAgreement) {
-      const agreementLabel = labelForPosition(leadingAgreement[0]);
-      conclusion = `The discussion showed a noticeable lean toward ${agreementLabel.toLowerCase()} with ${leadingAgreement[1]} supporting contribution${leadingAgreement[1] > 1 ? 's' : ''}. `;
-      if (leadingDisagreement) {
-        conclusion += `At the same time, ${labelForPosition(leadingDisagreement[0]).toLowerCase()} introduced a counterpoint that kept the conversation balanced.`;
+Your task: Extract THE ANSWER and make it crystal clear.
+
+Provide a synthesis in this EXACT format:
+
+## THE ANSWER
+[State the clear consensus/recommendation in 1-2 sentences. Be specific and actionable. If they agreed on "purple", say "Purple". If they agreed to "attend the conference", say "Yes, attend the conference". NO VAGUE META-COMMENTARY.]
+
+## WHY
+[3-5 bullet points of the key reasons supporting this answer]
+
+## CONCERNS / OBJECTIONS
+[2-4 bullet points of any concerns, caveats, or dissenting views raised]
+[If there were NO meaningful objections, write: "No significant objections raised."]
+
+## BOTTOM LINE
+[One sentence actionable takeaway]
+
+CRITICAL: Do NOT write meta-commentary like "participants agreed" or "consensus emerged". Extract the ACTUAL SUBSTANCE of what they decided. If the debate was about "which color for sex", your answer should be the COLOR, not "participants discussed color preferences".`;
+
+      // Use Claude for synthesis (fast, reliable, good at following format)
+      let synthesisText;
+
+      if (this.anthropic) {
+        console.log('[Synthesis] Using Claude Sonnet for synthesis');
+        const response = await this.anthropic.messages.create({
+          model: 'claude-sonnet-4-20250514',
+          messages: [{ role: 'user', content: prompt }],
+          max_tokens: 1500,
+          temperature: 0.3
+        });
+        synthesisText = response.content[0].text;
+      } else if (this.openai) {
+        console.log('[Synthesis] Using GPT-4o for synthesis');
+        const response = await this.openai.chat.completions.create({
+          model: 'gpt-4o',
+          messages: [{ role: 'user', content: prompt }],
+          max_tokens: 1500,
+          temperature: 0.3
+        });
+        synthesisText = response.choices[0].message.content;
       } else {
-        conclusion += 'Few opposing arguments surfaced, indicating tentative convergence on key themes.';
+        throw new Error('No AI provider available for synthesis generation');
       }
-    } else {
-      conclusion = `Participants explored the topic from diverse angles without establishing a dominant viewpoint across the ${totalResponses} contributions.`;
+
+      await prisma.$disconnect();
+      return synthesisText;
+
+    } catch (error) {
+      console.error('Failed to generate AI-powered synthesis:', error);
+      // Fallback to simple text extraction
+      const recentResponses = this.responses.slice(-3);
+      return `## Debate Summary
+
+${this.responses.length} participants shared their perspectives across multiple rounds.
+
+Recent key points:
+${recentResponses.map(r => `- ${r.modelId}: ${r.content.substring(0, 200)}...`).join('\n')}
+
+Note: AI synthesis failed. See full debate transcript above for complete details.`;
     }
-
-    return `## Debate Synthesis
-
-### Key Points Raised:
-${keyPoints.length > 0 ? keyPoints.join('\n') : '- Participants shared their perspectives on the topic.'}
-
-### Areas of Agreement:
-${agreementSection.join('\n')}
-
-### Areas of Disagreement:
-${disagreementSection.join('\n')}
-
-### Conclusion:
-${conclusion}`;
   }
 
   async generateJudgeAnalysis(debateId, judgeModel, isConsensusMode) {
