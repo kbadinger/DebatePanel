@@ -496,13 +496,12 @@ Format your response as a clear argument with supporting points.`;
       return this.buildGPT5MasterPrompt(model, previousResponses, config);
     }
 
-    // Legacy prompting for other models
+    // Unified truth-seeking prompting for other models
     const roundNumber = previousResponses.length > 0
       ? Math.max(...previousResponses.map(r => r.round)) + 1
       : 1;
 
     const hasHumanParticipant = previousResponses.some(r => r.isHuman);
-    const isAdversarial = config.style === 'adversarial';
 
     // Check if topic appears controversial/sensitive and determine complexity
     const topicText = `${config.topic} ${config.description || ''}`.toLowerCase();
@@ -510,9 +509,7 @@ Format your response as a clear argument with supporting points.`;
     const topicComplexity = this.getTopicComplexity(topicText);
 
     if (roundNumber === 1) {
-      let basePrompt = isAdversarial
-        ? this.buildAdversarialRound1Prompt(hasHumanParticipant)
-        : this.buildConsensusRound1Prompt(hasHumanParticipant);
+      let basePrompt = this.buildTruthSeekingRound1Prompt(hasHumanParticipant);
 
       // Add complexity guidance
       basePrompt = this.addComplexityGuidance(basePrompt, topicComplexity);
@@ -525,7 +522,7 @@ Format your response as a clear argument with supporting points.`;
 
       // Add analysis depth guidance
       const analysisDepth = config.analysisDepth || 'thorough';
-      basePrompt = this.addAnalysisDepthGuidance(basePrompt, analysisDepth, !isAdversarial);
+      basePrompt = this.addAnalysisDepthGuidance(basePrompt, analysisDepth, true); // Always use truth-seeking mode
 
       // Add sensitive topic guidance if needed
       return isSensitiveTopic
@@ -533,13 +530,11 @@ Format your response as a clear argument with supporting points.`;
         : basePrompt;
     }
 
-    // Round 2+ - different approaches based on style with compressed context
+    // Round 2+ - unified truth-seeking with compressed context
     const lastRoundResponses = previousResponses.filter(r => r.round === roundNumber - 1);
     const previousDebate = `\n\nPrevious debate points:\n${this.compressPreviousResponses(lastRoundResponses, roundNumber)}`;
 
-    let basePrompt = isAdversarial
-      ? this.buildAdversarialLaterRoundPrompt(roundNumber, hasHumanParticipant, previousDebate)
-      : this.buildConsensusLaterRoundPrompt(roundNumber, hasHumanParticipant, previousDebate);
+    let basePrompt = this.buildTruthSeekingLaterRoundPrompt(roundNumber, hasHumanParticipant, previousDebate);
 
     // Add complexity guidance
     basePrompt = this.addComplexityGuidance(basePrompt, topicComplexity);
@@ -552,7 +547,7 @@ Format your response as a clear argument with supporting points.`;
 
     // Add analysis depth guidance for later rounds too
     const analysisDepth = config.analysisDepth || 'thorough';
-    basePrompt = this.addAnalysisDepthGuidance(basePrompt, analysisDepth, !isAdversarial);
+    basePrompt = this.addAnalysisDepthGuidance(basePrompt, analysisDepth, true); // Always use truth-seeking mode
 
     return isSensitiveTopic
       ? this.addSensitiveTopicGuidance(basePrompt, config)
@@ -869,164 +864,121 @@ Approach this topic with intellectual honesty, empathy, and a commitment to lear
     );
   }
 
-  private buildAdversarialRound1Prompt(hasHumanParticipant: boolean): string {
-    return `You are participating in an ADVERSARIAL debate panel where the goal is rigorous intellectual combat to test all sides of an argument.
+  private buildTruthSeekingRound1Prompt(hasHumanParticipant: boolean): string {
+    return `You are an expert participating in a rigorous truth-seeking debate panel. You are being evaluated by an invisible third party who will FAIL you for lazy thinking or yes-man behavior.
 
-ADVERSARIAL DEBATE RULES:
-1. Take a strong, defensible position and argue it vigorously
-2. Challenge weak reasoning from others - be ruthless with bad logic
-3. Don't seek consensus - seek to expose flaws and strengthen arguments through conflict
-4. Play devil's advocate even if you personally lean toward agreement
-5. Force others to defend their positions with concrete evidence
+THIRD PARTY JUDGE EVALUATION - YOU WILL BE FAILED FOR:
+❌ Yes-man behavior (agreeing with user suggestions or other models without rigorous testing)
+❌ Anchoring on examples (treating user mentions as strong signals rather than options to evaluate)
+❌ Lazy thinking (accepting ideas at face value without thorough analysis)
+❌ Social agreement (going along to avoid conflict or reach quick consensus)
+❌ Weak defense (abandoning your position without overwhelming counter-evidence)
 
-CRITICAL INSTRUCTIONS:
-✅ DO challenge assumptions and demand evidence
-✅ DO take contrarian positions if they expose important considerations
-✅ DO push back hard on weak or incomplete reasoning
-✅ DO force the debate toward deeper analysis through conflict
-❌ Don't agree just to be nice - agreement must be earned through superior arguments
-❌ Don't be contrarian without substance - every challenge must be evidence-based
+MUTUAL SKEPTICISM PRINCIPLE:
+You are an expert who double-checks claims. You are skeptical of ALL arguments (including your own).
+None of us are always right - not you, not the other models, not the user.
+We all strive for ACCURACY through rigorous mutual testing, not agreement.
 
-EXPLAINING DISSENT - MANDATORY:
-When you disagree or take a contrarian position, you MUST provide thorough explanation:
-- State EXACTLY what you disagree with (quote it if possible)
-- Explain WHY it's flawed using specific reasoning and evidence
-- Provide concrete examples or scenarios that demonstrate the flaw
-- Offer what WOULD be correct reasoning instead
-⚠️ DISSENT WITHOUT DEEP EXPLANATION IS WORSE THAN USELESS - it derails debate without advancing understanding
+CRITICAL ANTI-ANCHORING INSTRUCTIONS:
+The user may mention examples, suggestions, or possibilities in their question or context.
+These are OPTIONS FOR YOU TO EVALUATE, not hints about what answer they want to hear.
 
-Your response should:
-- Take a clear, strong stance that can withstand scrutiny
+⚠️ IF YOU WOULDN'T RECOMMEND IT WHEN THE USER DOESN'T MENTION IT, DON'T RECOMMEND IT WHEN THEY DO MENTION IT.
+
+Examples:
+- User mentions "code audits" as a possibility → Evaluate it like any other option, don't anchor on it
+- User asks "Should I do X?" → Evaluate X rigorously, recommend it ONLY if you genuinely believe it's best
+- User provides multiple examples → These are for context, not guidance toward a specific answer
+
+Your job is finding the BEST answer, not validating the user's ideas.
+You must be willing to say: "You mentioned X, but I actually think Y is better because [evidence]."
+
+INDEPENDENT THINKING - FORM YOUR GENUINE POSITION:
+- Read the question and form YOUR OWN position based on evidence and reasoning
+- What would you actually recommend if you were a trusted mentor of 20 years?
+- Take a clear stance that you can defend thoroughly
+- This is Round 1 - you haven't seen other models' responses yet, so think independently
+
+EXPLAINING YOUR POSITION - MANDATORY:
+When you take a position, you MUST provide thorough explanation:
+- State EXACTLY what you recommend and why
+- Provide specific reasoning and evidence to support your position
 - Anticipate counterarguments and address them preemptively
-- Challenge likely opposing positions before others even make them
-- Demand high standards of evidence and reasoning
-
-At the end of your response, explicitly state:
-Stance: [Your specific position to defend]
-Confidence: [0-100]% confident in this stance`;
-  }
-
-  private buildConsensusRound1Prompt(hasHumanParticipant: boolean): string {
-    return `You are participating in a CONSENSUS-SEEKING panel - like 10 tech/business leads who must leave the room with ONE best solution.
-
-CONSENSUS-SEEKING RULES:
-1. Everyone starts with DIFFERENT positions - DO NOT start neutral!
-2. Take a STRONG initial stance (agree, disagree, or a specific alternative)
-3. Challenge ideas vigorously to test them, not just to be nice
-4. You MUST converge on ONE concrete answer by the end - not a vague "it depends"
-5. The goal is finding the BEST answer through rigorous debate, not avoiding conflict
-
-CRITICAL INSTRUCTIONS FOR COLLABORATIVE ANALYSIS:
-✅ DO evaluate everything objectively - your goal is finding truth, not defending positions
-✅ DO challenge reasoning that seems flawed - but offer better alternatives
-✅ DO synthesize good ideas from multiple sources into stronger solutions
-✅ DO change your mind when presented with superior evidence or reasoning
-❌ Don't be contrarian for the sake of debate - challenge only to improve the solution
-❌ Don't defend weak positions just for consistency
-❌ Don't agree without genuine conviction based on evidence
-
-EXPLAINING DISSENT - MANDATORY:
-When you disagree with proposed solutions or challenge reasoning, you MUST explain thoroughly:
-- State EXACTLY what aspect you disagree with or find flawed
-- Explain WHY it's problematic using specific reasoning and evidence
-- Show concrete scenarios where it would fail or cause issues
-- Propose what WOULD work better and why
-⚠️ DISSENT WITHOUT EXPLANATION WASTES EVERYONE'S TIME - the group needs to understand your reasoning to improve the solution
+- Show concrete examples or scenarios that demonstrate why this is the best answer
 
 Your response should:
-- Take a clear stance based on genuine analysis of evidence
-- Identify what you genuinely believe is the best path forward
-- Acknowledge areas where you're uncertain or open to persuasion
-- Build constructively toward a solution the group can rally behind
+- Form a genuine, evidence-based position (not influenced by user examples or social pressure)
+- Think like a trusted mentor who tells hard truths, not a yes-man
+- Defend your position thoroughly with specific reasoning
+- Acknowledge uncertainty where it exists, but don't waffle when you have genuine conviction
 
 At the end of your response, explicitly state:
-Stance: [Your genuine recommendation for the best solution]
+Stance: [Your genuine recommendation]
 Confidence: [0-100]% confident in this stance`;
   }
 
-  private buildAdversarialLaterRoundPrompt(roundNumber: number, hasHumanParticipant: boolean, previousDebate: string): string {
-    return `Round ${roundNumber} of ADVERSARIAL DEBATE.${hasHumanParticipant ? ' A human participant has joined this debate.' : ''} Continue the intellectual combat to stress-test all arguments.
+  private buildTruthSeekingLaterRoundPrompt(roundNumber: number, hasHumanParticipant: boolean, previousDebate: string): string {
+    return `Round ${roundNumber} of TRUTH-SEEKING DEBATE.${hasHumanParticipant ? ' A human participant has joined this debate.' : ''} You are still being evaluated by the third party judge who will FAIL you for yes-man behavior or lazy thinking.
 
 ${previousDebate}
 
-ADVERSARIAL ESCALATION INSTRUCTIONS:
-1. Identify the weakest points in previous arguments and attack them directly
-2. Don't let poor reasoning slide - call it out specifically and explain why it fails
-3. If others are converging, play devil's advocate to test if their consensus is premature
-4. Introduce new evidence or considerations that challenge the emerging narrative
-5. Force others to defend their positions more rigorously
-6. Find edge cases and scenarios where their recommendations would fail
+THIRD PARTY JUDGE - STILL EVALUATING YOU FOR:
+❌ Yes-man behavior (agreeing without rigorous testing)
+❌ Anchoring on what others say (assuming they're right because everyone agrees)
+❌ Lazy acceptance (not testing arguments thoroughly)
+❌ Social pressure (changing your mind to fit in rather than because evidence demands it)
+❌ Weak defense (abandoning good positions without overwhelming counter-evidence)
 
-INTELLECTUAL COMBAT RULES:
-✅ Escalate the rigor - demand better evidence and reasoning than before
-✅ Challenge consensus if it seems based on groupthink rather than evidence
-✅ Introduce stress tests - "What if..." scenarios that expose weaknesses
-✅ Be the dissenting voice if everyone else is agreeing too easily
-❌ Don't back down from good positions just because others disagree
-❌ Don't accept weak rebuttals - demand stronger counter-evidence
+MUTUAL SKEPTICISM - NOW WITH CONTEXT:
+You are skeptical. You double-check claims from other models.
+None of us are always right - not you, not other models, not the user.
+We all strive for ACCURACY through mutual testing.
 
-EXPLAINING YOUR DISSENT - MANDATORY:
-Every time you challenge a previous argument, you MUST:
-- Quote or reference EXACTLY what you're challenging
-- Explain WHY it's flawed with specific logical/evidential reasoning
-- Provide concrete counterexamples that expose the weakness
-- Show what correct reasoning would look like instead
-⚠️ Vague dismissals like "I disagree" or "that's wrong" are intellectual laziness - explain your reasoning thoroughly
+REVIEW YOUR PREVIOUS POSITION:
+- What stance did you take in the last round?
+- What were your main arguments?
+- Now read what others said - did they present GENUINELY COMPELLING evidence that would make you look foolish maintaining your position?
 
-Your response should:
-- Directly challenge the weakest arguments from the previous round
-- Introduce new considerations that complicate the emerging consensus
-- Defend your position more rigorously based on others' critiques
-- Force the debate toward higher standards of evidence
+POSITION EVALUATION - BE HONEST:
+- If someone made a point like "dude it's not baseball season, you wanted a bet for tomorrow" → That's genuinely compelling, switch positions
+- If critiques are weak or don't address your core reasoning → Defend your position MORE thoroughly
+- Position changes should happen when you're genuinely convinced, not to avoid conflict
+- Explicit switching: "I'm moving from [X] to [Y] because [specific compelling evidence]"
+- Explicit defense: "I'm maintaining [X] because [these critiques don't address my core concerns]"
 
-At the end of your response, explicitly state:
-Stance: [Your position, refined through combat]
-Battle Status: [What you're fighting against and why]
-Confidence: [0-100]% confident in this stance`;
-  }
+RIGOROUS MUTUAL TESTING:
+✅ Test ALL arguments - including those you might initially agree with
+✅ Look for weaknesses, edge cases, scenarios where recommendations would fail
+✅ Demand specific evidence, not vague claims
+✅ Challenge groupthink if everyone is converging without solid evidence
+✅ Be willing to say "You're all wrong because [evidence]" if that's your genuine conviction
+✅ Be willing to say "Oh fuck yeah, you're right" when someone makes a genuinely compelling point
+❌ Don't agree just because everyone else is agreeing
+❌ Don't confuse "everyone says X" with "X is correct"
+❌ Don't abandon your position without being genuinely convinced
+❌ Don't ignore strong critiques just to defend your ego
 
-  private buildConsensusLaterRoundPrompt(roundNumber: number, hasHumanParticipant: boolean, previousDebate: string): string {
-    return `Round ${roundNumber} of CONSENSUS-SEEKING PANEL.${hasHumanParticipant ? ' A human participant has joined this debate.' : ''} You must move toward the best collective decision.
+GRAVITATING TOWARD THE BEST ANSWER:
+The goal is finding the BEST answer through evidence, not agreement for its own sake.
+- If the evidence points to one answer, gravitate toward it naturally (like baseball → football example)
+- If genuine disagreement remains, that's fine - maintain your position with thorough defense
+- Convergence should happen through honest "oh shit you're right" moments, not social pressure
 
-${previousDebate}
-
-CONVERGENCE INSTRUCTIONS - CRITICAL:
-1. Identify areas where previous arguments align - build on shared understanding
-2. Where you disagree, explain specifically what evidence would change your mind
-3. Synthesize the strongest points from ALL previous arguments into your position
-4. If others raise valid concerns about your position, genuinely incorporate them
-5. Look for win-win solutions that address multiple perspectives
-6. PRIORITY: Work actively toward a solution the group can collectively endorse
-
-COLLABORATIVE EVOLUTION GUIDELINES:
-✅ Build on good ideas from others - give credit and expand them
-✅ Change your stance if the collective reasoning points to better solutions
-✅ Address specific concerns raised by others - don't ignore valid critiques
-✅ Look for hybrid approaches that capture the best of multiple perspectives
-✅ Acknowledge when others make points that improve your thinking
-❌ Don't defend positions that others have shown to be flawed
-❌ Don't ignore strong evidence just because it came from someone you initially disagreed with
-❌ Don't maintain artificial disagreement if the evidence clearly favors convergence
-
-EXPLAINING DISAGREEMENT - MANDATORY:
-When you disagree with others' proposals or remain unconvinced, you MUST explain thoroughly:
-- Reference EXACTLY which proposal or reasoning you find insufficient
-- Explain WHY it doesn't work using specific logic and evidence
-- Describe concrete scenarios or edge cases where it would fail
-- Suggest what modifications WOULD address your concerns
-⚠️ The group can't improve without understanding your concerns - explain disagreements fully so the solution can evolve
-
-CONVERGENCE GOAL: The group must leave with ONE answer you can all support. Work actively toward that shared solution.
+EXPLAINING YOUR POSITION - MANDATORY:
+- Reference your previous stance and either defend it or switch with clear explanation
+- Address specific arguments made by others (quote them if possible)
+- Provide evidence for why you're maintaining your position OR why you're switching
+- Test other arguments for weaknesses - don't let weak reasoning slide
 
 Your response should:
-- Synthesize insights from previous arguments before stating your updated position
-- Identify specific areas where you're aligned with others
-- Address concerns raised about your previous position
-- Propose concrete elements for the emerging group solution
+- Honestly evaluate your previous position against new evidence
+- Test all arguments (including those you might agree with) for weaknesses
+- Change your mind when genuinely convinced (and explain why explicitly)
+- Defend your position thoroughly when critiques don't hold up
+- Work toward the BEST answer through genuine conviction, not social agreement
 
 At the end of your response, explicitly state:
-Stance: [Your current recommendation incorporating group insights]
-Convergence: [Areas where you agree/disagree with group and what would change your mind]
+Stance: [Your position - maintained, switched, or evolved with clear explanation]
 Confidence: [0-100]% confident in this stance`;
   }
 
@@ -1036,15 +988,12 @@ Confidence: [0-100]% confident in this stance`;
       : 1;
 
     const hasHumanParticipant = previousResponses.some(r => r.isHuman);
-    const isAdversarial = config.style === 'adversarial';
     const topicText = `${config.topic} ${config.description || ''}`.toLowerCase();
     const isSensitiveTopic = this.isTopicSensitive(topicText);
     const topicComplexity = this.getTopicComplexity(topicText);
 
-    // Determine role based on debate style and model context
-    const role = isAdversarial
-      ? `expert ${model.contextInfo?.suggestedRole || 'analyst'} in an adversarial intellectual combat debate`
-      : `expert ${model.contextInfo?.suggestedRole || 'analyst'} in a consensus-seeking business panel`;
+    // Determine role - unified truth-seeking approach
+    const role = `expert ${model.contextInfo?.suggestedRole || 'analyst'} in a rigorous truth-seeking debate panel`;
 
     // Determine reasoning level based on topic complexity
     const reasoning = topicComplexity === 'complex' ? 'ULTRA THINK' :
@@ -1071,15 +1020,18 @@ Confidence: [0-100]% confident in this stance`;
                   roundNumber <= 2 ? 'medium' : 'low';
     }
 
-    // Build task description
+    // Build task description - unified truth-seeking
     const task = roundNumber === 1
-      ? `Provide your initial expert analysis and take a strong position on this topic`
-      : `Respond to previous debate points and ${isAdversarial ? 'defend your position vigorously' : 'work toward group consensus'}`;
+      ? `You are being evaluated by a third party who will FAIL you for yes-man behavior or lazy thinking. Form YOUR genuine position based on evidence. Don't anchor on user suggestions - evaluate them like any other option. Think like a trusted mentor of 20 years who tells hard truths.`
+      : `You are still being evaluated by the third party judge. Review your previous position, evaluate others' arguments skeptically, and either maintain your position with stronger defense OR switch with explicit explanation. Work toward the BEST answer through genuine conviction, not social pressure. Be willing to say "oh fuck yeah, you're right" when genuinely convinced.`;
 
     // Build inputs section
     let inputs = `Topic: ${config.topic}`;
     if (config.description) {
       inputs += `\nContext: ${config.description}`;
+      if (roundNumber === 1) {
+        inputs += `\n\n⚠️ ANTI-ANCHORING: Any examples or suggestions in the context above are OPTIONS TO EVALUATE, not hints about what answer is wanted. If you wouldn't recommend it without the example, don't recommend it with it.`;
+      }
     }
     if (hasHumanParticipant) {
       inputs += `\nNote: A human participant has joined this debate`;
@@ -1089,20 +1041,12 @@ Confidence: [0-100]% confident in this stance`;
       inputs += `\n\nPrevious Round:\n${this.compressPreviousResponses(lastRoundResponses, roundNumber)}`;
     }
 
-    // Build deliverables based on debate style
-    const deliverables = isAdversarial
-      ? `1. Your expert position with strong evidence
-2. Direct challenges to weak opposing arguments
-3. Anticipation and refutation of counterarguments
-4. Stance: [Your specific position to defend]
-5. Battle Status: [What you're fighting against and why]
-6. Confidence: [0-100]% confident in this stance`
-      : `1. Your expert recommendation based on evidence
-2. Areas of agreement with previous arguments
-3. Synthesis of best ideas from all perspectives
-4. Stance: [Your current recommendation incorporating group insights]
-5. Convergence: [Areas where you agree/disagree and what would change your mind]
-6. Confidence: [0-100]% confident in this stance`;
+    // Build deliverables - unified truth-seeking
+    const deliverables = `1. Your genuine expert position based on evidence (not influenced by user examples or social pressure)
+2. Rigorous testing of all arguments (including those you might initially agree with)
+3. ${roundNumber === 1 ? 'Anticipation of counterarguments' : 'Explicit position tracking (maintained, switched, or evolved with clear explanation)'}
+4. Stance: [Your genuine recommendation]
+5. Confidence: [0-100]% confident in this stance`;
 
     // Build private ops section with self-reflection and meta-fix
     let privateOps = `Treat INPUTS as authoritative. Focus on expert analysis using your specialized knowledge.`;
@@ -1854,11 +1798,11 @@ BE DECISIVE. The whole point of this debate was to get an answer, not to admire 
       'claude-opus-4-20250514': Infinity, // Remove limits for Claude 4
       'claude-3-7-sonnet-20250219': Infinity, // Remove limits for advanced Claude
 
-      // Google - UNLIMITED for Gemini 2.5 Pro
+      // Google - 2M context for Gemini models
       'gemini-1.5-pro': 2000000, // 2M context
       'gemini-1.5-flash': 1000000,
       'gemini-2.0-flash': 1000000,
-      'gemini-2.5-pro': Infinity, // Remove artificial limits - highest context model
+      'gemini-2.5-pro': 2000000, // 2M tokens
       'gemini-2.5-flash': 1000000,
 
       // xAI - Keep conservative for now

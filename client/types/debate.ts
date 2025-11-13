@@ -34,7 +34,7 @@ export interface DebateConfig {
   models: Model[];
   rounds: number;
   format: 'free-form' | 'structured' | 'devils-advocate';
-  style: DebateStyle; // NEW: Determines if models should seek consensus or argue different sides
+  style?: DebateStyle; // DEPRECATED: Kept for backward compatibility with old debates, new debates use unified truth-seeking mode
   analysisDepth?: AnalysisDepth; // NEW: Controls how deeply models analyze the topic
   convergenceThreshold?: number;
   responseLength?: ResponseLength; // NEW: Control response length and cost

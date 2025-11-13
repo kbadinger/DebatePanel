@@ -67,7 +67,6 @@ export default function Home() {
     ].filter(Boolean) as Model[], // Default to top primary tier models
     rounds: 3, // Ensure this is always a valid number
     format: 'structured',
-    style: 'consensus-seeking', // Default to consensus-seeking
     analysisDepth: 'thorough', // Default to thorough analysis
     convergenceThreshold: 0.75,
     responseLength: 'standard' as ResponseLength, // Default response length
@@ -141,7 +140,7 @@ Industry & Society:
     e.preventDefault();
     
     // Check topic safety before proceeding
-    const topicAnalysis = analyzeTopicSafety(config.topic, config.description, config.style);
+    const topicAnalysis = analyzeTopicSafety(config.topic, config.description);
     if (topicAnalysis.severity === 'blocked') {
       alert('This topic cannot be debated due to safety concerns. Please see the suggestions above for academic alternatives.');
       return;
@@ -317,7 +316,7 @@ Industry & Society:
             {/* Topic Safety Analysis */}
             {config.topic && (
               (() => {
-                const topicAnalysis = analyzeTopicSafety(config.topic, config.description, config.style);
+                const topicAnalysis = analyzeTopicSafety(config.topic, config.description);
                 
                 if (topicAnalysis.severity === 'safe') return null;
                 
@@ -677,16 +676,9 @@ Industry & Society:
                             </div>
                           ))}
                           <div className="text-xs text-amber-600 mt-2">
-                            Estimated usage: {contextAnalysis.initialTokens.toLocaleString()} initial tokens + 
-                            {contextAnalysis.tokensPerRound.reduce((sum, tokens) => sum + tokens, 0).toLocaleString()} across {config.rounds} rounds = 
+                            Estimated usage: {contextAnalysis.initialTokens.toLocaleString()} initial tokens +
+                            {contextAnalysis.tokensPerRound.reduce((sum, tokens) => sum + tokens, 0).toLocaleString()} across {config.rounds} rounds =
                             {contextAnalysis.totalTokensByRound[config.rounds - 1].toLocaleString()} total by round {config.rounds}
-                            <br />
-                            <span className="text-amber-500">
-                              {config.style === 'adversarial' 
-                                ? '⚔️ Adversarial mode: responses may get longer as models defend positions'
-                                : '🤝 Consensus mode: responses get shorter as models converge'
-                              }
-                            </span>
                           </div>
                         </div>
                       )}
@@ -770,48 +762,6 @@ Industry & Society:
                 })()}
               </div>
             )}
-          </div>
-          
-          <div className="mb-4">
-            <label className="block text-sm font-semibold text-slate-700 mb-2">
-              Debate Style
-            </label>
-            <div className="space-y-3">
-              <label className="flex items-start p-3 border border-slate-300 rounded-lg hover:bg-slate-50 cursor-pointer transition-colors">
-                <input
-                  type="radio"
-                  name="debate-style"
-                  value="consensus-seeking"
-                  checked={config.style === 'consensus-seeking'}
-                  onChange={(e) => setConfig({ ...config, style: e.target.value as 'consensus-seeking' | 'adversarial' })}
-                  className="mr-3 h-4 w-4 text-green-600 focus:ring-green-500 mt-1"
-                />
-                <div>
-                  <span className="text-slate-700 font-medium">🤝 Consensus-Seeking (Business Mode)</span>
-                  <p className="text-xs text-slate-500 mt-1">
-                    Like tech leads in a room who must agree on ONE solution before leaving. 
-                    Models start with different ideas but actively work toward the best shared answer.
-                  </p>
-                </div>
-              </label>
-              <label className="flex items-start p-3 border border-slate-300 rounded-lg hover:bg-slate-50 cursor-pointer transition-colors">
-                <input
-                  type="radio"
-                  name="debate-style"
-                  value="adversarial"
-                  checked={config.style === 'adversarial'}
-                  onChange={(e) => setConfig({ ...config, style: e.target.value as 'consensus-seeking' | 'adversarial' })}
-                  className="mr-3 h-4 w-4 text-red-600 focus:ring-red-500 mt-1"
-                />
-                <div>
-                  <span className="text-slate-700 font-medium">⚔️ Adversarial (Classical Debate)</span>
-                  <p className="text-xs text-slate-500 mt-1">
-                    Traditional debate where models argue different sides vigorously. 
-                    They challenge each other relentlessly to stress-test all arguments.
-                  </p>
-                </div>
-              </label>
-            </div>
           </div>
 
           <div className="mb-4">
@@ -1063,7 +1013,7 @@ Industry & Society:
                   </div>
                 )}
                 {(() => {
-                  const topicAnalysis = analyzeTopicSafety(config.topic, config.description, config.style);
+                  const topicAnalysis = analyzeTopicSafety(config.topic, config.description);
                   const isBlocked = topicAnalysis.severity === 'blocked';
                   const isDisabled = availableModels.length === 0 || config.models.length === 0 || isBlocked;
                   

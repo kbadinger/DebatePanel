@@ -32,8 +32,8 @@ export const MODEL_CONTEXT_LIMITS = {
   'claude-3-haiku-20240307': 200000, // Claude 3 Haiku - 200k context
   'claude-3-opus-20240229': 200000,
 
-  // Google - Unlimited for Gemini 2.5 Pro
-  'gemini-2.5-pro': Infinity, // Remove artificial limits - highest context model
+  // Google - 2M context for Gemini 2.5 Pro
+  'gemini-2.5-pro': 2000000, // 2M tokens
   'gemini-2.5-flash': 1048576, // 1M tokens
   'gemini-2.5-flash-lite': 1048576,
   'gemini-2.0-pro-exp': 1048576, // 1M tokens (experimental)

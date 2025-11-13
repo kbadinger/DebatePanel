@@ -132,7 +132,7 @@ const MODEL_REFUSAL_PATTERNS = {
   ]
 };
 
-export function analyzeTopicSafety(topic: string, description: string = '', style: DebateStyle = 'consensus-seeking'): TopicAnalysis {
+export function analyzeTopicSafety(topic: string, description: string = '', style?: DebateStyle): TopicAnalysis {
   const fullText = `${topic} ${description}`.toLowerCase();
   const analysis: TopicAnalysis = {
     severity: 'safe',
