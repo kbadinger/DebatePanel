@@ -12,10 +12,13 @@ async function recoverPendingDebates() {
   console.log('🔄 Checking for interrupted debates...');
 
   try {
-    // Find all debates that are still in "running" status
-    const runningDebates = await prisma.debate.findMany({
+    // Find all debates that need recovery (running or failed with incomplete rounds)
+    const interruptedDebates = await prisma.debate.findMany({
       where: {
-        status: 'running'
+        OR: [
+          { status: 'running' },
+          { status: 'failed' }
+        ]
       },
       include: {
         user: true,
@@ -27,17 +30,18 @@ async function recoverPendingDebates() {
       }
     });
 
-    if (runningDebates.length === 0) {
+    if (interruptedDebates.length === 0) {
       console.log('✅ No interrupted debates found');
       return;
     }
 
-    console.log(`⚠️  Found ${runningDebates.length} interrupted debate(s)`);
+    console.log(`⚠️  Found ${interruptedDebates.length} interrupted debate(s)`);
 
     let completedCount = 0;
     let queuedCount = 0;
+    let skippedCount = 0;
 
-    for (const debate of runningDebates) {
+    for (const debate of interruptedDebates) {
       const completedRounds = debate.debateRounds.length;
       const totalRounds = debate.rounds;
 
@@ -64,7 +68,7 @@ async function recoverPendingDebates() {
           console.error(`     ❌ Failed to update debate:`, error);
         }
 
-      } else {
+      } else if (completedRounds < totalRounds) {
         // Rounds incomplete - queue for restart
         try {
           // Update status to 'pending-restart' so we don't pick it up again
@@ -87,10 +91,14 @@ async function recoverPendingDebates() {
         } catch (error) {
           console.error(`     ❌ Failed to queue debate:`, error);
         }
+      } else {
+        // Edge case: rounds > totalRounds or completedRounds = 0
+        console.log(`     ⚠️  Skipped - unusual state (${completedRounds}/${totalRounds})`);
+        skippedCount++;
       }
     }
 
-    console.log(`✅ Recovery complete: ${completedCount} completed, ${queuedCount} queued for restart`);
+    console.log(`✅ Recovery complete: ${completedCount} completed, ${queuedCount} queued for restart, ${skippedCount} skipped`);
 
   } catch (error) {
     console.error('❌ Error recovering pending debates:', error);
