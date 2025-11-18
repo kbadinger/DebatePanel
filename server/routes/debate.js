@@ -224,7 +224,8 @@ router.post('/', async (req, res) => {
           create: config.models.map(model => ({
             modelId: model.id,
             provider: model.provider,
-            name: model.displayName || model.name || model.id
+            name: model.name || model.id,  // API model ID
+            displayName: model.displayName || model.name || model.id  // Human-readable name
           }))
         }
       },

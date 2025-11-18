@@ -210,12 +210,13 @@ model ModelResponse {
 }
 
 model ModelSelection {
-  id       String @id @default(cuid())
-  debateId String
-  modelId  String
-  provider String
-  name     String
-  debate   Debate @relation(fields: [debateId], references: [id])
+  id          String @id @default(cuid())
+  debateId    String
+  modelId     String
+  provider    String
+  name        String  // API model ID (e.g., "gpt-4o", "claude-sonnet-4-20250514")
+  displayName String? // Human-readable name (e.g., "GPT-4o", "Claude Sonnet 4.0")
+  debate      Debate @relation(fields: [debateId], references: [id])
 
   @@unique([debateId, modelId])
 }
