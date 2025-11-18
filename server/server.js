@@ -9,6 +9,7 @@ const cors = require('cors');
 const { PrismaClient } = require('@prisma/client');
 const debateRouter = require('./routes/debate');
 const humanInputRouter = require('./routes/human-input');
+const { recoverPendingDebates } = require('./lib/job-recovery');
 
 const app = express();
 const prisma = new PrismaClient();
@@ -73,11 +74,14 @@ app.use((err, req, res, next) => {
 
 const PORT = process.env.PORT || 3001;
 
-const server = app.listen(PORT, () => {
+const server = app.listen(PORT, async () => {
   console.log(`🚀 Debate processor running on port ${PORT}`);
   console.log(`📡 Allowed origins:`);
   allowedOrigins.forEach(origin => console.log(`   - ${origin}`));
   console.log(`🗄️  Database: ${process.env.DATABASE_URL ? 'Connected' : 'Not configured'}`);
+
+  // Recover any debates that were interrupted by server restart
+  await recoverPendingDebates();
 });
 
 // Configure server timeouts for long-running debates
