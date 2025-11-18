@@ -33,6 +33,7 @@ export const MODEL_CONTEXT_LIMITS = {
   'claude-3-opus-20240229': 200000,
 
   // Google - 2M context for Gemini 2.5 Pro
+  'gemini-3-pro-preview': 1048576, // 1M tokens (preview)
   'gemini-2.5-pro': 2000000, // 2M tokens
   'gemini-2.5-flash': 1048576, // 1M tokens
   'gemini-2.5-flash-lite': 1048576,
@@ -103,6 +104,7 @@ const MODEL_ROLES: Record<string, { strengths: ModelStrength[], role: string }> 
   'claude-3-opus-20240229': { strengths: ['ethical', 'analytical', 'general'], role: 'Deep ethical implications and comprehensive analysis' },
   
   // Google Gemini
+  'gemini-3-pro-preview': { strengths: ['research', 'analytical', 'technical', 'creative'], role: 'Most advanced Gemini model - state-of-the-art reasoning and multimodal analysis' },
   'gemini-2.5-pro': { strengths: ['research', 'analytical', 'technical'], role: 'Comprehensive research and technical analysis' },
   'gemini-2.5-flash': { strengths: ['research', 'general'], role: 'Efficient research and broad analysis' },
   'gemini-2.5-flash-lite': { strengths: ['research'], role: 'Ultra-efficient research synthesis' },
@@ -302,7 +304,13 @@ const FEATURED_MODELS: Model[] = [
     displayName: 'Claude Sonnet 3.7 (Feb 2025)'
   }),
 
-  // Google - Flagship Gemini 2.5 Series (Latest Generation)
+  // Google - Flagship Gemini 3 & 2.5 Series (Latest Generation)
+  withModelInfo({
+    id: 'gemini-3-pro-preview',
+    provider: 'google',
+    name: 'gemini-3-pro-preview',
+    displayName: 'Gemini 3 Pro (Preview)'
+  }),
   withModelInfo({
     id: 'gemini-2.5-pro',
     provider: 'google',

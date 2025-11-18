@@ -321,6 +321,16 @@ export const MODEL_PRICING: Record<string, ModelPricing> = {
   },
 
   // Google Gemini Models
+  'gemini-3-pro-preview': {
+    modelId: 'gemini-3-pro-preview',
+    costPer1kTokens: {
+      input: 0.002,   // Official: $2/million tokens (≤200K context)
+      output: 0.012   // Official: $12/million tokens (≤200K context)
+    },
+    costCategory: 'premium',
+    providerBaseCost: 0.014,
+    platformMarkup: 0.3
+  },
   'gemini-2.5-pro': {
     modelId: 'gemini-2.5-pro',
     costPer1kTokens: {
