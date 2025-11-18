@@ -74,14 +74,16 @@ app.use((err, req, res, next) => {
 
 const PORT = process.env.PORT || 3001;
 
-const server = app.listen(PORT, async () => {
+const server = app.listen(PORT, () => {
   console.log(`🚀 Debate processor running on port ${PORT}`);
   console.log(`📡 Allowed origins:`);
   allowedOrigins.forEach(origin => console.log(`   - ${origin}`));
   console.log(`🗄️  Database: ${process.env.DATABASE_URL ? 'Connected' : 'Not configured'}`);
 
-  // Recover any debates that were interrupted by server restart
-  await recoverPendingDebates();
+  // Recover any debates that were interrupted by server restart (non-blocking)
+  recoverPendingDebates().catch(err => {
+    console.error('❌ Background recovery failed:', err);
+  });
 });
 
 // Configure server timeouts for long-running debates
