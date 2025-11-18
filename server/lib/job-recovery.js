@@ -1,10 +1,11 @@
 const { PrismaClient } = require('@prisma/client');
+const debateQueue = require('./debate-queue');
 const prisma = new PrismaClient();
 
 /**
  * Recovers debates that were interrupted by server restart
  * - If all rounds completed: marks as completed with note
- * - If rounds incomplete: marks as failed with helpful message
+ * - If rounds incomplete: queues for automatic restart
  * Runs in background to avoid blocking server startup
  */
 async function recoverPendingDebates() {
@@ -33,6 +34,9 @@ async function recoverPendingDebates() {
 
     console.log(`⚠️  Found ${runningDebates.length} interrupted debate(s)`);
 
+    let completedCount = 0;
+    let queuedCount = 0;
+
     for (const debate of runningDebates) {
       const completedRounds = debate.debateRounds.length;
       const totalRounds = debate.rounds;
@@ -54,29 +58,39 @@ async function recoverPendingDebates() {
           });
 
           console.log(`     ✅ Marked as completed - all rounds preserved`);
+          completedCount++;
 
         } catch (error) {
           console.error(`     ❌ Failed to update debate:`, error);
         }
 
       } else {
-        // Rounds incomplete - mark as failed
-        await prisma.debate.update({
-          where: { id: debate.id },
-          data: {
-            status: 'failed',
-            finalSynthesis: `This debate was interrupted during round ${completedRounds + 1} due to a server restart. ` +
-              `${completedRounds} of ${totalRounds} rounds were completed. ` +
-              `Please start a new debate to continue your discussion.`,
-            completedAt: new Date()
-          }
-        });
+        // Rounds incomplete - queue for restart
+        try {
+          // Update status to 'pending-restart' so we don't pick it up again
+          await prisma.debate.update({
+            where: { id: debate.id },
+            data: {
+              status: 'pending-restart',
+              finalSynthesis: `This debate is being restarted automatically. ` +
+                `${completedRounds} of ${totalRounds} rounds were completed before interruption. ` +
+                `Resuming from round ${completedRounds + 1}...`
+            }
+          });
 
-        console.log(`     ✓ Marked as failed - ${completedRounds} rounds preserved`);
+          // Add to restart queue
+          await debateQueue.enqueue(debate.id);
+
+          console.log(`     🔄 Queued for restart - will resume from round ${completedRounds + 1}`);
+          queuedCount++;
+
+        } catch (error) {
+          console.error(`     ❌ Failed to queue debate:`, error);
+        }
       }
     }
 
-    console.log(`✅ Recovered ${runningDebates.length} interrupted debate(s)`);
+    console.log(`✅ Recovery complete: ${completedCount} completed, ${queuedCount} queued for restart`);
 
   } catch (error) {
     console.error('❌ Error recovering pending debates:', error);
