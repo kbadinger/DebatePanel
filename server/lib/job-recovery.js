@@ -12,13 +12,10 @@ async function recoverPendingDebates() {
   console.log('🔄 Checking for interrupted debates...');
 
   try {
-    // Find all debates that need recovery (running or failed with incomplete rounds)
+    // Find all debates that need recovery (only running status, not old failed ones)
     const interruptedDebates = await prisma.debate.findMany({
       where: {
-        OR: [
-          { status: 'running' },
-          { status: 'failed' }
-        ]
+        status: 'running'
       },
       include: {
         user: true,
