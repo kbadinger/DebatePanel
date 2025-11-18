@@ -135,6 +135,47 @@ export const MODEL_PRICING: Record<string, ModelPricing> = {
     providerBaseCost: 0.01125,
     platformMarkup: 0.3
   },
+  // GPT-5.1 Series (January 2025 Release)
+  'gpt-5.1': {
+    modelId: 'gpt-5.1',
+    costPer1kTokens: {
+      input: 0.00125,  // $1.25 per 1M input = $0.00125 per 1k
+      output: 0.010    // $10 per 1M output = $0.010 per 1k
+    },
+    costCategory: 'flagship',
+    providerBaseCost: 0.01125,
+    platformMarkup: 0.3
+  },
+  'gpt-5.1-codex': {
+    modelId: 'gpt-5.1-codex',
+    costPer1kTokens: {
+      input: 0.00125,  // Same as GPT-5.1
+      output: 0.010
+    },
+    costCategory: 'premium',
+    providerBaseCost: 0.01125,
+    platformMarkup: 0.3
+  },
+  'gpt-5.1-codex-mini': {
+    modelId: 'gpt-5.1-codex-mini',
+    costPer1kTokens: {
+      input: 0.00025,  // $0.25 per 1M input = $0.00025 per 1k
+      output: 0.002    // $2 per 1M output = $0.002 per 1k
+    },
+    costCategory: 'standard',
+    providerBaseCost: 0.00225,
+    platformMarkup: 0.3
+  },
+  'gpt-5.1-chat': {
+    modelId: 'gpt-5.1-chat',
+    costPer1kTokens: {
+      input: 0.00125,  // $1.25 per 1M input (optimized for chat)
+      output: 0.010    // $10 per 1M output
+    },
+    costCategory: 'flagship',
+    providerBaseCost: 0.01125,
+    platformMarkup: 0.3
+  },
   'o1': {
     modelId: 'o1',
     costPer1kTokens: {

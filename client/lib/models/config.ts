@@ -9,6 +9,11 @@ export const MODEL_CONTEXT_LIMITS = {
   'gpt-5-mini': 1000000, // 1M token context window
   'gpt-5-nano': 128000, // 128k token context window
   'gpt-5-codex': 1000000, // 1M token context window
+  // GPT-5.1 Series (January 2025 Release)
+  'gpt-5.1': 400000, // 400k context window
+  'gpt-5.1-codex': 400000, // 400k context window
+  'gpt-5.1-codex-mini': 400000, // 400k context window
+  'gpt-5.1-chat': 128000, // 128k context window (optimized for chat)
   'gpt-4o': 128000,
   'gpt-4o-mini': 128000,
   'o1': 200000,
@@ -78,6 +83,11 @@ const MODEL_ROLES: Record<string, { strengths: ModelStrength[], role: string }> 
   'gpt-5-mini': { strengths: ['business', 'analytical', 'general'], role: 'Fast and efficient variant of GPT-5' },
   'gpt-5-nano': { strengths: ['business', 'general'], role: 'Ultra-efficient GPT-5 for quick tasks' },
   'gpt-5-codex': { strengths: ['technical', 'analytical'], role: 'Specialized coding and software development model' },
+  // GPT-5.1 Series (January 2025 Release)
+  'gpt-5.1': { strengths: ['business', 'analytical', 'creative', 'technical'], role: 'Latest GPT-5.1 with improved reasoning and natural conversational style' },
+  'gpt-5.1-codex': { strengths: ['technical', 'analytical'], role: 'Specialized GPT-5.1 for software engineering and coding workflows' },
+  'gpt-5.1-codex-mini': { strengths: ['technical'], role: 'Faster, smaller version of GPT-5.1-Codex for quick coding tasks' },
+  'gpt-5.1-chat': { strengths: ['business', 'creative', 'general'], role: 'Optimized for low-latency chat while retaining strong general intelligence' },
   'gpt-4o': { strengths: ['business', 'general', 'creative'], role: 'Balanced business and creative analysis' },
   'gpt-4o-mini': { strengths: ['business', 'general'], role: 'Efficient business considerations' },
   'o4-mini': { strengths: ['analytical', 'technical'], role: 'Latest reasoning model - efficient problem-solving' },
@@ -242,6 +252,24 @@ export interface ProviderExpansion {
 const FEATURED_MODELS: Model[] = [
   // OpenAI - Flagship Models (Curated via Model Discovery System)
   withModelInfo({
+    id: 'gpt-5.1',
+    provider: 'openai',
+    name: 'gpt-5.1',
+    displayName: 'GPT-5.1'
+  }),
+  withModelInfo({
+    id: 'gpt-5.1-codex',
+    provider: 'openai',
+    name: 'gpt-5.1-codex',
+    displayName: 'GPT-5.1-Codex'
+  }),
+  withModelInfo({
+    id: 'gpt-5.1-chat',
+    provider: 'openai',
+    name: 'gpt-5.1-chat',
+    displayName: 'GPT-5.1 Chat'
+  }),
+  withModelInfo({
     id: 'gpt-5-chat-latest',
     provider: 'openai',
     name: 'gpt-5-chat-latest',
@@ -364,6 +392,12 @@ const FEATURED_MODELS: Model[] = [
 // EXPANDABLE MODELS (shown when provider is expanded)
 const EXPANDABLE_MODELS: Record<string, Model[]> = {
   openai: [
+    withModelInfo({
+      id: 'gpt-5.1-codex-mini',
+      provider: 'openai',
+      name: 'gpt-5.1-codex-mini',
+      displayName: 'GPT-5.1-Codex-Mini'
+    }),
     withModelInfo({
       id: 'o3-deep-research',
       provider: 'openai',
