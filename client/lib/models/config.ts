@@ -316,22 +316,10 @@ const FEATURED_MODELS: Model[] = [
     displayName: 'Claude Haiku 4.5 (Oct 2025)'
   }),
   withModelInfo({
-    id: 'claude-opus-4-1-20250805',
-    provider: 'anthropic',
-    name: 'claude-opus-4-1-20250805',
-    displayName: 'Claude Opus 4.1 (Aug 2025)'
-  }),
-  withModelInfo({
     id: 'claude-sonnet-4-20250514',
     provider: 'anthropic',
     name: 'claude-sonnet-4-20250514',
     displayName: 'Claude Sonnet 4.0 (May 2025)'
-  }),
-  withModelInfo({
-    id: 'claude-opus-4-20250514',
-    provider: 'anthropic',
-    name: 'claude-opus-4-20250514',
-    displayName: 'Claude Opus 4.0 (May 2025)'
   }),
   withModelInfo({
     id: 'claude-3-7-sonnet-20250219',
@@ -444,6 +432,18 @@ const EXPANDABLE_MODELS: Record<string, Model[]> = {
     })
   ],
   anthropic: [
+    withModelInfo({
+      id: 'claude-opus-4-1-20250805',
+      provider: 'anthropic',
+      name: 'claude-opus-4-1-20250805',
+      displayName: 'Claude Opus 4.1 (Aug 2025)'
+    }),
+    withModelInfo({
+      id: 'claude-opus-4-20250514',
+      provider: 'anthropic',
+      name: 'claude-opus-4-20250514',
+      displayName: 'Claude Opus 4.0 (May 2025)'
+    }),
     withModelInfo({
       id: 'claude-3-5-haiku-20241022',
       provider: 'anthropic',
