@@ -25,6 +25,7 @@ export const MODEL_CONTEXT_LIMITS = {
   'o4-mini-deep-research': 200000, // Deep research variant
 
   // Anthropic - Large context windows for Claude 4+ series
+  'claude-opus-4-5-20251101': 200000, // Claude Opus 4.5 - 200k context
   'claude-sonnet-4-5-20250929': 200000, // Claude 4.5 - 200k context
   'claude-haiku-4-5-20251001': 200000, // Claude Haiku 4.5 - 200k context
   'claude-opus-4-1-20250805': 200000, // Flagship Claude 4.1 - 200k context
@@ -101,6 +102,7 @@ const MODEL_ROLES: Record<string, { strengths: ModelStrength[], role: string }> 
   'o3-deep-research': { strengths: ['analytical', 'research', 'technical'], role: 'Deep research with advanced reasoning' },
 
   // Anthropic - Claude 4.5, 4.1 and 3.5 Series
+  'claude-opus-4-5-20251101': { strengths: ['technical', 'analytical', 'ethical', 'creative'], role: 'Most advanced Claude model - exceptional at complex reasoning, coding, and nuanced analysis' },
   'claude-sonnet-4-5-20250929': { strengths: ['technical', 'analytical', 'ethical'], role: 'Best coding model in the world - excels at complex agents and reasoning' },
   'claude-haiku-4-5-20251001': { strengths: ['general', 'ethical', 'business'], role: 'Fast and efficient Claude 4.5 - excellent value for cost' },
   'claude-opus-4-1-20250805': { strengths: ['ethical', 'analytical', 'general'], role: 'Most advanced Claude model with superior reasoning and ethical analysis' },
@@ -295,6 +297,12 @@ const FEATURED_MODELS: Model[] = [
   }),
 
   // Anthropic - Flagship Models (Curated via Model Discovery System)
+  withModelInfo({
+    id: 'claude-opus-4-5-20251101',
+    provider: 'anthropic',
+    name: 'claude-opus-4-5-20251101',
+    displayName: 'Claude Opus 4.5 (Nov 2025)'
+  }),
   withModelInfo({
     id: 'claude-sonnet-4-5-20250929',
     provider: 'anthropic',
