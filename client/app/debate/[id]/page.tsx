@@ -3,9 +3,10 @@
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
-import { Debate } from '@/types/debate';
+import { Debate, ModelResponse } from '@/types/debate';
 import { ModelResponseCard } from '@/components/debate/ModelResponseCard';
 import { WinnerDisplay } from '@/components/debate/WinnerDisplay';
+import { HumanInputPanel } from '@/components/debate/HumanInputPanel';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Share, Download, Loader2 } from 'lucide-react';
 import Link from 'next/link';
@@ -17,8 +18,13 @@ export default function DebateViewPage() {
   const [debate, setDebate] = useState<Debate | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isSubmittingHuman, setIsSubmittingHuman] = useState(false);
+  const [streamingResponses, setStreamingResponses] = useState<ModelResponse[]>([]);
 
   const debateId = params.id as string;
+  const isWaitingForHuman = debate?.status === 'waiting-for-human';
+  const currentRound = (debate?.rounds?.length || 0) + 1;
+  const totalRounds = debate?.config?.rounds || 3;
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -149,6 +155,78 @@ export default function DebateViewPage() {
     URL.revokeObjectURL(url);
   };
 
+  const submitHumanInput = async (content: string, stance?: string, confidence?: number) => {
+    if (!session?.user || !debate?.id) return;
+
+    setIsSubmittingHuman(true);
+    setStreamingResponses([]);
+
+    try {
+      const apiUrl = process.env.NEXT_PUBLIC_RAILWAY_URL
+        ? `${process.env.NEXT_PUBLIC_RAILWAY_URL}/api/debate/human-input`
+        : '/api/debate/human-input';
+
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          debateId: debate.id,
+          content,
+          stance,
+          confidence: confidence || 75,
+          position: 'neutral',
+          userId: (session.user as { id?: string }).id,
+          userName: session.user.name || session.user.email
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to submit human input');
+      }
+
+      const reader = response.body?.getReader();
+      if (!reader) throw new Error('No response body');
+
+      const decoder = new TextDecoder();
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value);
+        const lines = chunk.split('\n');
+
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            let data;
+            try {
+              data = JSON.parse(line.slice(6));
+            } catch {
+              continue;
+            }
+
+            if (data.type === 'response') {
+              setStreamingResponses(prev => [...prev, data.data]);
+            } else if (data.type === 'waiting-for-human') {
+              // Still waiting for more human input
+              setStreamingResponses([]);
+              fetchDebate(); // Refresh to get latest state
+            } else if (data.type === 'debate-complete') {
+              // Debate finished - refresh to show full results
+              setStreamingResponses([]);
+              fetchDebate();
+            }
+          }
+        }
+      }
+    } catch (err) {
+      console.error('Error submitting human input:', err);
+      alert('Failed to submit your response. Please try again.');
+    } finally {
+      setIsSubmittingHuman(false);
+    }
+  };
+
   if (loading || status === 'loading') {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center">
@@ -181,7 +259,10 @@ export default function DebateViewPage() {
     return null;
   }
 
-  const allResponses = debate.rounds?.flatMap(r => r.responses) || [];
+  const allResponses = [
+    ...(debate.rounds?.flatMap(r => r.responses) || []),
+    ...streamingResponses
+  ];
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
@@ -225,12 +306,28 @@ export default function DebateViewPage() {
             <span className={`px-2 py-1 rounded text-xs font-medium ${
               debate.status === 'completed' ? 'bg-green-100 text-green-800' :
               debate.status === 'converged' ? 'bg-blue-100 text-blue-800' :
+              debate.status === 'waiting-for-human' ? 'bg-purple-100 text-purple-800' :
               'bg-gray-100 text-gray-800'
             }`}>
-              {debate.status}
+              {debate.status === 'waiting-for-human' ? 'Awaiting Your Input' : debate.status}
             </span>
           </div>
         </div>
+
+        {/* Resume Interactive Debate Banner */}
+        {isWaitingForHuman && !isSubmittingHuman && (
+          <div className="mb-6 bg-gradient-to-r from-purple-100 to-blue-100 rounded-xl p-4 border border-purple-300">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="font-semibold text-purple-900">Interactive Debate Paused</h3>
+                <p className="text-sm text-purple-700">This debate is waiting for your input to continue.</p>
+              </div>
+              <span className="px-3 py-1 bg-purple-200 text-purple-800 rounded-full text-sm font-medium">
+                Round {currentRound} of {totalRounds}
+              </span>
+            </div>
+          </div>
+        )}
 
         {/* Debate Responses */}
         <div className="space-y-4 mb-8">
@@ -241,6 +338,26 @@ export default function DebateViewPage() {
             />
           ))}
         </div>
+
+        {/* Human Input Panel for Interactive Debates */}
+        {isWaitingForHuman && (
+          <div className="mb-8">
+            <HumanInputPanel
+              onSubmit={submitHumanInput}
+              isSubmitting={isSubmittingHuman}
+              currentRound={currentRound}
+              totalRounds={totalRounds}
+            />
+          </div>
+        )}
+
+        {/* Streaming indicator */}
+        {isSubmittingHuman && (
+          <div className="mb-8 flex items-center justify-center gap-3 p-4 bg-blue-50 rounded-xl border border-blue-200">
+            <Loader2 className="animate-spin text-blue-600" size={20} />
+            <span className="text-blue-800 font-medium">AI models are responding to your input...</span>
+          </div>
+        )}
 
         {/* Results Section */}
         {debate.status === 'completed' && (
