@@ -212,12 +212,13 @@ model ModelResponse {
 }
 
 model ModelSelection {
-  id       String @id @default(cuid())
-  debateId String
-  modelId  String
-  provider String
-  name     String
-  debate   Debate @relation(fields: [debateId], references: [id], onDelete: Cascade)
+  id          String  @id @default(cuid())
+  debateId    String
+  modelId     String
+  provider    String
+  name        String
+  displayName String?
+  debate      Debate  @relation(fields: [debateId], references: [id], onDelete: Cascade)
 
   @@unique([debateId, modelId])
 }
