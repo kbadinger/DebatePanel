@@ -11,6 +11,7 @@ interface Props {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://decisionforge.ai';
 
   const debate = await prisma.debate.findFirst({
     where: {
@@ -20,25 +21,55 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       ],
       isPublic: true,
     },
-    select: { topic: true, description: true }
+    select: {
+      topic: true,
+      description: true,
+      publicSlug: true,
+      modelSelections: {
+        select: { name: true }
+      }
+    }
   });
 
   if (!debate) {
     return { title: 'Debate Not Found | DecisionForge' };
   }
 
+  const debateUrl = `${baseUrl}/d/${debate.publicSlug || slug}`;
+  const modelCount = debate.modelSelections?.length || 6;
+  const description = debate.description || `Watch ${modelCount} AI models debate: ${debate.topic}`;
+
+  // Dynamic OG image with debate topic
+  const ogImageUrl = `${baseUrl}/api/og?title=${encodeURIComponent(debate.topic)}&models=${modelCount}`;
+
   return {
     title: `${debate.topic} | DecisionForge`,
-    description: debate.description || `AI models debate: ${debate.topic}`,
+    description,
     openGraph: {
       title: debate.topic,
-      description: debate.description || `Watch AI models debate: ${debate.topic}`,
+      description,
+      url: debateUrl,
+      siteName: 'DecisionForge',
       type: 'article',
+      images: [
+        {
+          url: ogImageUrl,
+          width: 1200,
+          height: 630,
+          alt: debate.topic,
+        },
+      ],
     },
     twitter: {
       card: 'summary_large_image',
+      site: '@kbadinger',
+      creator: '@kbadinger',
       title: debate.topic,
-      description: debate.description || `Watch AI models debate: ${debate.topic}`,
+      description,
+      images: [ogImageUrl],
+    },
+    alternates: {
+      canonical: debateUrl,
     },
   };
 }
