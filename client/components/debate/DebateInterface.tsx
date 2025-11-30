@@ -444,16 +444,22 @@ export function DebateInterface({ config, onComplete }: DebateInterfaceProps) {
 
         const pollForCompletion = async () => {
           let attempts = 0;
-          const maxAttempts = 60; // Poll for up to 5 minutes (60 * 5s)
+          const maxAttempts = 360; // Poll for up to 30 minutes (360 * 5s)
+          const intervalMs = 5000; // 5 seconds between polls initially
+
+          // Calculate debate start time for elapsed time display
+          const debateStart = debateStartTime || new Date();
 
           while (attempts < maxAttempts) {
             try {
-              console.log(`Polling for debate ${debateId} completion (attempt ${attempts + 1}/${maxAttempts})`);
+              const elapsedMinutes = Math.floor((Date.now() - debateStart.getTime()) / 60000);
+              console.log(`Polling for debate ${debateId} completion (attempt ${attempts + 1}/${maxAttempts}, ${elapsedMinutes} min elapsed)`);
+
               const response = await fetch(`/api/debate?debateId=${debateId}`);
 
               if (!response.ok) {
                 console.warn('Poll failed:', response.status);
-                await new Promise(resolve => setTimeout(resolve, 5000));
+                await new Promise(resolve => setTimeout(resolve, intervalMs));
                 attempts++;
                 continue;
               }
@@ -479,18 +485,20 @@ export function DebateInterface({ config, onComplete }: DebateInterfaceProps) {
                 break;
               }
 
-              await new Promise(resolve => setTimeout(resolve, 5000));
+              // Use exponential backoff after 10 minutes to reduce server load
+              const currentInterval = attempts > 120 ? 10000 : intervalMs;
+              await new Promise(resolve => setTimeout(resolve, currentInterval));
               attempts++;
             } catch (pollError) {
               console.error('Polling error:', pollError);
               attempts++;
-              await new Promise(resolve => setTimeout(resolve, 5000));
+              await new Promise(resolve => setTimeout(resolve, intervalMs));
             }
           }
 
           if (attempts >= maxAttempts) {
             console.error('Polling timeout - debate may still be running');
-            alert('Lost connection to debate. It may still be running. Check your debate history in a few minutes.');
+            alert('Debate is taking longer than expected. It may still be running on the server. Please check your debate history in a few minutes.');
             setIsRunning(false);
           }
         };

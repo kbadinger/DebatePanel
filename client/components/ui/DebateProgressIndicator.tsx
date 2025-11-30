@@ -94,6 +94,12 @@ export function DebateProgressIndicator({
       case 'waiting-human':
         return 'Waiting for your input to continue the debate';
       case 'analyzing':
+        // Show elapsed time context for long debates
+        if (elapsedTime > 900) { // More than 15 minutes
+          return 'Debate is still running on the server. This may take a while for complex topics - checking status...';
+        } else if (elapsedTime > 600) { // More than 10 minutes
+          return 'Debate continuing on server (reconnecting in background)...';
+        }
         return 'Analyzing debate responses and calculating statistical insights...';
       case 'judge-review':
         return 'Judge is reviewing all responses and preparing final verdict...';
