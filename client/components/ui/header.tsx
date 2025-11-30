@@ -103,7 +103,7 @@ export function Header() {
                 </Link>
                 <Link href="/signup">
                   <Button size="sm">
-                    Sign up
+                    Request Access
                   </Button>
                 </Link>
               </div>

@@ -8,7 +8,7 @@ import { ModelResponseCard } from '@/components/debate/ModelResponseCard';
 import { WinnerDisplay } from '@/components/debate/WinnerDisplay';
 import { HumanInputPanel } from '@/components/debate/HumanInputPanel';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Share, Download, Loader2 } from 'lucide-react';
+import { ArrowLeft, Share, Download, Loader2, Globe, Lock, Copy, Check } from 'lucide-react';
 import Link from 'next/link';
 
 export default function DebateViewPage() {
@@ -20,6 +20,11 @@ export default function DebateViewPage() {
   const [error, setError] = useState<string | null>(null);
   const [isSubmittingHuman, setIsSubmittingHuman] = useState(false);
   const [streamingResponses, setStreamingResponses] = useState<ModelResponse[]>([]);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [isPublic, setIsPublic] = useState(false);
+  const [publicSlug, setPublicSlug] = useState<string | null>(null);
+  const [togglingPublic, setTogglingPublic] = useState(false);
+  const [copiedLink, setCopiedLink] = useState(false);
 
   const debateId = params.id as string;
   const isWaitingForHuman = debate?.status === 'waiting-for-human';
@@ -35,8 +40,63 @@ export default function DebateViewPage() {
   useEffect(() => {
     if (session && debateId) {
       fetchDebate();
+      checkAdminAndPublicStatus();
     }
   }, [session, debateId]);
+
+  const checkAdminAndPublicStatus = async () => {
+    try {
+      // Check admin status
+      const adminRes = await fetch('/api/admin/check');
+      if (adminRes.ok) {
+        const { isAdmin: adminStatus } = await adminRes.json();
+        setIsAdmin(adminStatus);
+      }
+
+      // Check public status
+      const publicRes = await fetch(`/api/debate/public?debateId=${debateId}`);
+      if (publicRes.ok) {
+        const { isPublic: pubStatus, publicSlug: slug } = await publicRes.json();
+        setIsPublic(pubStatus);
+        setPublicSlug(slug);
+      }
+    } catch (err) {
+      console.error('Error checking status:', err);
+    }
+  };
+
+  const togglePublic = async () => {
+    setTogglingPublic(true);
+    try {
+      const res = await fetch('/api/debate/public', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          debateId,
+          isPublic: !isPublic
+        })
+      });
+
+      if (res.ok) {
+        const { debate: updated } = await res.json();
+        setIsPublic(updated.isPublic);
+        setPublicSlug(updated.publicSlug);
+      }
+    } catch (err) {
+      console.error('Error toggling public:', err);
+    } finally {
+      setTogglingPublic(false);
+    }
+  };
+
+  const copyPublicLink = async () => {
+    if (publicSlug) {
+      const url = `${window.location.origin}/d/${publicSlug}`;
+      await navigator.clipboard.writeText(url);
+      setCopiedLink(true);
+      setTimeout(() => setCopiedLink(false), 2000);
+    }
+  };
 
   const fetchDebate = async () => {
     try {
@@ -277,6 +337,35 @@ export default function DebateViewPage() {
           </Link>
           
           <div className="flex items-center gap-2">
+            {isAdmin && (
+              <>
+                <Button
+                  variant={isPublic ? "default" : "secondary"}
+                  size="sm"
+                  onClick={togglePublic}
+                  disabled={togglingPublic}
+                >
+                  {togglingPublic ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : isPublic ? (
+                    <Globe className="mr-2 h-4 w-4" />
+                  ) : (
+                    <Lock className="mr-2 h-4 w-4" />
+                  )}
+                  {isPublic ? 'Public' : 'Make Public'}
+                </Button>
+                {isPublic && publicSlug && (
+                  <Button variant="secondary" size="sm" onClick={copyPublicLink}>
+                    {copiedLink ? (
+                      <Check className="mr-2 h-4 w-4 text-green-600" />
+                    ) : (
+                      <Copy className="mr-2 h-4 w-4" />
+                    )}
+                    {copiedLink ? 'Copied!' : 'Copy Link'}
+                  </Button>
+                )}
+              </>
+            )}
             <Button variant="secondary" size="sm" onClick={handleShare}>
               <Share className="mr-2 h-4 w-4" />
               Share

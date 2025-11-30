@@ -245,7 +245,7 @@ Industry & Society:
               <div className="space-y-3">
                 <Link href="/signup" className="block">
                   <Button className="w-full" size="lg">
-                    Start Free Trial → Get $5 Credits
+                    Request Early Access
                   </Button>
                 </Link>
                 <Link href="/login" className="block">
@@ -255,7 +255,7 @@ Industry & Society:
                 </Link>
               </div>
               <p className="text-sm text-slate-500 mt-6">
-                No credit card required • 35+ AI models available
+                Limited access • 35+ AI models available
               </p>
             </div>
 
@@ -275,11 +275,11 @@ Industry & Society:
               <h3 className="text-xl font-semibold text-slate-900 mb-4">Ready to explore any topic with AI consensus?</h3>
               <Link href="/signup">
                 <Button size="lg" className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800">
-                  Create Free Account
+                  Request Access
                 </Button>
               </Link>
               <p className="text-sm text-slate-600 mt-4">
-                Join researchers, students, and professionals using AI debates for better decisions
+                We're onboarding users gradually to ensure quality
               </p>
             </div>
           </>
