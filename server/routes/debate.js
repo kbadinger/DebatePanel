@@ -278,8 +278,21 @@ router.post('/', async (req, res) => {
 
     console.log('✓ Keepalive heartbeat enabled (15s interval)');
 
+    // Gather all participating models (regular + challenger if enabled)
+    let participatingModels = [...config.models];
+    if (config.challenger?.enabled && config.challenger?.model) {
+      const challengerAlreadyIncluded = participatingModels.some(m => m.id === config.challenger.model.id);
+      if (!challengerAlreadyIncluded) {
+        participatingModels.push({
+          ...config.challenger.model,
+          isChallenger: true  // Mark as challenger for special prompting
+        });
+        console.log(`✓ Challenger model added: ${config.challenger.model.displayName || config.challenger.model.id}`);
+      }
+    }
+
     // Initialize orchestrator
-    const orchestrator = new Orchestrator(config.models);
+    const orchestrator = new Orchestrator(participatingModels, config);
 
     // Run debate rounds
     for (let i = 1; i <= config.rounds; i++) {
