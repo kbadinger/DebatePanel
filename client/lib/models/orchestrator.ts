@@ -496,7 +496,6 @@ Format your response as a clear argument with supporting points.`;
       return this.buildGPT5MasterPrompt(model, previousResponses, config);
     }
 
-    // Unified truth-seeking prompting for other models
     const roundNumber = previousResponses.length > 0
       ? Math.max(...previousResponses.map(r => r.round)) + 1
       : 1;
@@ -507,9 +506,19 @@ Format your response as a clear argument with supporting points.`;
     const topicText = `${config.topic} ${config.description || ''}`.toLowerCase();
     const isSensitiveTopic = this.isTopicSensitive(topicText);
     const topicComplexity = this.getTopicComplexity(topicText);
+    const isAdversarial = config.style === 'adversarial';
+
+    // Determine model's position index for adversarial debates (for assigning sides)
+    const modelIndex = config.models.findIndex(m => m.id === model.id);
+
+    let basePrompt: string;
 
     if (roundNumber === 1) {
-      let basePrompt = this.buildTruthSeekingRound1Prompt(hasHumanParticipant);
+      if (isAdversarial) {
+        basePrompt = this.buildAdversarialRound1Prompt(hasHumanParticipant, modelIndex);
+      } else {
+        basePrompt = this.buildTruthSeekingRound1Prompt(hasHumanParticipant);
+      }
 
       // Add complexity guidance
       basePrompt = this.addComplexityGuidance(basePrompt, topicComplexity);
@@ -522,7 +531,7 @@ Format your response as a clear argument with supporting points.`;
 
       // Add analysis depth guidance
       const analysisDepth = config.analysisDepth || 'thorough';
-      basePrompt = this.addAnalysisDepthGuidance(basePrompt, analysisDepth, true); // Always use truth-seeking mode
+      basePrompt = this.addAnalysisDepthGuidance(basePrompt, analysisDepth, !isAdversarial);
 
       // Add sensitive topic guidance if needed
       return isSensitiveTopic
@@ -530,11 +539,15 @@ Format your response as a clear argument with supporting points.`;
         : basePrompt;
     }
 
-    // Round 2+ - unified truth-seeking with compressed context
+    // Round 2+ - different prompts based on style
     const lastRoundResponses = previousResponses.filter(r => r.round === roundNumber - 1);
     const previousDebate = `\n\nPrevious debate points:\n${this.compressPreviousResponses(lastRoundResponses, roundNumber)}`;
 
-    let basePrompt = this.buildTruthSeekingLaterRoundPrompt(roundNumber, hasHumanParticipant, previousDebate);
+    if (isAdversarial) {
+      basePrompt = this.buildAdversarialLaterRoundPrompt(roundNumber, hasHumanParticipant, previousDebate, modelIndex);
+    } else {
+      basePrompt = this.buildConsensusLaterRoundPrompt(roundNumber, hasHumanParticipant, previousDebate);
+    }
 
     // Add complexity guidance
     basePrompt = this.addComplexityGuidance(basePrompt, topicComplexity);
@@ -547,7 +560,7 @@ Format your response as a clear argument with supporting points.`;
 
     // Add analysis depth guidance for later rounds too
     const analysisDepth = config.analysisDepth || 'thorough';
-    basePrompt = this.addAnalysisDepthGuidance(basePrompt, analysisDepth, true); // Always use truth-seeking mode
+    basePrompt = this.addAnalysisDepthGuidance(basePrompt, analysisDepth, !isAdversarial);
 
     return isSensitiveTopic
       ? this.addSensitiveTopicGuidance(basePrompt, config)
@@ -979,6 +992,167 @@ Your response should:
 
 At the end of your response, explicitly state:
 Stance: [Your position - maintained, switched, or evolved with clear explanation]
+Confidence: [0-100]% confident in this stance`;
+  }
+
+  // === ADVERSARIAL MODE PROMPTS ===
+  // In adversarial mode, models take OPPOSING SIDES and argue to WIN
+
+  private buildAdversarialRound1Prompt(hasHumanParticipant: boolean, modelIndex: number): string {
+    const side = modelIndex % 2 === 0 ? 'AFFIRMATIVE (PRO)' : 'NEGATIVE (CON)';
+    const oppositeSide = modelIndex % 2 === 0 ? 'negative/con' : 'affirmative/pro';
+
+    return `You are a debater in a FORMAL ADVERSARIAL DEBATE. You have been assigned to argue the ${side} position.
+${hasHumanParticipant ? '\nA human participant is part of this debate.' : ''}
+
+THIS IS INTELLECTUAL COMBAT - YOUR JOB IS TO WIN:
+
+YOUR ASSIGNED POSITION: ${side}
+You MUST argue this side as effectively as possible, even if you personally disagree with it.
+The ${oppositeSide} side will be argued by other debaters. Your job is to DEFEAT their arguments.
+
+DEBATE RULES:
+✅ Argue your assigned position with full conviction and the strongest possible evidence
+✅ Anticipate the opposing side's arguments and preemptively counter them
+✅ Find the BEST reasoning, examples, and evidence for your position
+✅ This is a debate competition - argue to WIN, not to find middle ground
+✅ Attack weak points in opposing arguments ruthlessly
+❌ Do NOT hedge or acknowledge the other side has "good points"
+❌ Do NOT seek compromise or middle ground
+❌ Do NOT abandon your position - defend it vigorously
+
+WINNING THE DEBATE:
+- The strongest arguments, best evidence, and most effective rhetoric win
+- Conceding points to the other side is LOSING
+- Your goal is to make the ${oppositeSide} position look as weak as possible
+- Only concede if the opposing argument is so overwhelming you'd look foolish not to
+
+STRUCTURE YOUR ARGUMENT:
+1. State your position clearly and forcefully
+2. Present your 3-5 strongest arguments with evidence
+3. Preemptively address likely counter-arguments
+4. Conclude with why your position is clearly correct
+
+At the end of your response, explicitly state:
+Stance: [Your position - ${side}]
+Confidence: [0-100]% confident in winning this debate`;
+  }
+
+  private buildAdversarialLaterRoundPrompt(roundNumber: number, hasHumanParticipant: boolean, previousDebate: string, modelIndex: number): string {
+    const side = modelIndex % 2 === 0 ? 'AFFIRMATIVE (PRO)' : 'NEGATIVE (CON)';
+
+    return `Round ${roundNumber} of ADVERSARIAL DEBATE. You are arguing the ${side} position.
+${hasHumanParticipant ? ' A human participant is in this debate.' : ''}
+
+${previousDebate}
+
+YOUR MISSION: DEFEND YOUR POSITION AND ATTACK THE OPPOSITION
+
+REVIEW THE PREVIOUS ROUND:
+- The opposition has made their arguments. Read them carefully.
+- Identify their WEAKEST points - those are your targets
+- Find flaws in their logic, gaps in their evidence, holes in their reasoning
+
+YOUR STRATEGY FOR THIS ROUND:
+✅ ATTACK: Target the weakest parts of their argument. Expose the flaws.
+✅ DEFEND: Address any critiques they made of your position. Show why they're wrong.
+✅ STRENGTHEN: Add new evidence or arguments that bolster your side
+✅ UNDERMINE: Make their position look weaker than it did before
+❌ Do NOT concede points unless they've completely destroyed your argument
+❌ Do NOT seek common ground - this is a debate, not a negotiation
+❌ Do NOT soften your position to seem "reasonable"
+
+DEBATER'S MINDSET:
+- You are a lawyer defending your client (your position)
+- Every point you concede is a point LOST
+- The other side is trying to WIN - so are you
+- Only acknowledge their argument is strong if it would be embarrassing not to
+
+WHEN THEY MAKE A GOOD POINT:
+- Don't say "that's a good point" - instead find a way to counter it
+- Reframe their evidence in a way that supports YOUR side
+- Find exceptions, edge cases, or context that weakens their argument
+- If you truly cannot counter it, minimize its importance
+
+At the end of your response, explicitly state:
+Stance: [Your position - ${side} - MAINTAINED/STRENGTHENED]
+Confidence: [0-100]% confident in winning this debate`;
+  }
+
+  // === CONSENSUS MODE PROMPTS ===
+  // In consensus mode, models challenge each other but can agree when genuinely convinced
+
+  private buildConsensusLaterRoundPrompt(roundNumber: number, hasHumanParticipant: boolean, previousDebate: string): string {
+    return `Round ${roundNumber} of CONSENSUS-SEEKING DEBATE.${hasHumanParticipant ? ' A human participant has joined this debate.' : ''} You are being evaluated by the third party judge who will FAIL you for lazy agreement.
+
+${previousDebate}
+
+CRITICAL: CHALLENGE BEFORE YOU AGREE
+
+BEFORE YOU CAN AGREE WITH ANYONE, YOU MUST TRY TO DISAGREE:
+If another participant made a point you're inclined to agree with, your FIRST job is to challenge it:
+
+1. ATTEMPT TO CHALLENGE: Find the weakest part of their argument. Attack it. Look for:
+   - Hidden assumptions they're making
+   - Edge cases where their logic fails
+   - Missing considerations they ignored
+   - Alternative approaches they didn't consider
+
+2. EVALUATE YOUR CHALLENGE: Was your counter-argument strong or weak?
+   - Strong = You found a real flaw that undermines their position
+   - Weak = Your objection doesn't really hold up under scrutiny
+
+3. ONLY THEN DECIDE:
+   - If your challenge was STRONG → Push back hard, defend your counter-argument
+   - If your challenge was WEAK → Acknowledge it honestly: "I tried to argue [X], but your point about [Y] holds up. You're right."
+
+❌ NEVER just agree without attempting a challenge first
+❌ NEVER say "good point, I agree" without trying to find holes
+✅ DO say "I tried to counter with [X], but it doesn't hold up against your [Y]"
+✅ DO fight for your position until genuinely convinced otherwise
+
+Agreement is EARNED through failed challenges, not given through politeness.
+
+---
+
+EXCEPTION - SETTLED QUESTIONS (Skip the Challenge):
+Some questions have clear, obviously correct answers. Don't manufacture fake disagreement for:
+- Basic morality (murder, rape, child abuse = wrong. Period.)
+- Established scientific facts (earth is round, evolution is real)
+- Logical necessities
+
+HOW TO KNOW IF IT'S SETTLED:
+- Would any counter-argument require abandoning basic morality or facts?
+- Would you be embarrassed to say the counter-argument out loud to reasonable people?
+- If YES → It's settled. Agree immediately and explain WHY it's settled.
+
+For settled questions: "This is settled. [X] is clearly [right/wrong] because [core principle]. No serious counter-argument exists."
+
+DON'T be the model that argues "well actually, [horrible thing] could be justified if..." just to seem rigorous. That's not intellectual rigor, that's being an edgelord. The challenge requirement is for GENUINELY DEBATABLE topics.
+
+---
+
+THIRD PARTY JUDGE - EVALUATING YOU FOR:
+❌ Lazy agreement (agreeing without trying to challenge first)
+❌ Fake challenges (manufacturing absurd objections to settled questions)
+❌ Social pressure (changing your mind to fit in rather than because evidence demands it)
+❌ Weak defense (abandoning good positions without genuine counter-evidence)
+✅ Honest intellectual combat followed by honest concession when beaten
+
+GRAVITATING TOWARD THE BEST ANSWER:
+The goal is finding the BEST answer through genuine debate.
+- If you challenge someone and your challenge fails → Admit it and agree
+- If you challenge someone and your challenge succeeds → Press your advantage
+- Convergence happens through "I tried to disagree but couldn't" moments
+
+Your response should:
+- First, try to challenge the strongest position from the previous round
+- Honestly evaluate whether your challenge holds up
+- If your challenge is weak, admit it and explain why you're now agreeing
+- If your challenge is strong, defend it vigorously
+
+At the end of your response, explicitly state:
+Stance: [Your position - with explanation of whether you challenged and what happened]
 Confidence: [0-100]% confident in this stance`;
   }
 
