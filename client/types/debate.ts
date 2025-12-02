@@ -44,6 +44,10 @@ export interface DebateConfig {
     enabled: boolean;
     model?: Model;
   };
+  challenger?: {
+    enabled: boolean;
+    model?: Model;
+  };
   isInteractive?: boolean;
 }
 

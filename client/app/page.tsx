@@ -727,11 +727,12 @@ Industry & Society:
                 <div className="text-sm font-semibold text-blue-900 mb-2">Estimated Debate Cost</div>
                 {(() => {
                   const cost = calculateDebateCost(
-                    config.models, 
-                    config.rounds || 3, 
-                    config.topic, 
+                    config.models,
+                    config.rounds || 3,
+                    config.topic,
                     config.description || '',
-                    config.judge?.enabled ? config.judge.model : null
+                    config.judge?.enabled ? config.judge.model : null,
+                    config.challenger?.enabled ? config.challenger.model : null
                   );
                   return (
                     <>
@@ -942,11 +943,12 @@ Industry & Society:
               {Object.entries(RESPONSE_LENGTH_OPTIONS).map(([key, option]) => {
                 const isSelected = config.responseLength === key;
                 const costInfo = calculateDebateCost(
-                  config.models, 
+                  config.models,
                   config.rounds,
                   config.topic,
                   config.description || '',
-                  config.judge?.enabled ? config.judge.model : null
+                  config.judge?.enabled ? config.judge.model : null,
+                  config.challenger?.enabled ? config.challenger.model : null
                 );
                 const adjustedCost = costInfo.totalCost * option.costMultiplier;
                 
@@ -1044,14 +1046,68 @@ Industry & Society:
               )}
             </div>
           </div>
-          
+
+          <div className="mb-6">
+            <label className="block text-sm font-semibold text-slate-700 mb-2">
+              Challenger (Stress Tester)
+            </label>
+            <div className="space-y-3">
+              <label className="flex items-center">
+                <input
+                  type="checkbox"
+                  checked={config.challenger?.enabled || false}
+                  onChange={(e) => setConfig({
+                    ...config,
+                    challenger: {
+                      ...config.challenger,
+                      enabled: e.target.checked,
+                      model: config.challenger?.model || AVAILABLE_MODELS.find(m => m.id === 'grok-3')
+                    }
+                  })}
+                  className="mr-3 h-4 w-4 text-blue-600 rounded focus:ring-blue-500"
+                />
+                <span className="text-slate-700 font-medium">Enable Challenger</span>
+              </label>
+
+              {config.challenger?.enabled && (
+                <div className="ml-7">
+                  <select
+                    value={config.challenger.model?.id || 'grok-3'}
+                    onChange={(e) => {
+                      const model = AVAILABLE_MODELS.find(m => m.id === e.target.value);
+                      setConfig({
+                        ...config,
+                        challenger: {
+                          ...config.challenger,
+                          enabled: true,
+                          model
+                        }
+                      });
+                    }}
+                    className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-slate-900 bg-white font-medium"
+                  >
+                    {availableModels.map(model => (
+                      <option key={model.id} value={model.id}>
+                        {model.displayName}
+                      </option>
+                    ))}
+                  </select>
+                  <p className="mt-1 text-xs text-slate-500">
+                    The Challenger stress-tests all positions to forge stronger answers. Attacks to improve, not destroy.
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+
           {(() => {
             const cost = calculateDebateCost(
-              config.models, 
-              config.rounds || 3, 
-              config.topic, 
+              config.models,
+              config.rounds || 3,
+              config.topic,
               config.description || '',
-              config.judge?.enabled ? config.judge.model : null
+              config.judge?.enabled ? config.judge.model : null,
+              config.challenger?.enabled ? config.challenger.model : null
             );
             const isExpensive = cost.totalCost > 0.50;
             return (

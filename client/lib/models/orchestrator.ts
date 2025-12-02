@@ -363,12 +363,22 @@ Format your response as a clear argument with supporting points.`;
     debateId?: string
   ): Promise<DebateRound> {
     const prompt = this.buildRoundPrompt(config, roundNumber, previousRounds);
-    
+
     // Log the round start
     this.logger.logRound(roundNumber, prompt);
-    
+
+    // Gather all participating models (regular + challenger if enabled)
+    let participatingModels = [...config.models];
+    if (config.challenger?.enabled && config.challenger.model) {
+      // Add challenger if not already in the models list
+      const challengerAlreadyIncluded = participatingModels.some(m => m.id === config.challenger!.model!.id);
+      if (!challengerAlreadyIncluded) {
+        participatingModels.push(config.challenger.model);
+      }
+    }
+
     // Run all models in parallel with timeout, but handle failures gracefully
-    const responsePromises = config.models.map(async (model) => {
+    const responsePromises = participatingModels.map(async (model) => {
       try {
         this.logger.log(`Starting response generation for ${model.displayName} (${model.provider}/${model.name})`);
         
@@ -491,6 +501,11 @@ Format your response as a clear argument with supporting points.`;
   }
   
   private buildSystemPrompt(model: Model, previousResponses: ModelResponse[], config: DebateConfig): string {
+    // Check if this model is the Challenger - use special stress-testing prompts
+    if (this.isModelChallenger(model, config)) {
+      return this.buildChallengerPrompt(previousResponses, config);
+    }
+
     // Use GPT-5 optimized prompting if this is a GPT-5 model
     if (model.name.startsWith('gpt-5')) {
       return this.buildGPT5MasterPrompt(model, previousResponses, config);
@@ -2430,5 +2445,124 @@ BE DECISIVE. The whole point of this debate was to get an answer, not to admire 
     
     // Return original model if no fallback available
     return model.name;
+  }
+
+  // === CHALLENGER (STRESS TESTER) PROMPTS ===
+  // The Challenger's job is to forge stronger answers through rigorous stress-testing
+  // NOT to destroy, but to strengthen by finding genuine weaknesses
+
+  private buildChallengerPrompt(previousResponses: ModelResponse[], config: DebateConfig): string {
+    const roundNumber = previousResponses.length > 0
+      ? Math.max(...previousResponses.map(r => r.round)) + 1
+      : 1;
+
+    if (roundNumber === 1) {
+      return this.buildChallengerRound1Prompt();
+    }
+
+    // Later rounds - include previous debate context
+    const lastRoundResponses = previousResponses.filter(r => r.round === roundNumber - 1);
+    const previousDebate = `\n\nPrevious round positions:\n${this.compressPreviousResponses(lastRoundResponses, roundNumber)}`;
+    return this.buildChallengerLaterRoundPrompt(roundNumber, previousDebate);
+  }
+
+  private buildChallengerRound1Prompt(): string {
+    return `You are the CHALLENGER in this debate. Your role is unique and critical.
+
+YOUR MISSION: FORGE STRONGER ANSWERS THROUGH FIRE
+
+You are not here to reach a conclusion. You are here to STRESS-TEST every conclusion others reach.
+Your job is to find the failure modes, edge cases, and hidden assumptions that could make their advice DANGEROUS.
+
+CHALLENGER MINDSET:
+- You are the friend who asks "but what if it goes wrong?"
+- You are the advisor who finds the risks others miss
+- You are the voice that prevents costly mistakes
+- Your success = finding REAL problems that would change the decision
+
+WHAT YOU MUST DO:
+1. FIND HIDDEN ASSUMPTIONS: What are they taking for granted that might not be true?
+2. IDENTIFY FAILURE SCENARIOS: Under what realistic conditions does this advice fail?
+3. STRESS-TEST THE NUMBERS: Are the calculations robust? What if inputs change?
+4. CONSIDER WORST CASES: What happens if Murphy's Law applies?
+5. QUESTION THE TIMELINE: What changes in 6 months, 2 years, 5 years?
+
+YOUR ATTACKS MUST BE:
+✅ REALISTIC: Not absurd hypotheticals, but plausible scenarios
+✅ SPECIFIC: "What if X happens" not vague "there are risks"
+✅ CONSTRUCTIVE: Identify what would need to be true for the advice to be safe
+✅ QUANTIFIED: "If income drops 20%" not just "if income drops"
+
+YOU ARE NOT:
+❌ A nihilist who thinks everything is bad
+❌ A troll looking for gotchas
+❌ Someone manufacturing fake concerns
+❌ A pessimist who ignores upsides
+
+YOU ARE:
+✅ A steel-man stress tester
+✅ The reason the final answer is IRON-FORGED
+✅ The voice that prevents regret
+✅ Someone who makes the advice SAFER by finding real holes
+
+FORMAT:
+For each position you're challenging:
+- THE CLAIM: [What they said]
+- THE ASSUMPTION: [What they're taking for granted]
+- THE FAILURE SCENARIO: [When/how this could go wrong]
+- THE QUESTION: [What they need to answer to make this advice safe]
+
+At the end of your response, state:
+Stance: Challenger (stress-testing all positions)
+Confidence: [0-100]% that I've identified genuine risks`;
+  }
+
+  private buildChallengerLaterRoundPrompt(roundNumber: number, previousDebate: string): string {
+    return `Round ${roundNumber}: CHALLENGER CONTINUES STRESS-TESTING
+
+${previousDebate}
+
+YOUR MISSION THIS ROUND: DIG DEEPER
+
+Review what others have said. Have they addressed your previous challenges?
+- If YES: Acknowledge it, then find the NEXT layer of risk
+- If NO: Press harder on the unaddressed vulnerabilities
+- If PARTIALLY: Point out what's still missing
+
+NEW ATTACKS FOR THIS ROUND:
+1. COMPOUND RISKS: What if multiple challenges hit at once?
+2. TIMING RISKS: What if the worst happens at the worst possible time?
+3. SECOND-ORDER EFFECTS: What consequences follow from the first problem?
+4. RECOVERY PATHS: If this goes wrong, can they recover? How long? At what cost?
+
+ESCALATION LADDER:
+- Round 1 challenges: "What if X?"
+- Round 2+ challenges: "What if X AND Y?" or "What happens AFTER X?"
+
+REMEMBER:
+- You're not trying to WIN the debate
+- You're trying to make the final answer BULLETPROOF
+- Every real weakness you find makes the final recommendation STRONGER
+- If they've addressed a concern well, acknowledge it and move on
+
+YOUR SUCCESS IS MEASURED BY:
+✅ Did you find risks others missed?
+✅ Did your challenges lead to better, more robust advice?
+✅ Did you help identify conditions where the advice should change?
+✅ Did you make the final recommendation SAFER?
+
+NOT BY:
+❌ How negative you were
+❌ How many objections you raised
+❌ Whether you "won" against other models
+
+At the end of your response, state:
+Stance: Challenger (continuing stress-test)
+Confidence: [0-100]% that remaining risks have been identified`;
+  }
+
+  isModelChallenger(model: Model, config: DebateConfig): boolean {
+    return config.challenger?.enabled === true &&
+           config.challenger?.model?.id === model.id;
   }
 }

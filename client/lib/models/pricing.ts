@@ -826,11 +826,12 @@ export const MODEL_PRICING: Record<string, ModelPricing> = {
 
 // Helper functions
 export function calculateDebateCost(
-  models: Model[], 
+  models: Model[],
   rounds: number,
   topic: string = '',
   description: string = '',
-  judgeModel?: Model | null
+  judgeModel?: Model | null,
+  challengerModel?: Model | null
 ): {
   apiCost: number;
   platformFee: number;
@@ -912,18 +913,58 @@ export function calculateDebateCost(
       const judgeInputChars = promptChars + (finalRoundResponses * 1000 * 3);
       const judgeInputTokens = (systemPromptTokens + Math.ceil(judgeInputChars / 3)) / 1000;
       const judgeOutputTokens = 0.5; // Judge writes ~500 token analysis
-      
+
       const judgeInputCost = judgeInputTokens * judgePricing.costPer1kTokens.input;
       const judgeOutputCost = judgeOutputTokens * judgePricing.costPer1kTokens.output;
       const judgeApiCost = judgeInputCost + judgeOutputCost;
       const judgeUserCost = judgeApiCost * (1 + judgePricing.platformMarkup);
-      
+
       totalApiCost += judgeApiCost;
       breakdown.push({
         modelId: judgeModel.id,
         displayName: `${judgeModel.displayName} (Judge)`,
         apiCost: judgeApiCost,
         userCost: judgeUserCost
+      });
+    }
+  }
+
+  // Add challenger cost if enabled (participates in all rounds like regular models)
+  if (challengerModel && !models.some(m => m.id === challengerModel.id)) {
+    const challengerPricing = MODEL_PRICING[challengerModel.id];
+    if (challengerPricing) {
+      const responseTokensPerRound = challengerPricing.costCategory === 'budget' ? 750 :
+                                    challengerPricing.costCategory === 'standard' ? 1000 :
+                                    challengerPricing.costCategory === 'premium' ? 1250 :
+                                    challengerPricing.costCategory === 'luxury' ? 1500 :
+                                    challengerPricing.costCategory === 'flagship' ? 2000 : 1000;
+
+      let totalInputTokens = 0;
+      let cumulativeContext = 0;
+
+      for (let round = 1; round <= rounds; round++) {
+        const contextGrowth = round === 1 ? 0 :
+                             round === 2 ? responseTokensPerRound * 0.3 :
+                             responseTokensPerRound * 0.5;
+        cumulativeContext += contextGrowth;
+        const roundInputTokens = basePromptTokens + cumulativeContext;
+        totalInputTokens += roundInputTokens;
+      }
+
+      totalInputTokens = totalInputTokens / 1000;
+      const totalOutputTokens = (responseTokensPerRound * rounds) / 1000;
+
+      const inputCost = totalInputTokens * challengerPricing.costPer1kTokens.input;
+      const outputCost = totalOutputTokens * challengerPricing.costPer1kTokens.output;
+      const challengerApiCost = inputCost + outputCost;
+      const challengerUserCost = challengerApiCost * (1 + challengerPricing.platformMarkup);
+
+      totalApiCost += challengerApiCost;
+      breakdown.push({
+        modelId: challengerModel.id,
+        displayName: `${challengerModel.displayName} (Challenger)`,
+        apiCost: challengerApiCost,
+        userCost: challengerUserCost
       });
     }
   }

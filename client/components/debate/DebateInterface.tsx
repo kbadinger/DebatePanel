@@ -227,12 +227,8 @@ export function DebateInterface({ config, onComplete }: DebateInterfaceProps) {
         } : undefined
       };
       
-      // Use Railway service in production
-      const apiUrl = process.env.NEXT_PUBLIC_RAILWAY_URL 
-        ? `${process.env.NEXT_PUBLIC_RAILWAY_URL}/api/debate`
-        : '/api/debate';
-      
-      const response = await fetch(apiUrl, {
+      // Always use local Next.js API (returns JSON, handles Railway internally if needed)
+      const response = await fetch('/api/debate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
@@ -431,12 +427,8 @@ export function DebateInterface({ config, onComplete }: DebateInterfaceProps) {
     setModelStatuses(nextRoundStatuses);
     
     try {
-      // Use Railway service in production
-      const apiUrl = process.env.NEXT_PUBLIC_RAILWAY_URL 
-        ? `${process.env.NEXT_PUBLIC_RAILWAY_URL}/api/debate/human-input`
-        : '/api/debate/human-input';
-      
-      const response = await fetch(apiUrl, {
+      // Always use local Next.js API
+      const response = await fetch('/api/debate/human-input', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

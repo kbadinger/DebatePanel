@@ -222,11 +222,8 @@ export default function DebateViewPage() {
     setStreamingResponses([]);
 
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_RAILWAY_URL
-        ? `${process.env.NEXT_PUBLIC_RAILWAY_URL}/api/debate/human-input`
-        : '/api/debate/human-input';
-
-      const response = await fetch(apiUrl, {
+      // Always use local Next.js API
+      const response = await fetch('/api/debate/human-input', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
