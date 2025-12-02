@@ -723,7 +723,7 @@ Note: AI synthesis failed. See full debate transcript above for complete details
         content: r.content
       }));
 
-      const prompt = `As the judge, provide the DEFINITIVE ANSWER to this debate question.
+      const prompt = `As the judge, evaluate the QUALITY OF ARGUMENTS in this debate.
 
 Topic: ${debate.topic}
 
@@ -735,31 +735,37 @@ ${p.model}:
 - Full Argument: ${p.content.substring(0, 500)}...
 `).join('\n')}
 
-Your PRIMARY task is to provide THE ANSWER:
-1. Cut through any vagueness - what is the CORRECT answer based on the evidence presented?
-2. Give the actionable answer someone could implement
-3. NO WAFFLING - Be decisive and specific
+CRITICAL: Judge ONLY the quality of arguments, NOT whether you agree with the conclusion.
+- There is no objectively "correct" answer to most debates
+- A minority position with excellent reasoning should outscore a majority position with weak reasoning
+- NEVER use phrases like "wrong conclusion" - evaluate REASONING, not positions
+
+Your PRIMARY task:
+1. Based on argument quality, which position is BEST SUPPORTED?
+2. Give a clear recommendation someone could act on
+3. Acknowledge when the opposite position might be valid
 
 Your SECONDARY tasks:
 ${isConsensusMode
-  ? `4. IDENTIFY LEADING CONTRIBUTOR: Which participant contributed most effectively to reaching consensus?
+  ? `4. IDENTIFY LEADING CONTRIBUTOR: Who made the strongest arguments?
 5. Score each participant (0-100) based on:
-   - How well they facilitated consensus
-   - Quality of their collaborative reasoning
-   - Clarity of their synthesis`
-  : `4. DECLARE A WINNER: Which participant made the BEST case for the correct answer?
+   - Quality of reasoning and logic
+   - Strength of evidence presented
+   - How well they addressed counter-arguments`
+  : `4. DECLARE A WINNER: Who made the STRONGEST case based on argument quality?
 5. Score each participant (0-100) based on:
-   - How close they got to the right answer
-   - Quality of their reasoning
-   - Strength of their evidence`}
+   - Quality of reasoning (NOT agreement with conclusion)
+   - Strength of evidence presented
+   - How well they addressed counter-arguments`}
 
 Provide:
-- THE DEFINITIVE ANSWER (in 1-2 clear sentences)
-- WHY this is the correct answer (brief justification)
-- ${isConsensusMode ? 'LEADING CONTRIBUTOR: Who facilitated the best consensus' : 'WINNER: Who argued best for this position'}
-- SCORES: Rate each participant (format: "ModelName: XX/100")
+- YOUR RECOMMENDATION (in 1-2 clear sentences)
+- WHY this is best supported by the arguments
+- WHEN THE OPPOSITE MIGHT BE BETTER (acknowledge valid scenarios)
+- ${isConsensusMode ? 'LEADING CONTRIBUTOR' : 'WINNER'}: Who argued best
+- SCORES: Rate each participant on ARGUMENT QUALITY (format: "ModelName: XX/100")
 
-BE DECISIVE. The whole point of this debate was to get an answer.`;
+Judge the arguments, not the conclusions.`;
 
       // Call the judge model
       let judgeResponse;
