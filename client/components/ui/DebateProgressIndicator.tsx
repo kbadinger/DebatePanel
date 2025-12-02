@@ -84,13 +84,68 @@ export function DebateProgressIndicator({
 
   const progress = calculateProgress();
 
+  // Get round-specific purpose based on the 5/7-round structure
+  const getRoundPurpose = (round: number, total: number): { title: string; description: string } => {
+    const isDeepAnalysis = total >= 7;
+
+    switch (round) {
+      case 1:
+        return {
+          title: 'Independent Analysis',
+          description: 'Models forming initial positions based on evidence'
+        };
+      case 2:
+        return {
+          title: 'Challenge Phase',
+          description: 'Finding weaknesses and questioning assumptions'
+        };
+      case 3:
+        return {
+          title: 'Defend & Counter',
+          description: 'Defending positions and counter-attacking challenges'
+        };
+      case 4:
+        return {
+          title: 'Stress-Test',
+          description: 'Testing if defenses hold up under scrutiny'
+        };
+      case 5:
+        if (isDeepAnalysis) {
+          return {
+            title: 'Second Defense',
+            description: 'Deeper defense and fresh perspectives'
+          };
+        }
+        return {
+          title: 'Final Positions',
+          description: 'Delivering final verdicts based on what survived'
+        };
+      case 6:
+        return {
+          title: 'Final Stress-Test',
+          description: 'Last chance to find remaining flaws'
+        };
+      case 7:
+        return {
+          title: 'Final Positions',
+          description: 'Delivering final verdicts based on what survived'
+        };
+      default:
+        return {
+          title: `Round ${round}`,
+          description: 'Models are analyzing and responding'
+        };
+    }
+  };
+
   // Generate phase description
   const getPhaseDescription = () => {
     switch (phase) {
       case 'initializing':
         return 'Initializing AI models and preparing debate environment...';
       case 'round':
-        return `Round ${currentRound} of ${totalRounds} - AI models are analyzing and responding`;
+        const { description } = getRoundPurpose(currentRound, totalRounds);
+        return `Round ${currentRound} of ${totalRounds} - ${description}`;
       case 'waiting-human':
         return 'Waiting for your input to continue the debate';
       case 'analyzing':
@@ -240,9 +295,16 @@ export function DebateProgressIndicator({
       {(phase === 'round' || phase === 'waiting-human') && (
         <div className="mb-6 p-4 bg-slate-50 rounded-lg">
           <div className="flex items-center justify-between mb-3">
-            <h4 className="font-semibold text-slate-900">Round {currentRound} of {totalRounds}</h4>
+            <div>
+              <h4 className="font-semibold text-slate-900">
+                Round {currentRound}: {getRoundPurpose(currentRound, totalRounds).title}
+              </h4>
+              <p className="text-xs text-slate-500">
+                {getRoundPurpose(currentRound, totalRounds).description}
+              </p>
+            </div>
             <div className="text-sm text-slate-600">
-              {completedModels} of {models.length} models responded
+              {completedModels} of {models.length} responded
             </div>
           </div>
           

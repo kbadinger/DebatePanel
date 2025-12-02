@@ -158,13 +158,18 @@ model Debate {
   topic                String
   description          String?
   format               String           @default("structured")
-  rounds               Int
+  rounds               Int              // Total rounds configured
+  currentRound         Int              @default(0) // Current round being executed (0 = not started)
   convergenceThreshold Float?
-  status               String           @default("active")
+  status               String           @default("pending") // 'pending', 'running', 'completed', 'failed', 'converged'
+  errorMessage         String?          // Error details if status = 'failed'
+  style                String           @default("consensus-seeking") // 'adversarial' or 'consensus-seeking'
+  analysisDepth        String           @default("standard") // 'standard' (5 rounds) or 'deep' (7 rounds)
   isInteractive        Boolean          @default(false)
   isPublic             Boolean          @default(false) // Publicly viewable without auth
   publicSlug           String?          @unique // Short shareable slug like "ai-vs-humans-2024"
   createdAt            DateTime         @default(now())
+  startedAt            DateTime?        // When execution actually started
   completedAt          DateTime?
   finalSynthesis       String?
   judgeAnalysis        String?

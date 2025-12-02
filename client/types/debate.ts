@@ -4,7 +4,9 @@ export type ModelStrength = 'analytical' | 'creative' | 'ethical' | 'technical' 
 
 export type ResponseLength = 'concise' | 'standard' | 'detailed' | 'comprehensive';
 
-export type AnalysisDepth = 'practical' | 'thorough' | 'excellence';
+export type AnalysisDepth = 'practical' | 'thorough' | 'excellence' | 'standard' | 'deep';
+
+export type DebateStatus = 'pending' | 'running' | 'completed' | 'failed' | 'converged' | 'waiting-for-human';
 
 export interface Model {
   id: string;
@@ -71,8 +73,11 @@ export interface Debate {
   id: string;
   config: DebateConfig;
   rounds: DebateRound[];
-  status: 'active' | 'completed' | 'converged' | 'waiting-for-human';
+  currentRound: number;
+  status: DebateStatus;
+  errorMessage?: string;
   createdAt: Date;
+  startedAt?: Date;
   completedAt?: Date;
   finalSynthesis?: string;
   judgeAnalysis?: string;

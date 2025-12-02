@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Debate, DebateConfig, DebateRound, ModelResponse } from '@/types/debate';
+import { Debate, DebateConfig, DebateRound, DebateStatus, ModelResponse } from '@/types/debate';
 import { ModelResponseCard } from './ModelResponseCard';
 import { RatingsKey } from './RatingsKey';
 import { HumanInputPanel } from './HumanInputPanel';
@@ -242,268 +242,139 @@ export function DebateInterface({ config, onComplete }: DebateInterfaceProps) {
       });
       
       if (!response.ok) {
-        const errorText = await response.text();
-        console.error('API error response:', errorText);
+        const errorData = await response.json().catch(() => ({ error: response.statusText }));
         clearTimeout(timeoutId);
-        
-        // Parse error message if it's JSON
-        let errorMessage = `Failed to start debate: ${response.status} ${response.statusText}`;
-        try {
-          const errorJson = JSON.parse(errorText);
-          errorMessage = errorJson.error || errorJson.message || errorMessage;
-        } catch {
-          // If not JSON, use the text directly if it's not empty
-          if (errorText) {
-            errorMessage = errorText;
-          }
-        }
-        
-        throw new Error(errorMessage);
+        throw new Error(errorData.error || `Failed to start debate: ${response.status}`);
       }
-      
-      const reader = response.body?.getReader();
-      if (!reader) {
-        clearTimeout(timeoutId);
-        throw new Error('No response body');
-      }
-      
-      const decoder = new TextDecoder();
-      
+
+      // New polling-based architecture: POST returns immediately with debateId
+      const { debateId } = await response.json();
+      console.log('Debate started with ID:', debateId);
+
       // Clear the timeout since we got a response
       clearTimeout(timeoutId);
       setInitTimeout(false);
-      
+
       // Start first round
       setDebatePhase('round');
       setCurrentRound(1);
-      
+
       // Initialize all models as pending for round 1
       const initialStatuses: Record<string, 'pending' | 'thinking' | 'responding' | 'completed' | 'error'> = {};
       config.models.forEach(model => {
         initialStatuses[model.id] = 'thinking';
       });
       setModelStatuses(initialStatuses);
-      
-      let buffer = '';
-      let capturedDebateId: string | null = null;
 
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        
-        const chunk = decoder.decode(value);
-        buffer += chunk;
-        const lines = buffer.split('\n');
-        
-        // Keep the last line in the buffer if it's incomplete
-        buffer = lines.pop() || '';
-        
-        for (const line of lines) {
-          if (line.startsWith('data: ')) {
-            console.log('Received SSE line length:', line.length, 'Preview:', line.substring(0, 100) + '...');
-            let data;
-            try {
-              data = JSON.parse(line.slice(6));
-              console.log('Successfully parsed SSE data type:', data.type);
-            } catch (parseError) {
-              console.error('JSON parse error:', parseError);
-              console.error('Failed to parse line:', line.substring(0, 200));
-              // Try to detect if it's a truncation issue
-              if (line.length > 10000) {
-                console.error('Line appears to be very long and may be truncated');
-              }
-              continue;
-            }
-            
-            if (data.type === 'response' && data.data) {
-              console.log('Adding streaming response from:', data.data.modelId, 'round:', data.data.round);
-              setStreamingResponses(prev => [...prev, data.data]);
+      // Poll for debate status updates
+      const pollInterval = 3000; // 3 seconds
+      const maxAttempts = 600; // 30 minutes max (600 * 3s)
+      let attempts = 0;
+      let lastRoundSeen = 0;
 
-              // Update model status to completed
-              setModelStatuses(prev => ({
-                ...prev,
-                [data.data.modelId]: 'completed'
-              }));
-            } else if (data.type === 'round-complete' && data.data) {
-              // Capture debate ID for polling fallback
-              if (data.data.debateId && !capturedDebateId) {
-                capturedDebateId = data.data.debateId;
-                console.log('Captured debate ID for polling:', capturedDebateId);
-              }
-              console.log('Round complete:', data.data.roundNumber, 'Adding to debate state');
-              setCurrentRound(data.data.roundNumber);
-              setStreamingResponses([]);
-              
-              // Reset model statuses for next round if not final round
-              if (data.data.roundNumber < config.rounds) {
-                const nextRoundStatuses: Record<string, 'pending' | 'thinking' | 'responding' | 'completed' | 'error'> = {};
-                config.models.forEach(model => {
-                  nextRoundStatuses[model.id] = 'thinking';
-                });
-                setModelStatuses(nextRoundStatuses);
-              } else {
-                // Final round complete, moving to analysis
-                setDebatePhase('analyzing');
-              }
-              
-              // Update the debate object with the completed round
-              setDebate(prevDebate => {
-                const updatedDebate = {
-                  ...prevDebate,
-                  id: prevDebate?.id || `temp-${Date.now()}`,
-                  status: 'active' as const,
-                  config: prevDebate?.config || config,
-                  rounds: [
-                    ...(prevDebate?.rounds || []),
-                    data.data
-                  ]
-                };
-                console.log('Updated debate with round:', data.data.roundNumber, 'Total rounds:', updatedDebate.rounds.length);
-                return updatedDebate;
-              });
-            } else if (data.type === 'waiting-for-human') {
-              setWaitingForHuman(true);
-              setStreamingResponses([]);
-              setDebatePhase('waiting-human');
-            } else if (data.type === 'human-joined') {
-              const participant = data.data as { userId: string; userName: string };
-              setParticipants(prev => [...prev, participant]);
-            } else if (data.type === 'debate-summary') {
-              console.log('Debate summary received, full data follows...');
-              // Update with summary data first
-              setDebate(prevDebate => ({
-                ...prevDebate,
-                ...data.data,
-                status: data.data.status || 'completed'
-              }));
-              
-              // Move to judge phase if judge is enabled, otherwise analyzing
-              if (config.judge?.enabled) {
-                setDebatePhase('judge-review');
-              } else {
-                setDebatePhase('analyzing');
-              }
-            } else if (data.type === 'debate-complete' && data.data) {
-              console.log('Debate completed - Full data:', JSON.stringify(data.data, null, 2));
-              console.log('Debate status:', data.data?.status);
-              console.log('Has finalSynthesis:', !!data.data?.finalSynthesis);
-              console.log('Synthesis content:', data.data?.finalSynthesis?.substring(0, 200));
-              console.log('Has judgeAnalysis:', !!data.data?.judgeAnalysis);
-              console.log('Current debate state before update:', debate);
-              
-              // Merge completed debate with existing rounds data AND stop running in the same update
-              setIsRunning(false);
-              setDebatePhase('completed');
-              setDebate(prevDebate => {
-                const roundsData = extractRoundsFromPayload(data.data, prevDebate?.rounds);
-                const completedDebate = {
-                  ...prevDebate,
-                  ...data.data,
-                  rounds: roundsData,
-                  debateRounds: undefined,
-                  status: 'completed'
-                };
-                console.log('Setting completed debate state');
-                console.log('Preserved rounds:', completedDebate.rounds?.length);
-                console.log('Has synthesis:', !!completedDebate.finalSynthesis);
-                console.log('Has judge:', !!completedDebate.judgeAnalysis);
-                return completedDebate;
-              });
-              
-              // Add a small delay to ensure state updates and prevent race conditions
-              setTimeout(() => {
-                setDebate(prev => {
-                  console.log('Final verification - debate status:', prev?.status, 'rounds:', prev?.rounds?.length);
-                  return prev; // Just verify, don't overwrite
-                });
-              }, 100);
-              
-              onComplete?.(data.data);
-              // Cancel the reader to close the stream
-              reader.cancel();
-              return; // Exit the function completely
-            } else if (data.type === 'error') {
-              console.error('Debate error:', data.data);
-              const errorMessage = data.data?.message || data.data?.error || data.data || 'Unknown error occurred';
-              alert(`Debate Error: ${errorMessage}\n\nPlease ensure all required API keys are configured.`);
-              setIsRunning(false);
-              reader.cancel();
-              return; // Exit the function completely
+      while (attempts < maxAttempts) {
+        try {
+          const statusResponse = await fetch(`/api/debate/${debateId}/status`);
+
+          if (!statusResponse.ok) {
+            console.warn('Status poll failed:', statusResponse.status);
+            await new Promise(resolve => setTimeout(resolve, pollInterval));
+            attempts++;
+            continue;
+          }
+
+          const status = await statusResponse.json();
+          console.log(`Poll ${attempts + 1}: status=${status.status}, round=${status.currentRound}/${status.totalRounds}`);
+
+          // Update current round if changed
+          if (status.currentRound > lastRoundSeen) {
+            lastRoundSeen = status.currentRound;
+            setCurrentRound(status.currentRound);
+
+            // Update model statuses for new round
+            const roundStatuses: Record<string, 'pending' | 'thinking' | 'responding' | 'completed' | 'error'> = {};
+            config.models.forEach(model => {
+              roundStatuses[model.id] = 'thinking';
+            });
+            setModelStatuses(roundStatuses);
+
+            // Update phase
+            if (status.currentRound === status.totalRounds) {
+              setDebatePhase('analyzing');
+            } else {
+              setDebatePhase('round');
             }
           }
+
+          // Update debate state with rounds as they complete
+          if (status.rounds && status.rounds.length > 0) {
+            setDebate({
+              id: debateId,
+              config,
+              rounds: status.rounds,
+              currentRound: status.currentRound || 0,
+              status: (status.status || 'running') as DebateStatus,
+              createdAt: new Date(),
+            });
+
+            // Mark models as completed for completed rounds
+            const latestRound = status.rounds[status.rounds.length - 1];
+            if (latestRound?.responses) {
+              const completedStatuses: Record<string, 'pending' | 'thinking' | 'responding' | 'completed' | 'error'> = {};
+              latestRound.responses.forEach((r: { modelId: string }) => {
+                completedStatuses[r.modelId] = 'completed';
+              });
+              setModelStatuses(prev => ({ ...prev, ...completedStatuses }));
+            }
+          }
+
+          // Handle completed/failed states
+          if (status.status === 'completed' || status.status === 'converged') {
+            console.log('Debate completed via polling!');
+            setIsRunning(false);
+            setDebatePhase('completed');
+            setDebate(prevDebate => {
+              const roundsData = extractRoundsFromPayload(status, prevDebate?.rounds);
+              return {
+                ...prevDebate,
+                ...status,
+                rounds: roundsData,
+                debateRounds: undefined,
+                status: status.status
+              };
+            });
+            onComplete?.(status);
+            break;
+          }
+
+          if (status.status === 'failed') {
+            console.error('Debate failed:', status.errorMessage);
+            alert(`Debate failed: ${status.errorMessage || 'Unknown error'}`);
+            setIsRunning(false);
+            setDebatePhase('completed');
+            break;
+          }
+
+          if (status.status === 'waiting-for-human') {
+            setWaitingForHuman(true);
+            setDebatePhase('waiting-human');
+            break;
+          }
+
+          await new Promise(resolve => setTimeout(resolve, pollInterval));
+          attempts++;
+
+        } catch (pollError) {
+          console.error('Polling error:', pollError);
+          attempts++;
+          await new Promise(resolve => setTimeout(resolve, pollInterval));
         }
       }
 
-      // If stream closed but debate hasn't completed yet, poll for result
-      // (handles 15min proxy timeout for long debates)
-      const debateId = capturedDebateId || debate?.id;
-      console.log('Stream ended. Debate status:', debate?.status, 'Debate ID:', debateId);
-      if (debateId && (!debate || debate.status !== 'completed')) {
-        console.log('Stream closed before completion - starting polling fallback');
-        setDebatePhase('analyzing');
-
-        const pollForCompletion = async () => {
-          let attempts = 0;
-          const maxAttempts = 360; // Poll for up to 30 minutes (360 * 5s)
-          const intervalMs = 5000; // 5 seconds between polls initially
-
-          // Calculate debate start time for elapsed time display
-          const debateStart = debateStartTime || new Date();
-
-          while (attempts < maxAttempts) {
-            try {
-              const elapsedMinutes = Math.floor((Date.now() - debateStart.getTime()) / 60000);
-              console.log(`Polling for debate ${debateId} completion (attempt ${attempts + 1}/${maxAttempts}, ${elapsedMinutes} min elapsed)`);
-
-              const response = await fetch(`/api/debate?debateId=${debateId}`);
-
-              if (!response.ok) {
-                console.warn('Poll failed:', response.status);
-                await new Promise(resolve => setTimeout(resolve, intervalMs));
-                attempts++;
-                continue;
-              }
-
-              const data = await response.json();
-              console.log('Polled debate status:', data.status);
-
-              if (data.status === 'completed') {
-                console.log('Debate completed via polling! Updating state...');
-                setIsRunning(false);
-                setDebatePhase('completed');
-                setDebate(prevDebate => {
-                  const roundsData = extractRoundsFromPayload(data, prevDebate?.rounds);
-                  return {
-                    ...prevDebate,
-                    ...data,
-                    rounds: roundsData,
-                    debateRounds: undefined,
-                    status: 'completed'
-                  };
-                });
-                onComplete?.(data);
-                break;
-              }
-
-              // Use exponential backoff after 10 minutes to reduce server load
-              const currentInterval = attempts > 120 ? 10000 : intervalMs;
-              await new Promise(resolve => setTimeout(resolve, currentInterval));
-              attempts++;
-            } catch (pollError) {
-              console.error('Polling error:', pollError);
-              attempts++;
-              await new Promise(resolve => setTimeout(resolve, intervalMs));
-            }
-          }
-
-          if (attempts >= maxAttempts) {
-            console.error('Polling timeout - debate may still be running');
-            alert('Debate is taking longer than expected. It may still be running on the server. Please check your debate history in a few minutes.');
-            setIsRunning(false);
-          }
-        };
-
-        await pollForCompletion();
+      if (attempts >= maxAttempts) {
+        console.error('Polling timeout - debate may still be running');
+        alert('Debate is taking longer than expected. Check your debate history later.');
+        setIsRunning(false);
       }
 
     } catch (error) {

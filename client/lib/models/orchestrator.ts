@@ -539,14 +539,15 @@ Format your response as a clear argument with supporting points.`;
         : basePrompt;
     }
 
-    // Round 2+ - different prompts based on style
+    // Round 2+ - use round-specific prompts for the 5-round structure
     const lastRoundResponses = previousResponses.filter(r => r.round === roundNumber - 1);
     const previousDebate = `\n\nPrevious debate points:\n${this.compressPreviousResponses(lastRoundResponses, roundNumber)}`;
 
     if (isAdversarial) {
       basePrompt = this.buildAdversarialLaterRoundPrompt(roundNumber, hasHumanParticipant, previousDebate, modelIndex);
     } else {
-      basePrompt = this.buildConsensusLaterRoundPrompt(roundNumber, hasHumanParticipant, previousDebate);
+      // Use new round-specific prompts for the 5/7-round structure
+      basePrompt = this.getRoundSpecificPrompt(roundNumber, config.rounds, previousDebate, hasHumanParticipant);
     }
 
     // Add complexity guidance
@@ -1154,6 +1155,355 @@ Your response should:
 At the end of your response, explicitly state:
 Stance: [Your position - with explanation of whether you challenged and what happened]
 Confidence: [0-100]% confident in this stance`;
+  }
+
+  // ============================================================================
+  // NEW ROUND-SPECIFIC PROMPTS (5-round structure)
+  // ============================================================================
+
+  private buildRound2ChallengePrompt(previousDebate: string): string {
+    return `Round 2: FIRST CHALLENGES
+
+${previousDebate}
+
+YOUR MISSION THIS ROUND: FIND THE WEAKNESSES
+
+STAKES: YOUR REPUTATION IS PUBLIC
+You are one of the world's best minds. This debate will be judged publicly.
+- Find the flaw others missed → You look brilliant
+- Accept weak reasoning → You look like a yes-man
+- Miss an obvious problem → You look careless
+
+THE OTHER MODELS ARE YOUR COMPETITION. This is your audition.
+
+CHALLENGE PROTOCOL:
+Your ONLY job this round is to challenge. For EACH position from Round 1:
+
+1. ATTACK THE REASONING: "Your argument assumes X, but what about Y?"
+2. FIND THE EDGE CASES: "This works for Z, but fails when..."
+3. DEMAND EVIDENCE: "You claimed X. What's your actual evidence?"
+4. SPOT THE GAPS: "You missed considering..."
+5. QUESTION ASSUMPTIONS: "You're assuming [X] but that's not given"
+
+WHAT MAKES A GOOD CHALLENGE:
+✅ Specific: Points to exact flaw in reasoning
+✅ Substantive: Would actually matter if true
+✅ Testable: Can be verified or refuted with evidence
+✅ Novel: Raises something the original argument didn't address
+
+WEAK CHALLENGES (WILL HURT YOUR REPUTATION):
+❌ "I just don't agree" (no reasoning)
+❌ Nitpicking minor details that don't affect the conclusion
+❌ Repeating your own position without addressing theirs
+❌ Being contrarian without substance
+
+FORMAT YOUR RESPONSE:
+For each model you're challenging:
+- Their claim: [What they said]
+- My challenge: [Specific problem with their reasoning]
+- Why this matters: [How this changes the conclusion]
+
+At the end of your response, explicitly state:
+Stance: [Your current position after considering Round 1]
+Confidence: [0-100]% confident in this stance`;
+  }
+
+  private buildRound3DefendPrompt(previousDebate: string): string {
+    return `Round 3: DEFEND AND COUNTER-ATTACK
+
+${previousDebate}
+
+YOUR MISSION THIS ROUND: RESPOND TO CHALLENGES
+
+You've been challenged. Now prove your position can survive scrutiny.
+
+STAKES: YOUR REPUTATION IS PUBLIC
+- Strong defense under fire → You look like an expert
+- Crumbling at first criticism → You look unprepared
+- Admitting valid points → You look intellectually honest
+- Doubling down on bad arguments → You look stubborn and foolish
+
+DEFENSE PROTOCOL:
+For each challenge you received:
+
+1. ACKNOWLEDGE OR REJECT: Is this a valid criticism?
+   - Valid: "You're right about X. I'm adjusting my position."
+   - Invalid: "This doesn't hold because [specific counter-evidence]"
+
+2. DEFEND WITH EVIDENCE: Don't just reassert. PROVE.
+   - Provide new evidence you didn't mention before
+   - Show why their challenge doesn't undermine your core point
+   - Address the specific mechanism of their objection
+
+3. COUNTER-CHALLENGE: Turn the tables.
+   - "But your position has the SAME problem, plus [additional flaw]"
+   - "If your critique is valid, then by the same logic [absurd conclusion]"
+   - "You're attacking my implementation but not the core principle"
+
+CONCESSION PROTOCOL:
+When someone makes a genuinely good point:
+✅ Say so clearly: "That's a valid point. I was wrong about X."
+✅ Adjust your position: "Given this, I'm now recommending Y instead"
+✅ This makes you look STRONGER, not weaker
+
+NEVER:
+❌ Ignore challenges and just repeat your position
+❌ Concede everything to avoid conflict
+❌ Pretend weak arguments are strong
+❌ Refuse to update when evidence demands it
+
+FORMAT YOUR RESPONSE:
+- Challenges I'm conceding: [List with brief explanation]
+- Challenges I'm rejecting: [List with counter-evidence]
+- My counter-challenges: [New attacks on their positions]
+- Updated position: [Your refined stance]
+
+At the end of your response, explicitly state:
+Stance: [Your position after defending and counter-attacking]
+Confidence: [0-100]% confident in this stance`;
+  }
+
+  private buildRound4StressTestPrompt(previousDebate: string): string {
+    return `Round 4: STRESS-TEST THE DEFENSES
+
+${previousDebate}
+
+YOUR MISSION THIS ROUND: FIND THE REMAINING HOLES
+
+The positions have been defended. Now test if those defenses actually hold up.
+
+STAKES: YOUR REPUTATION IS PUBLIC
+- Exposing weak defenses → You're doing your job
+- Validating strong defenses → Shows intellectual honesty
+- Missing obvious flaws → You look like you're not paying attention
+- Accepting hand-wavy responses → You look easily fooled
+
+STRESS-TEST PROTOCOL:
+For each defense from Round 3:
+
+1. TEST THE COUNTER-EVIDENCE: "You said X proves your point, but..."
+   - Is their evidence actually strong?
+   - Does it address the original challenge or dodge it?
+   - Are they moving goalposts?
+
+2. PUSH THE EDGE CASES HARDER: "Even with your defense, what about..."
+   - Find scenarios where their defense still fails
+   - Test boundary conditions
+   - Look for second-order effects they missed
+
+3. CHECK FOR HIDDEN ASSUMPTIONS: "Your defense relies on [assumption]..."
+   - What are they taking for granted?
+   - Is that assumption actually safe?
+
+4. DEMAND MECHANISM: "HOW exactly does this work?"
+   - Vague defenses should be challenged
+   - "That sounds plausible but what's the actual mechanism?"
+
+QUALITY CHECK - ASK YOURSELF:
+- Did they actually address the challenge or just restate their position?
+- Is their counter-evidence specific or hand-wavy?
+- Would this defense convince a skeptical expert?
+
+WHEN DEFENSES ARE STRONG:
+✅ Acknowledge it: "Their defense of X is solid because [reason]"
+✅ Move on to weaker points
+✅ Don't manufacture fake objections
+
+WHEN DEFENSES ARE WEAK:
+✅ Call it out: "They didn't actually address [core problem]"
+✅ Explain why their evidence is insufficient
+✅ Press for better answers
+
+FORMAT YOUR RESPONSE:
+- Strong defenses I'm accepting: [List]
+- Weak defenses I'm challenging: [List with specific problems]
+- Remaining holes: [What's still unresolved]
+- My assessment: [Which position is holding up best and why]
+
+At the end of your response, explicitly state:
+Stance: [Your position after stress-testing]
+Confidence: [0-100]% confident in this stance`;
+  }
+
+  private buildRound5FinalPositionPrompt(previousDebate: string, isDeepAnalysis: boolean = false): string {
+    const roundLabel = isDeepAnalysis ? 'Round 7' : 'Round 5';
+    return `${roundLabel}: FINAL POSITIONS
+
+${previousDebate}
+
+YOUR MISSION THIS ROUND: DELIVER YOUR VERDICT
+
+Four rounds of rigorous debate. Now: what actually survived?
+
+STAKES: THIS IS YOUR FINAL ANSWER
+- Your recommendation will be judged on whether it accounts for everything raised
+- Cherry-picking only supporting evidence → You look biased
+- Ignoring valid challenges → You look dishonest
+- Changing position without explanation → You look inconsistent
+- Well-reasoned final stance → You look like a true expert
+
+FINAL POSITION PROTOCOL:
+
+1. WHAT WAS DESTROYED: What arguments/positions didn't survive scrutiny?
+   - Which initial recommendations got successfully challenged?
+   - Which defenses failed under stress-testing?
+   - Be specific about what evidence killed each position
+
+2. WHAT SURVIVED: What arguments held up through all challenges?
+   - Which positions successfully defended against all attacks?
+   - What evidence proved most compelling?
+   - Why did these survive when others didn't?
+
+3. KEY INSIGHTS: What did we learn through this debate?
+   - What nuances emerged that weren't obvious in Round 1?
+   - What assumptions were overturned?
+   - What factors turned out to be more/less important than expected?
+
+4. YOUR FINAL RECOMMENDATION:
+   - State clearly: "My recommendation is [X]"
+   - Explain why: Based on what survived the debate
+   - Acknowledge limitations: What uncertainties remain?
+   - Note dependencies: "This assumes [conditions]"
+
+INTELLECTUAL HONESTY CHECK:
+Before you submit, ask yourself:
+- Am I accounting for the strongest challenges raised?
+- Would I be embarrassed if someone pointed out I ignored [X]?
+- Is this my actual belief or am I just being agreeable?
+
+FORMAT YOUR RESPONSE:
+## What Got Destroyed
+[Positions that didn't survive, with brief explanation why]
+
+## What Survived
+[Positions that held up, with brief explanation why]
+
+## Key Insights
+[What we learned through this debate]
+
+## My Final Recommendation
+[Clear recommendation with reasoning]
+
+At the end of your response, explicitly state:
+Stance: [Your final recommendation]
+Confidence: [0-100]% confident in this stance`;
+  }
+
+  // Deep Analysis mode additional rounds (for 7-round debates)
+  private buildRound5DeepDefensePrompt(previousDebate: string): string {
+    return `Round 5 (Deep Analysis): SECOND DEFENSE + NEW ANGLES
+
+${previousDebate}
+
+YOUR MISSION THIS ROUND: DEEPER DEFENSE AND FRESH PERSPECTIVES
+
+The stress-test revealed remaining holes. Now shore up your defenses AND bring new considerations.
+
+STAKES: YOUR REPUTATION IS PUBLIC
+This is deep analysis mode - the standards are HIGHER.
+- Superficial defense → You're not taking this seriously
+- Novel insight at this stage → You're a true expert
+- Just repeating earlier points → You've run out of ideas
+
+SECOND DEFENSE PROTOCOL:
+
+1. ADDRESS REMAINING HOLES:
+   - What challenges from Round 4 still need answers?
+   - Provide STRONGER evidence than before
+   - If you can't defend a point, concede it explicitly
+
+2. BRING NEW ANGLES:
+   - What hasn't been considered yet?
+   - Are there second-order effects we're missing?
+   - External factors that change the calculus?
+   - Long-term implications not yet discussed?
+
+3. SYNTHESIS:
+   - How do the surviving arguments fit together?
+   - Is there a unified framework emerging?
+   - What's the meta-lesson from this debate?
+
+QUALITY BAR FOR DEEP ANALYSIS:
+✅ New evidence or perspectives, not just repetition
+✅ Acknowledge what's been settled vs still contested
+✅ Build toward a synthesis, not just another argument
+
+At the end of your response, explicitly state:
+Stance: [Your refined position]
+Confidence: [0-100]% confident in this stance`;
+  }
+
+  private buildRound6FinalStressTestPrompt(previousDebate: string): string {
+    return `Round 6 (Deep Analysis): FINAL STRESS-TEST
+
+${previousDebate}
+
+YOUR MISSION THIS ROUND: LAST CHANCE TO FIND FLAWS
+
+This is the final opportunity to challenge before final positions. Make it count.
+
+STAKES: YOUR REPUTATION IS PUBLIC
+- Finding a flaw everyone missed → You're the expert who saved the day
+- Letting a weak argument through → You failed at your job
+- Raising trivial objections → You're wasting everyone's time
+
+FINAL STRESS-TEST PROTOCOL:
+
+1. FRESH EYES ON SURVIVING ARGUMENTS:
+   - Read the debate as if you're seeing it for the first time
+   - Is there anything that "sounds good" but doesn't hold up?
+   - Are we suffering from groupthink?
+
+2. DEVIL'S ADVOCATE:
+   - What would the strongest critic say?
+   - What evidence would change your mind?
+   - Are there real-world failures of similar approaches?
+
+3. IMPLEMENTATION REALITY CHECK:
+   - Is the recommended approach actually practical?
+   - What could go wrong in execution?
+   - Hidden costs or dependencies?
+
+4. FINAL CHALLENGES:
+   - Your last chance to raise objections
+   - Make them count - focus on substantive issues
+   - Don't hold back if you see a problem
+
+At the end of your response, explicitly state:
+Stance: [Your position going into final round]
+Confidence: [0-100]% confident in this stance`;
+  }
+
+  // Helper to get the right prompt based on round number
+  private getRoundSpecificPrompt(
+    roundNumber: number,
+    totalRounds: number,
+    previousDebate: string,
+    hasHumanParticipant: boolean
+  ): string {
+    const isDeepAnalysis = totalRounds >= 7;
+
+    // Map rounds to their purpose
+    if (roundNumber === 2) {
+      return this.buildRound2ChallengePrompt(previousDebate);
+    } else if (roundNumber === 3) {
+      return this.buildRound3DefendPrompt(previousDebate);
+    } else if (roundNumber === 4) {
+      return this.buildRound4StressTestPrompt(previousDebate);
+    } else if (roundNumber === 5) {
+      if (isDeepAnalysis) {
+        return this.buildRound5DeepDefensePrompt(previousDebate);
+      } else {
+        return this.buildRound5FinalPositionPrompt(previousDebate, false);
+      }
+    } else if (roundNumber === 6 && isDeepAnalysis) {
+      return this.buildRound6FinalStressTestPrompt(previousDebate);
+    } else if (roundNumber === 7 && isDeepAnalysis) {
+      return this.buildRound5FinalPositionPrompt(previousDebate, true);
+    }
+
+    // Fallback for rounds beyond the standard structure
+    return this.buildConsensusLaterRoundPrompt(roundNumber, hasHumanParticipant, previousDebate);
   }
 
   private buildGPT5MasterPrompt(model: Model, previousResponses: ModelResponse[], config: DebateConfig): string {

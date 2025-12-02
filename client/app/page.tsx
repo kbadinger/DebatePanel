@@ -65,7 +65,7 @@ export default function Home() {
       availableModels.find(m => m.id === 'claude-3-5-sonnet-20241022'),
       availableModels.find(m => m.id === 'gemini-2.5-pro')
     ].filter(Boolean) as Model[], // Default to top primary tier models
-    rounds: 3, // Ensure this is always a valid number
+    rounds: 5, // Default to Standard mode (5-round debate)
     format: 'structured',
     analysisDepth: 'thorough', // Default to thorough analysis
     convergenceThreshold: 0.75,
@@ -861,21 +861,77 @@ Industry & Society:
           </div>
           
           <div className="mb-4">
-            <label htmlFor="rounds" className="block text-sm font-semibold text-slate-700 mb-2">
-              Number of Rounds
+            <label className="block text-sm font-semibold text-slate-700 mb-2">
+              Debate Mode
             </label>
-            <input
-              id="rounds"
-              type="number"
-              min="1"
-              max="10"
-              value={config.rounds || 3}
-              onChange={(e) => {
-                const value = parseInt(e.target.value);
-                setConfig({ ...config, rounds: isNaN(value) ? 3 : Math.max(1, Math.min(10, value)) });
-              }}
-              className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-slate-900 bg-white font-medium"
-            />
+            <div className="space-y-3">
+              <label className={`flex items-start p-3 border rounded-lg hover:bg-slate-50 cursor-pointer transition-colors ${
+                config.rounds === 5 ? 'border-blue-500 bg-blue-50' : 'border-slate-300'
+              }`}>
+                <input
+                  type="radio"
+                  name="debate-mode"
+                  checked={config.rounds === 5}
+                  onChange={() => setConfig({ ...config, rounds: 5 })}
+                  className="mr-3 h-4 w-4 text-blue-600 focus:ring-blue-500 mt-1"
+                />
+                <div>
+                  <span className="text-slate-700 font-medium">⚡ Standard (5 rounds)</span>
+                  <p className="text-xs text-slate-500 mt-1">
+                    Full debate cycle: Position → Challenge → Defend → Stress-Test → Final Verdict.
+                    Best for most decisions.
+                  </p>
+                </div>
+              </label>
+              <label className={`flex items-start p-3 border rounded-lg hover:bg-slate-50 cursor-pointer transition-colors ${
+                config.rounds === 7 ? 'border-purple-500 bg-purple-50' : 'border-slate-300'
+              }`}>
+                <input
+                  type="radio"
+                  name="debate-mode"
+                  checked={config.rounds === 7}
+                  onChange={() => setConfig({ ...config, rounds: 7 })}
+                  className="mr-3 h-4 w-4 text-purple-600 focus:ring-purple-500 mt-1"
+                />
+                <div>
+                  <span className="text-slate-700 font-medium">🔬 Deep Analysis (7 rounds)</span>
+                  <p className="text-xs text-slate-500 mt-1">
+                    Extended cycle with extra defense and stress-testing rounds.
+                    For high-stakes decisions, major pivots, or complex architecture.
+                  </p>
+                </div>
+              </label>
+              <label className={`flex items-start p-3 border rounded-lg hover:bg-slate-50 cursor-pointer transition-colors ${
+                config.rounds !== 5 && config.rounds !== 7 ? 'border-slate-500 bg-slate-50' : 'border-slate-300'
+              }`}>
+                <input
+                  type="radio"
+                  name="debate-mode"
+                  checked={config.rounds !== 5 && config.rounds !== 7}
+                  onChange={() => setConfig({ ...config, rounds: 3 })}
+                  className="mr-3 h-4 w-4 text-slate-600 focus:ring-slate-500 mt-1"
+                />
+                <div className="flex-1">
+                  <span className="text-slate-700 font-medium">🎛️ Custom</span>
+                  <p className="text-xs text-slate-500 mt-1 mb-2">
+                    Set your own number of rounds (1-10).
+                  </p>
+                  {config.rounds !== 5 && config.rounds !== 7 && (
+                    <input
+                      type="number"
+                      min="1"
+                      max="10"
+                      value={config.rounds || 3}
+                      onChange={(e) => {
+                        const value = parseInt(e.target.value);
+                        setConfig({ ...config, rounds: isNaN(value) ? 3 : Math.max(1, Math.min(10, value)) });
+                      }}
+                      className="w-20 px-3 py-1 border border-slate-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-900 bg-white text-sm"
+                    />
+                  )}
+                </div>
+              </label>
+            </div>
           </div>
           
           <div className="mb-4">
