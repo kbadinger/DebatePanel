@@ -1884,7 +1884,7 @@ ${privateOps}`;
       isHuman: r.isHuman || false
     }));
 
-    const prompt = `As the judge, provide the DEFINITIVE ANSWER to this debate question.
+    const prompt = `As the judge, synthesize this debate and provide a clear recommendation.
 
 Topic: ${topic}
 
@@ -1899,39 +1899,47 @@ ${p.model}:
 - Full Argument: ${p.keyPoint}
 `).join('\n')}
 
-Your PRIMARY task is to provide THE ANSWER:
-1. Cut through any vagueness - what is the CORRECT answer based on the evidence presented?
-2. If it's "prioritize safety" - say that clearly and explain why
-3. If it's "prioritize innovation" - say that clearly and explain why
-4. If it truly requires balance - specify EXACTLY what that means (e.g., "80% innovation, 20% safety" or "Safety gates at these 3 specific points")
-5. NO WAFFLING - Give the actionable answer someone could implement tomorrow
+CRITICAL: There is no objectively "correct" or "wrong" answer to most debate questions. Different positions may be valid depending on circumstances, values, and risk tolerance. Your job is NOT to declare one side "right" and another "wrong."
+
+Your PRIMARY task is to provide A CLEAR RECOMMENDATION:
+1. Based on the arguments presented, what position is BEST SUPPORTED by evidence and reasoning?
+2. Be specific about the recommendation and the conditions under which it applies
+3. Acknowledge the strongest counter-arguments and when the opposite position might be better
+4. NO WAFFLING - Give an actionable recommendation someone could implement
 
 ANALYSIS DEPTH EXPECTATIONS (${analysisDepth.toUpperCase()}):
 ${this.getJudgeDepthGuidance(analysisDepth)}
 
 Your SECONDARY tasks:
-${isConsensusMode 
-  ? `6. IDENTIFY LEADING CONTRIBUTOR: Which participant contributed most effectively to reaching the consensus?
-7. Score each participant (0-100) based on:
-   - How well they facilitated consensus
-   - Quality of their collaborative reasoning
+${isConsensusMode
+  ? `5. IDENTIFY LEADING CONTRIBUTOR: Which participant contributed most effectively to reaching the consensus?
+6. Score each participant (0-100) based on:
+   - Quality of reasoning and evidence
+   - How well they engaged with counter-arguments
    - Constructiveness of their contributions
    - Clarity of their synthesis`
-  : `6. DECLARE A WINNER: Which participant made the BEST case for the correct answer?
-7. Score each participant (0-100) based on:
-   - How close they got to the right answer
-   - Quality of their reasoning
-   - Strength of their evidence
-   - Clarity of their position`}
+  : `5. DECLARE A WINNER: Which participant made the STRONGEST, best-reasoned case?
+6. Score each participant (0-100) based on:
+   - Quality of reasoning (NOT whether you agree with their conclusion)
+   - Strength of evidence presented
+   - How well they addressed counter-arguments
+   - Clarity and persuasiveness of their position`}
+
+IMPORTANT SCORING GUIDANCE:
+- A well-reasoned minority position should score HIGHER than a poorly-reasoned majority position
+- Do NOT penalize models for reaching different conclusions if their reasoning is sound
+- Reward intellectual rigor, evidence, and engagement with opposing views
+- "Wrong conclusion" is NOT valid criticism - evaluate the REASONING, not the position
 
 Provide:
-- THE DEFINITIVE ANSWER (in 1-2 clear sentences)
-- WHY this is the correct answer (brief justification)
-- ${isConsensusMode ? 'LEADING CONTRIBUTOR: Who facilitated the best consensus' : 'WINNER: Who argued best for this position'}
-- SCORES: Rate each participant
-- CONFIDENCE: How certain are you in this answer (0-100%)
+- YOUR RECOMMENDATION (in 1-2 clear sentences)
+- WHY this recommendation is best supported (brief justification)
+- WHEN THE OPPOSITE MIGHT BE BETTER (acknowledge valid counter-scenarios)
+- ${isConsensusMode ? 'LEADING CONTRIBUTOR: Who facilitated the best consensus' : 'WINNER: Who made the strongest case'}
+- SCORES: Rate each participant on reasoning quality
+- CONFIDENCE: How confident in this recommendation (0-100%)
 
-BE DECISIVE. The whole point of this debate was to get an answer, not to admire the complexity.`;
+BE DECISIVE but intellectually honest. A strong recommendation acknowledges its limitations.`;
 
     const result = await generateText({
       model: this.getModelProvider(judgeModel),
