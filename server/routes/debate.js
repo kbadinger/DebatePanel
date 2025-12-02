@@ -209,6 +209,18 @@ router.post('/', async (req, res) => {
       }
     }
 
+    // Gather all models to save (regular + challenger if enabled)
+    const modelsToSave = [...config.models];
+    if (config.challenger?.enabled && config.challenger?.model) {
+      const challengerAlreadyIncluded = modelsToSave.some(m => m.id === config.challenger.model.id);
+      if (!challengerAlreadyIncluded) {
+        modelsToSave.push({
+          ...config.challenger.model,
+          isChallenger: true
+        });
+      }
+    }
+
     // Create debate in database
     debate = await prisma.debate.create({
       data: {
@@ -221,11 +233,13 @@ router.post('/', async (req, res) => {
         isInteractive: config.includeHuman || false,
         status: 'running',
         modelSelections: {
-          create: config.models.map(model => ({
+          create: modelsToSave.map(model => ({
             modelId: model.id,
             provider: model.provider,
             name: model.name || model.id,  // API model ID
-            displayName: model.displayName || model.name || model.id  // Human-readable name
+            displayName: model.isChallenger
+              ? `${model.displayName || model.name || model.id} (Challenger)`
+              : (model.displayName || model.name || model.id)
           }))
         }
       },
@@ -278,21 +292,13 @@ router.post('/', async (req, res) => {
 
     console.log('✓ Keepalive heartbeat enabled (15s interval)');
 
-    // Gather all participating models (regular + challenger if enabled)
-    let participatingModels = [...config.models];
+    // Use modelsToSave which already includes Challenger if enabled
     if (config.challenger?.enabled && config.challenger?.model) {
-      const challengerAlreadyIncluded = participatingModels.some(m => m.id === config.challenger.model.id);
-      if (!challengerAlreadyIncluded) {
-        participatingModels.push({
-          ...config.challenger.model,
-          isChallenger: true  // Mark as challenger for special prompting
-        });
-        console.log(`✓ Challenger model added: ${config.challenger.model.displayName || config.challenger.model.id}`);
-      }
+      console.log(`✓ Challenger model included: ${config.challenger.model.displayName || config.challenger.model.id}`);
     }
 
-    // Initialize orchestrator
-    const orchestrator = new Orchestrator(participatingModels, config);
+    // Initialize orchestrator with all participating models
+    const orchestrator = new Orchestrator(modelsToSave, config);
 
     // Run debate rounds
     for (let i = 1; i <= config.rounds; i++) {
