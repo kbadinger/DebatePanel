@@ -290,67 +290,93 @@ export function PublicDebateView({ debate }: { debate: PublicDebate }) {
                 </div>
               </button>
 
-              {expandedRounds.includes(round.roundNumber) && (
-                <div className="px-6 pb-6 space-y-4 border-t border-slate-100 pt-4">
-                  {/* Round Synthesis */}
-                  {round.consensus && (
-                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
-                      <p className="text-sm font-medium text-blue-800 mb-1">📋 Round Summary</p>
-                      <p className="text-sm text-blue-900">{round.consensus}</p>
-                    </div>
-                  )}
+              {expandedRounds.includes(round.roundNumber) && (() => {
+                // Separate regular responses from Challenger
+                const regularResponses = round.responses.filter(r => !isChallenger(r.modelId));
+                const challengerResponse = round.responses.find(r => isChallenger(r.modelId));
 
-                  {/* Responses */}
-                  {round.responses.map((response, idx) => {
-                    const responseKey = `${round.roundNumber}-${idx}`;
-                    const isExpanded = expandedResponses.includes(responseKey);
-                    const needsTruncation = response.content.length > 250;
-                    const isChallengerResponse = isChallenger(response.modelId);
+                return (
+                  <div className="px-6 pb-6 space-y-4 border-t border-slate-100 pt-4">
+                    {/* 1. Model Responses (not Challenger) */}
+                    {regularResponses.map((response, idx) => {
+                      const responseKey = `${round.roundNumber}-${idx}`;
+                      const isExpanded = expandedResponses.includes(responseKey);
+                      const needsTruncation = response.content.length > 250;
 
-                    return (
-                      <div
-                        key={idx}
-                        className={`rounded-lg p-5 ${
-                          isChallengerResponse
-                            ? 'bg-indigo-50 border-2 border-indigo-300'
-                            : 'bg-slate-50'
-                        }`}
-                      >
-                        <div className="flex items-center justify-between mb-3">
-                          <div className="flex items-center gap-2">
-                            {isChallengerResponse && (
-                              <span className="px-2 py-0.5 bg-indigo-600 text-white rounded text-xs font-bold">⚔️ CHALLENGER</span>
-                            )}
-                            <span className={`px-2.5 py-1 rounded-full text-xs font-medium border ${getProviderColor(response.modelProvider)}`}>
-                              {getModelDisplayName(response.modelId, debate.models)}
-                            </span>
-                            {response.isHuman && (
-                              <span className="px-2 py-0.5 bg-purple-100 text-purple-800 rounded text-xs">Human</span>
-                            )}
+                      return (
+                        <div key={idx} className="rounded-lg p-5 bg-slate-50">
+                          <div className="flex items-center justify-between mb-3">
+                            <div className="flex items-center gap-2">
+                              <span className={`px-2.5 py-1 rounded-full text-xs font-medium border ${getProviderColor(response.modelProvider)}`}>
+                                {getModelDisplayName(response.modelId, debate.models)}
+                              </span>
+                              {response.isHuman && (
+                                <span className="px-2 py-0.5 bg-purple-100 text-purple-800 rounded text-xs">Human</span>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-3 text-sm">
+                              <span className="text-slate-500">Confidence: {response.confidence}%</span>
+                              {response.argumentScore && (
+                                <span className="text-slate-500">Score: {response.argumentScore.toFixed(1)}</span>
+                              )}
+                            </div>
                           </div>
-                          <div className="flex items-center gap-3 text-sm">
-                            <span className="text-slate-500">Confidence: {response.confidence}%</span>
-                            {response.argumentScore && (
-                              <span className="text-slate-500">Score: {response.argumentScore.toFixed(1)}</span>
-                            )}
+                          <div className="text-slate-700 whitespace-pre-wrap text-sm leading-relaxed">
+                            {isExpanded ? response.content : truncateContent(response.content)}
                           </div>
+                          {needsTruncation && (
+                            <button
+                              onClick={() => toggleResponse(responseKey)}
+                              className="mt-2 text-sm text-blue-600 hover:text-blue-800 font-medium"
+                            >
+                              {isExpanded ? '← Show less' : 'Read more →'}
+                            </button>
+                          )}
                         </div>
-                        <div className="text-slate-700 whitespace-pre-wrap text-sm leading-relaxed">
-                          {isExpanded ? response.content : truncateContent(response.content)}
-                        </div>
-                        {needsTruncation && (
-                          <button
-                            onClick={() => toggleResponse(responseKey)}
-                            className="mt-2 text-sm text-blue-600 hover:text-blue-800 font-medium"
-                          >
-                            {isExpanded ? '← Show less' : 'Read more →'}
-                          </button>
-                        )}
+                      );
+                    })}
+
+                    {/* 2. Round Synthesis */}
+                    {round.consensus && (
+                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                        <p className="text-sm font-medium text-blue-800 mb-1">📊 Round {round.roundNumber} Synthesis</p>
+                        <p className="text-sm text-blue-900">{round.consensus}</p>
                       </div>
-                    );
-                  })}
-                </div>
-              )}
+                    )}
+
+                    {/* 3. Challenger (after synthesis) */}
+                    {challengerResponse && (() => {
+                      const challengerKey = `${round.roundNumber}-challenger`;
+                      const isExpanded = expandedResponses.includes(challengerKey);
+                      const needsTruncation = challengerResponse.content.length > 250;
+
+                      return (
+                        <div className="rounded-lg p-5 bg-indigo-50 border-2 border-indigo-300">
+                          <div className="flex items-center justify-between mb-3">
+                            <div className="flex items-center gap-2">
+                              <span className="px-2 py-0.5 bg-indigo-600 text-white rounded text-xs font-bold">⚔️ CHALLENGER</span>
+                              <span className={`px-2.5 py-1 rounded-full text-xs font-medium border ${getProviderColor(challengerResponse.modelProvider)}`}>
+                                {getModelDisplayName(challengerResponse.modelId, debate.models)}
+                              </span>
+                            </div>
+                          </div>
+                          <div className="text-slate-700 whitespace-pre-wrap text-sm leading-relaxed">
+                            {isExpanded ? challengerResponse.content : truncateContent(challengerResponse.content)}
+                          </div>
+                          {needsTruncation && (
+                            <button
+                              onClick={() => toggleResponse(challengerKey)}
+                              className="mt-2 text-sm text-blue-600 hover:text-blue-800 font-medium"
+                            >
+                              {isExpanded ? '← Show less' : 'Read more →'}
+                            </button>
+                          )}
+                        </div>
+                      );
+                    })()}
+                  </div>
+                );
+              })()}
             </div>
           ))}
         </div>

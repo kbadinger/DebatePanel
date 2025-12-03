@@ -697,44 +697,51 @@ export function DebateInterface({ config, onComplete }: DebateInterfaceProps) {
       
       
       <div className="space-y-6">
-        {/* Display rounds with synthesis */}
-        {debate?.rounds?.slice().reverse().map((round) => (
-          <div key={round.roundNumber} className="space-y-4">
-            {/* Round Header */}
-            <h3 className="text-lg font-semibold text-slate-700 border-b pb-2">
-              Round {round.roundNumber}
-            </h3>
+        {/* Display rounds chronologically with proper order: Responses → Synthesis → Challenger */}
+        {debate?.rounds?.map((round) => {
+          // Separate regular responses from Challenger
+          const regularResponses = round.responses?.filter(r => !r.modelId.startsWith('challenger-')) || [];
+          const challengerResponse = round.responses?.find(r => r.modelId.startsWith('challenger-'));
 
-            {/* Round Responses - sort to put Challenger last */}
-            {round.responses
-              ?.slice()
-              .sort((a, b) => {
-                const aIsChallenger = a.modelId.startsWith('challenger-');
-                const bIsChallenger = b.modelId.startsWith('challenger-');
-                if (aIsChallenger && !bIsChallenger) return 1;
-                if (!aIsChallenger && bIsChallenger) return -1;
-                return 0;
-              })
-              .map((response, idx) => (
-              <ModelResponseCard
-                key={`${response.modelId}-${round.roundNumber}-${idx}`}
-                response={response}
-                isStreaming={streamingResponses.includes(response)}
-                debateId={debate?.id}
-              />
-            ))}
+          return (
+            <div key={round.roundNumber} className="space-y-4">
+              {/* Round Header */}
+              <h3 className="text-lg font-semibold text-slate-700 border-b pb-2">
+                Round {round.roundNumber}
+              </h3>
 
-            {/* Round Synthesis */}
-            {round.consensus && (
-              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-xl p-5 mt-4">
-                <h4 className="font-semibold text-blue-900 mb-2 flex items-center gap-2">
-                  📊 Round {round.roundNumber} Synthesis
-                </h4>
-                <p className="text-blue-800 text-sm leading-relaxed">{round.consensus}</p>
-              </div>
-            )}
-          </div>
-        ))}
+              {/* 1. Model Responses (not Challenger) */}
+              {regularResponses.map((response, idx) => (
+                <ModelResponseCard
+                  key={`${response.modelId}-${round.roundNumber}-${idx}`}
+                  response={response}
+                  isStreaming={streamingResponses.includes(response)}
+                  debateId={debate?.id}
+                />
+              ))}
+
+              {/* 2. Round Synthesis */}
+              {round.consensus && (
+                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-xl p-5">
+                  <h4 className="font-semibold text-blue-900 mb-2 flex items-center gap-2">
+                    📊 Round {round.roundNumber} Synthesis
+                  </h4>
+                  <p className="text-blue-800 text-sm leading-relaxed">{round.consensus}</p>
+                </div>
+              )}
+
+              {/* 3. Challenger (after synthesis) */}
+              {challengerResponse && (
+                <ModelResponseCard
+                  key={`challenger-${round.roundNumber}`}
+                  response={challengerResponse}
+                  isStreaming={streamingResponses.includes(challengerResponse)}
+                  debateId={debate?.id}
+                />
+              )}
+            </div>
+          );
+        })}
 
         {/* Streaming responses (not yet assigned to a round) */}
         {streamingResponses.filter(r => !debate?.rounds?.some(round =>
