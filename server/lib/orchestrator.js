@@ -623,7 +623,7 @@ Example good synthesis:
 
       if (this.anthropic) {
         const response = await this.anthropic.messages.create({
-          model: 'claude-sonnet-4-20250514',
+          model: 'claude-sonnet-4-5-20250929',
           messages: [{ role: 'user', content: prompt }],
           max_tokens: 300,
           temperature: 0.3
@@ -847,7 +847,7 @@ CRITICAL: Do NOT write meta-commentary like "participants agreed" or "consensus 
       if (this.anthropic) {
         console.log('[Synthesis] Using Claude Sonnet for synthesis');
         const response = await this.anthropic.messages.create({
-          model: 'claude-sonnet-4-20250514',
+          model: 'claude-sonnet-4-5-20250929',
           messages: [{ role: 'user', content: prompt }],
           max_tokens: 1500,
           temperature: 0.3
@@ -1012,7 +1012,7 @@ Judge the arguments, not the conclusions.`;
       let normalizedJudgeModel = judgeModel;
       if (judgeModel === 'claude-3-5-sonnet') {
         // Use latest Claude 4 Sonnet (Claude 3.5 may not be available on all API keys)
-        normalizedJudgeModel = 'claude-sonnet-4-20250514';
+        normalizedJudgeModel = 'claude-sonnet-4-5-20250929';
       } else if (judgeModel === 'gpt-4o') {
         normalizedJudgeModel = 'gpt-4o';
       } else if (judgeModel && judgeModel.includes('gpt-5')) {
@@ -1064,7 +1064,7 @@ Judge the arguments, not the conclusions.`;
         // Default to first available client
         if (this.anthropic) {
           const response = await this.anthropic.messages.create({
-            model: 'claude-sonnet-4-20250514',
+            model: 'claude-sonnet-4-5-20250929',
             messages: [{ role: 'user', content: prompt }],
             max_tokens: 1500,
             temperature: 0.3
