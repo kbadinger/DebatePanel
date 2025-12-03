@@ -28,8 +28,21 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       topic: true,
       description: true,
       publicSlug: true,
+      winnerName: true,
       modelSelections: {
         select: { name: true }
+      },
+      debateRounds: {
+        select: {
+          roundNumber: true,
+          responses: {
+            select: {
+              modelId: true,
+              confidence: true
+            }
+          }
+        },
+        orderBy: { roundNumber: 'asc' }
       }
     }
   });
@@ -38,12 +51,54 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     return { title: 'Debate Not Found | DecisionForge' };
   }
 
+  // Calculate confidence trajectory for OG image
+  let startConfidence = 0;
+  let endConfidence = 0;
+  let confidenceDrop = 0;
+
+  if (debate.debateRounds.length >= 2) {
+    const firstRound = debate.debateRounds[0];
+    const lastRound = debate.debateRounds[debate.debateRounds.length - 1];
+
+    // Get average confidence from first and last rounds (excluding challenger)
+    const firstConfidences = firstRound.responses
+      .filter(r => !r.modelId.startsWith('challenger-') && r.confidence > 0)
+      .map(r => r.confidence);
+    const lastConfidences = lastRound.responses
+      .filter(r => !r.modelId.startsWith('challenger-') && r.confidence > 0)
+      .map(r => r.confidence);
+
+    if (firstConfidences.length > 0 && lastConfidences.length > 0) {
+      startConfidence = Math.round(firstConfidences.reduce((a, b) => a + b, 0) / firstConfidences.length);
+      endConfidence = Math.round(lastConfidences.reduce((a, b) => a + b, 0) / lastConfidences.length);
+      confidenceDrop = startConfidence - endConfidence;
+    }
+  }
+
   const debateUrl = `${baseUrl}/d/${debate.publicSlug || slug}`;
   const modelCount = debate.modelSelections?.length || 6;
-  const description = debate.description || `Watch ${modelCount} AI models debate: ${debate.topic}`;
 
-  // Dynamic OG image with debate topic
-  const ogImageUrl = `${baseUrl}/api/og?title=${encodeURIComponent(debate.topic)}&models=${modelCount}`;
+  // Build compelling description based on confidence drop
+  let description: string;
+  if (confidenceDrop >= 10) {
+    description = `${modelCount} AI models started at ${startConfidence}% confident. They ended at ${endConfidence}%. See what changed their minds.`;
+  } else if (debate.winnerName) {
+    description = `${modelCount} AI models debated this. Winner: ${debate.winnerName}`;
+  } else {
+    description = debate.description || `Watch ${modelCount} AI models debate: ${debate.topic}`;
+  }
+
+  // Dynamic OG image with confidence data
+  const ogParams = new URLSearchParams({
+    title: debate.topic,
+    models: String(modelCount),
+    ...(confidenceDrop >= 10 && {
+      startConf: String(startConfidence),
+      endConf: String(endConfidence)
+    }),
+    ...(debate.winnerName && { winner: debate.winnerName })
+  });
+  const ogImageUrl = `${baseUrl}/api/og?${ogParams.toString()}`;
 
   return {
     title: `${debate.topic} | DecisionForge`,

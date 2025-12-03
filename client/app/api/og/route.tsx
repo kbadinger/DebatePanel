@@ -6,7 +6,13 @@ export const runtime = 'edge';
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const title = searchParams.get('title') || 'AI Debate';
-  const models = searchParams.get('models') || '6 AI Models';
+  const models = searchParams.get('models') || '6';
+  const startConf = searchParams.get('startConf');
+  const endConf = searchParams.get('endConf');
+  const winner = searchParams.get('winner');
+
+  const hasConfidenceDrop = startConf && endConf && Number(startConf) > Number(endConf);
+  const confidenceDrop = hasConfidenceDrop ? Number(startConf) - Number(endConf) : 0;
 
   return new ImageResponse(
     (
@@ -17,7 +23,7 @@ export async function GET(request: NextRequest) {
           display: 'flex',
           flexDirection: 'column',
           backgroundColor: '#0A0A0A',
-          padding: '60px',
+          padding: '50px 60px',
         }}
       >
         {/* Header */}
@@ -25,27 +31,49 @@ export async function GET(request: NextRequest) {
           style={{
             display: 'flex',
             alignItems: 'center',
-            marginBottom: '40px',
+            justifyContent: 'space-between',
+            marginBottom: '30px',
           }}
         >
-          <div
-            style={{
-              fontSize: '28px',
-              fontWeight: 'bold',
-              color: '#FFFFFF',
-              letterSpacing: '-0.5px',
-            }}
-          >
-            DecisionForge
+          <div style={{ display: 'flex', alignItems: 'center' }}>
+            <div
+              style={{
+                fontSize: '26px',
+                fontWeight: 'bold',
+                color: '#FFFFFF',
+                letterSpacing: '-0.5px',
+              }}
+            >
+              DecisionForge
+            </div>
+            <div
+              style={{
+                fontSize: '16px',
+                color: '#666666',
+                marginLeft: '16px',
+              }}
+            >
+              Iron-Forged AI Debate
+            </div>
           </div>
           <div
             style={{
-              fontSize: '18px',
+              fontSize: '16px',
               color: '#888888',
-              marginLeft: '20px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
             }}
           >
-            Multi-LLM Debate Engine
+            <div
+              style={{
+                width: '10px',
+                height: '10px',
+                borderRadius: '50%',
+                backgroundColor: '#22C55E',
+              }}
+            />
+            {models} AI Models
           </div>
         </div>
 
@@ -60,27 +88,108 @@ export async function GET(request: NextRequest) {
         >
           <div
             style={{
-              fontSize: '56px',
+              fontSize: title.length > 50 ? '44px' : '52px',
               fontWeight: 'bold',
               color: '#FFFFFF',
-              lineHeight: 1.2,
-              maxWidth: '900px',
-              marginBottom: '30px',
+              lineHeight: 1.15,
+              maxWidth: '950px',
+              marginBottom: '35px',
             }}
           >
-            {title.length > 80 ? title.slice(0, 80) + '...' : title}
+            {title.length > 90 ? title.slice(0, 90) + '...' : title}
           </div>
 
-          <div
-            style={{
-              fontSize: '24px',
-              color: '#888888',
-              display: 'flex',
-              alignItems: 'center',
-            }}
-          >
-            <span style={{ marginRight: '15px' }}>{models} debated this decision</span>
-          </div>
+          {/* The Hook - Confidence Drop or Winner */}
+          {hasConfidenceDrop ? (
+            <div
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '12px',
+              }}
+            >
+              {/* Confidence trajectory visualization */}
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '20px',
+                }}
+              >
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '12px',
+                  }}
+                >
+                  <span style={{ fontSize: '48px', fontWeight: 'bold', color: '#22C55E' }}>
+                    {startConf}%
+                  </span>
+                  <span style={{ fontSize: '32px', color: '#666666' }}>→</span>
+                  <span style={{ fontSize: '48px', fontWeight: 'bold', color: '#F59E0B' }}>
+                    {endConf}%
+                  </span>
+                </div>
+                <div
+                  style={{
+                    backgroundColor: '#DC2626',
+                    color: '#FFFFFF',
+                    padding: '8px 16px',
+                    borderRadius: '8px',
+                    fontSize: '20px',
+                    fontWeight: 'bold',
+                  }}
+                >
+                  ↓ {confidenceDrop} points
+                </div>
+              </div>
+
+              {/* The anti-sycophancy hook */}
+              <div
+                style={{
+                  fontSize: '22px',
+                  color: '#A3A3A3',
+                  fontStyle: 'italic',
+                }}
+              >
+                Confidence dropped as they thought harder. That&apos;s the point.
+              </div>
+            </div>
+          ) : winner ? (
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '16px',
+              }}
+            >
+              <div
+                style={{
+                  backgroundColor: '#F59E0B',
+                  color: '#000000',
+                  padding: '10px 20px',
+                  borderRadius: '8px',
+                  fontSize: '22px',
+                  fontWeight: 'bold',
+                }}
+              >
+                🏆 WINNER
+              </div>
+              <span style={{ fontSize: '26px', color: '#FFFFFF', fontWeight: '600' }}>
+                {winner}
+              </span>
+            </div>
+          ) : (
+            <div
+              style={{
+                fontSize: '24px',
+                color: '#888888',
+              }}
+            >
+              {models} AI models debated this decision
+            </div>
+          )}
         </div>
 
         {/* Footer */}
@@ -90,7 +199,7 @@ export async function GET(request: NextRequest) {
             justifyContent: 'space-between',
             alignItems: 'center',
             borderTop: '1px solid #333',
-            paddingTop: '30px',
+            paddingTop: '25px',
           }}
         >
           <div
@@ -103,22 +212,11 @@ export async function GET(request: NextRequest) {
           </div>
           <div
             style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
+              fontSize: '16px',
+              color: '#888888',
             }}
           >
-            <div
-              style={{
-                width: '12px',
-                height: '12px',
-                borderRadius: '50%',
-                backgroundColor: '#22C55E',
-              }}
-            />
-            <span style={{ fontSize: '16px', color: '#888888' }}>
-              Completed Debate
-            </span>
+            See the full debate →
           </div>
         </div>
       </div>
