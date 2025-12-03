@@ -3,6 +3,9 @@ import { notFound } from 'next/navigation';
 import { Metadata } from 'next';
 import { PublicDebateView } from '@/components/debate/PublicDebateView';
 
+// Force dynamic rendering to always get fresh data
+export const dynamic = 'force-dynamic';
+
 const prisma = new PrismaClient();
 
 interface Props {
@@ -110,6 +113,13 @@ export default async function PublicDebatePage({ params }: Props) {
   if (!debate) {
     notFound();
   }
+
+  // Debug: Log consensus data
+  console.log('[PublicDebatePage] Rounds with consensus:', debate.debateRounds.map(r => ({
+    roundNumber: r.roundNumber,
+    hasConsensus: !!r.consensus,
+    consensusPreview: r.consensus?.substring(0, 50)
+  })));
 
   // Transform to client format
   const debateData = {
