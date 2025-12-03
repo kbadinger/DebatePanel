@@ -17,6 +17,33 @@ export function ModelResponseCard({ response, isStreaming, debateId }: ModelResp
   const isHuman = response.isHuman || response.modelId.startsWith('human-');
   const isChallenger = response.modelId.startsWith('challenger-') || response.modelId.toLowerCase().includes('challenger');
   const [copied, setCopied] = useState(false);
+  const [expanded, setExpanded] = useState(false);
+
+  // Truncate to ~3-4 sentences
+  const truncateContent = (content: string) => {
+    const maxScan = Math.min(content.length, 500);
+    const snippet = content.substring(0, maxScan);
+    let sentenceCount = 0;
+    let lastSentenceEnd = 0;
+
+    for (let i = 0; i < snippet.length; i++) {
+      if (snippet[i] === '.' || snippet[i] === '!' || snippet[i] === '?') {
+        if (i + 1 < snippet.length && (snippet[i + 1] === ' ' || snippet[i + 1] === '\n')) {
+          sentenceCount++;
+          lastSentenceEnd = i + 1;
+          if (sentenceCount >= 3) break;
+        }
+      }
+    }
+
+    if (sentenceCount >= 2 && lastSentenceEnd > 100) {
+      return content.substring(0, lastSentenceEnd).trim();
+    }
+    if (content.length <= 250) return content;
+    return content.substring(0, 250).trim() + '...';
+  };
+
+  const needsTruncation = response.content.length > 300;
   
   // Check if this is an error or context limit exceeded response
   const isContextError = response.content.includes('⚠️ Context limit exceeded');
@@ -196,7 +223,17 @@ export function ModelResponseCard({ response, isStreaming, debateId }: ModelResp
       </div>
       
       <div className="prose prose-sm max-w-none">
-        <p className="whitespace-pre-wrap text-slate-700 leading-relaxed">{response.content}</p>
+        <p className="whitespace-pre-wrap text-slate-700 leading-relaxed">
+          {expanded ? response.content : truncateContent(response.content)}
+        </p>
+        {needsTruncation && (
+          <button
+            onClick={() => setExpanded(!expanded)}
+            className="mt-2 text-sm text-blue-600 hover:text-blue-800 font-medium"
+          >
+            {expanded ? '← Show less' : 'Read more →'}
+          </button>
+        )}
       </div>
     </div>
   );
