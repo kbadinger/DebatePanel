@@ -696,16 +696,49 @@ export function DebateInterface({ config, onComplete }: DebateInterfaceProps) {
       )}
       
       
-      <div className="space-y-4">
-        {allResponses.map((response, idx) => (
+      <div className="space-y-6">
+        {/* Display rounds with synthesis */}
+        {debate?.rounds?.slice().reverse().map((round) => (
+          <div key={round.roundNumber} className="space-y-4">
+            {/* Round Header */}
+            <h3 className="text-lg font-semibold text-slate-700 border-b pb-2">
+              Round {round.roundNumber}
+            </h3>
+
+            {/* Round Responses */}
+            {round.responses?.map((response, idx) => (
+              <ModelResponseCard
+                key={`${response.modelId}-${round.roundNumber}-${idx}`}
+                response={response}
+                isStreaming={streamingResponses.includes(response)}
+                debateId={debate?.id}
+              />
+            ))}
+
+            {/* Round Synthesis */}
+            {round.consensus && (
+              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-xl p-5 mt-4">
+                <h4 className="font-semibold text-blue-900 mb-2 flex items-center gap-2">
+                  📊 Round {round.roundNumber} Synthesis
+                </h4>
+                <p className="text-blue-800 text-sm leading-relaxed">{round.consensus}</p>
+              </div>
+            )}
+          </div>
+        ))}
+
+        {/* Streaming responses (not yet assigned to a round) */}
+        {streamingResponses.filter(r => !debate?.rounds?.some(round =>
+          round.responses?.some(resp => resp.modelId === r.modelId && resp.round === r.round)
+        )).map((response, idx) => (
           <ModelResponseCard
-            key={`${response.modelId}-${response.round}-${idx}`}
+            key={`streaming-${response.modelId}-${response.round}-${idx}`}
             response={response}
-            isStreaming={streamingResponses.includes(response)}
+            isStreaming={true}
             debateId={debate?.id}
           />
         ))}
-        
+
         {/* Human Input Panel */}
         {waitingForHuman && config.isInteractive && (
           <HumanInputPanel
