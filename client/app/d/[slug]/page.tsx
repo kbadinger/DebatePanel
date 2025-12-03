@@ -89,7 +89,11 @@ export default async function PublicDebatePage({ params }: Props) {
       modelSelections: true,
       debateRounds: {
         include: {
-          responses: true
+          responses: {
+            orderBy: {
+              createdAt: 'asc'
+            }
+          }
         },
         orderBy: {
           roundNumber: 'asc'
