@@ -409,17 +409,31 @@ router.post('/', async (req, res) => {
           );
 
           if (challengerResponse) {
+            // SAVE Challenger response to database
+            const challengerModelId = config.challenger.model.id || config.challenger.model.modelId;
+            await prisma.modelResponse.create({
+              data: {
+                roundId: savedRound.id,
+                modelId: `challenger-${challengerModelId}`,
+                modelProvider: config.challenger.model.provider || 'challenger',
+                content: challengerResponse,
+                position: 'challenger',
+                confidence: 100,
+                isHuman: false
+              }
+            });
+
             const challengerUpdate = {
               type: 'challenger-response',
               data: {
                 round: i,
-                modelId: config.challenger.model.id || config.challenger.model.modelId,
+                modelId: `challenger-${challengerModelId}`,
                 content: challengerResponse,
                 debateId: debate.id
               }
             };
             safeWrite(challengerUpdate, true);
-            console.log(`[Round ${i}] Challenger complete: ${challengerResponse.substring(0, 100)}...`);
+            console.log(`[Round ${i}] Challenger saved and sent: ${challengerResponse.substring(0, 100)}...`);
           }
         } catch (error) {
           console.error(`[Round ${i}] Challenger failed:`, error);
