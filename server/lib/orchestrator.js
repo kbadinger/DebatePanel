@@ -9,6 +9,10 @@ class Orchestrator {
     this.models = models;
     this.config = config;
     this.responses = [];
+
+    // State for iron-forged debates
+    this.roundSyntheses = {};      // { roundNumber: "synthesis text" }
+    this.challengerResponses = {}; // { roundNumber: "challenger text" }
     
     // Initialize API clients
     this.openai = process.env.OPENAI_API_KEY ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY }) : null;
@@ -427,12 +431,50 @@ class Orchestrator {
         ? 'work toward finding common ground while maintaining your perspective.'
         : 'strengthen your position or acknowledge stronger arguments.';
 
-      // Add previous responses summary
+      // === IRON-FORGED: Add previous round syntheses (compressed history) ===
+      const hasSyntheses = Object.keys(this.roundSyntheses).length > 0;
+      if (hasSyntheses) {
+        prompt += '\n\n=== DEBATE EVOLUTION ===\n';
+        for (let r = 1; r < round; r++) {
+          if (this.roundSyntheses[r]) {
+            prompt += `Round ${r}: ${this.roundSyntheses[r]}\n`;
+          }
+        }
+        prompt += `=== END DEBATE EVOLUTION ===\n`;
+      }
+
+      // === IRON-FORGED: Add Challenger concerns to address ===
+      const previousRound = round - 1;
+      if (this.challengerResponses[previousRound]) {
+        prompt += `\n=== CHALLENGER'S CONCERNS (address these) ===\n`;
+        prompt += `${this.challengerResponses[previousRound]}\n`;
+        prompt += `\nYou MUST address these challenges in your response. If you think a concern has been adequately addressed, explain how. If it's a valid concern, adapt your position accordingly.\n`;
+        prompt += `=== END CHALLENGER'S CONCERNS ===\n`;
+      }
+
+      // Add THIS MODEL's own position history (prevents flip-flopping)
+      if (model && this.responses.length > 0) {
+        const myHistory = this.responses.filter(r => r.modelId === model.id);
+        if (myHistory.length > 0) {
+          const latest = myHistory[myHistory.length - 1];
+          prompt += `\n\n=== YOUR PREVIOUS POSITION ===\n`;
+          prompt += `You argued "${latest.position}" with ${latest.confidence || 75}% confidence.\n`;
+          prompt += `Your key argument was: ${latest.content?.substring(0, 300) || 'Not recorded'}...\n`;
+          prompt += `\nIMPORTANT: If you change your position, you MUST explain WHY - what new information or argument changed your mind? Unexplained position changes undermine your credibility.\n`;
+          prompt += `=== END YOUR PREVIOUS POSITION ===\n`;
+        }
+      }
+
+      // Add previous responses summary from OTHER models (most recent round only for token efficiency)
       if (this.responses.length > 0) {
-        prompt += '\n\nPrevious arguments included:\n';
+        prompt += '\n\nOther participants argued in the last round:\n';
         const recentResponses = this.responses.slice(-this.models.length);
         recentResponses.forEach(r => {
-          prompt += `- ${r.position}: Key point from their argument\n`;
+          // Skip this model's own response (already shown above)
+          if (model && r.modelId === model.id) return;
+          // Include actual argument content, truncated for context management
+          const truncatedContent = r.content ? r.content.substring(0, 400) : 'No response recorded';
+          prompt += `- ${r.modelId} (${r.position}): ${truncatedContent}...\n\n`;
         });
       }
     }
@@ -500,7 +542,8 @@ NEW ATTACKS FOR THIS ROUND:
         prompt += '\n\nPrevious arguments to stress-test:\n';
         const recentResponses = this.responses.slice(-this.models.length);
         recentResponses.forEach(r => {
-          prompt += `- ${r.position}: ${r.content?.substring(0, 200)}...\n`;
+          const truncatedContent = r.content ? r.content.substring(0, 400) : 'No response recorded';
+          prompt += `- ${r.modelId} (${r.position}): ${truncatedContent}...\n\n`;
         });
       }
 
@@ -541,6 +584,181 @@ Confidence: [0-100]% that remaining risks have been identified`;
     }
     
     return { position, confidence };
+  }
+
+  /**
+   * Generate a brief synthesis of a round's arguments
+   * This creates context for the next round - NOT the final answer
+   */
+  async generateRoundSynthesis(roundNumber, roundResponses, topic) {
+    if (!roundResponses || roundResponses.length === 0) {
+      return 'No responses to synthesize.';
+    }
+
+    // Build a summary of positions
+    const positionsSummary = roundResponses.map(r => {
+      const content = r.content ? r.content.substring(0, 300) : 'No content';
+      return `${r.modelId} (${r.position}, ${r.confidence || 75}% confident): ${content}...`;
+    }).join('\n\n');
+
+    const prompt = `Summarize Round ${roundNumber} of this debate in 2-3 sentences.
+
+Topic: ${topic}
+
+Arguments this round:
+${positionsSummary}
+
+Your synthesis should:
+1. State how many favor each position (e.g., "3 models favor X, 1 favors Y")
+2. Identify the KEY point of disagreement (if any)
+3. Note any surprising arguments or shifts
+
+Keep it to 2-3 sentences MAX. This is context for the next round, not a conclusion.
+
+Example good synthesis:
+"3 models (Claude, GPT, Grok) favor BUY citing equity building and forced savings. Gemini favors RENT citing flexibility and opportunity cost. Key disagreement: whether job security is sufficient to commit to a 30-year mortgage."`;
+
+    try {
+      let synthesisText;
+
+      if (this.anthropic) {
+        const response = await this.anthropic.messages.create({
+          model: 'claude-sonnet-4-20250514',
+          messages: [{ role: 'user', content: prompt }],
+          max_tokens: 300,
+          temperature: 0.3
+        });
+        synthesisText = response.content[0].text;
+      } else if (this.openai) {
+        const response = await this.openai.chat.completions.create({
+          model: 'gpt-4o-mini',
+          messages: [{ role: 'user', content: prompt }],
+          max_tokens: 300,
+          temperature: 0.3
+        });
+        synthesisText = response.choices[0].message.content;
+      } else {
+        // Fallback: generate simple synthesis without AI
+        const positionCounts = {};
+        roundResponses.forEach(r => {
+          const pos = r.position || 'neutral';
+          positionCounts[pos] = (positionCounts[pos] || 0) + 1;
+        });
+        const positionList = Object.entries(positionCounts)
+          .map(([pos, count]) => `${count} model(s) ${pos}`)
+          .join(', ');
+        synthesisText = `Round ${roundNumber}: ${positionList}.`;
+      }
+
+      // Store for later use
+      this.roundSyntheses[roundNumber] = synthesisText;
+      return synthesisText;
+    } catch (error) {
+      console.error('[RoundSynthesis] Error:', error);
+      return `Round ${roundNumber}: ${roundResponses.length} responses received.`;
+    }
+  }
+
+  /**
+   * Run the Challenger as a separate step after round synthesis
+   * Returns the challenger's stress-test of the current debate state
+   */
+  async runChallengerStep(roundNumber, synthesis, topic, challengerModel) {
+    if (!challengerModel) {
+      return null;
+    }
+
+    // Build previous challenges context
+    let previousChallenges = '';
+    for (let r = 1; r < roundNumber; r++) {
+      if (this.challengerResponses[r]) {
+        previousChallenges += `Round ${r} Challenge: ${this.challengerResponses[r].substring(0, 200)}...\n`;
+      }
+    }
+
+    const prompt = `You are the CHALLENGER. Your job is to FORGE STRONGER ANSWERS through rigorous stress-testing.
+
+TOPIC: ${topic}
+
+CURRENT STATE (Round ${roundNumber}):
+${synthesis}
+
+${previousChallenges ? `YOUR PREVIOUS CHALLENGES:\n${previousChallenges}\n` : ''}
+
+REVIEW EACH PREVIOUS CHALLENGE (if any):
+- If ADDRESSED WELL → Acknowledge: "The [solution] handles the [concern]. Good."
+- If PARTIALLY ADDRESSED → Press for clarity: "You mentioned X but didn't specify Y."
+- If IGNORED → Press harder: "Still no answer on [critical issue]."
+
+NEW CHALLENGES MUST BE:
+✅ REALISTIC - Could actually happen to real people
+✅ MATERIAL - Would genuinely change the decision if true
+✅ NOT ALREADY COVERED - Don't repeat addressed concerns
+
+DO NOT:
+❌ Manufacture absurd scenarios
+❌ Challenge just to have something to challenge
+❌ Repeat concerns that were adequately addressed
+❌ Be contrarian for contrarian's sake
+
+IF THE ARGUMENTS ARE SOLID, SAY SO:
+"The core risks have been addressed:
+- [Risk 1] handled by [Solution 1] ✓
+- [Risk 2] handled by [Solution 2] ✓
+Remaining edge cases are minor and shouldn't change the recommendation."
+
+Your job is to make the answer IRON-FORGED, not to be difficult.
+A Challenger who acknowledges solid arguments is MORE credible than one who manufactures fake concerns.
+
+Keep your response to 200-300 words focused on the most important challenges.`;
+
+    try {
+      let challengerText;
+      const modelId = challengerModel.modelId || challengerModel.id;
+      const provider = challengerModel.provider;
+
+      if (provider === 'anthropic' && this.anthropic) {
+        const response = await this.anthropic.messages.create({
+          model: modelId,
+          messages: [{ role: 'user', content: prompt }],
+          max_tokens: 500,
+          temperature: 0.7
+        });
+        challengerText = response.content[0].text;
+      } else if (provider === 'openai' && this.openai) {
+        const response = await this.openai.chat.completions.create({
+          model: modelId,
+          messages: [{ role: 'user', content: prompt }],
+          max_tokens: 500,
+          temperature: 0.7
+        });
+        challengerText = response.choices[0].message.content;
+      } else if (provider === 'google' && this.google) {
+        const model = this.google.getGenerativeModel({ model: modelId });
+        const result = await model.generateContent(prompt);
+        challengerText = result.response.text();
+      } else {
+        // Use OpenAI as fallback
+        if (this.openai) {
+          const response = await this.openai.chat.completions.create({
+            model: 'gpt-4o',
+            messages: [{ role: 'user', content: prompt }],
+            max_tokens: 500,
+            temperature: 0.7
+          });
+          challengerText = response.choices[0].message.content;
+        } else {
+          challengerText = 'Challenger unavailable - no API configured.';
+        }
+      }
+
+      // Store for later use
+      this.challengerResponses[roundNumber] = challengerText;
+      return challengerText;
+    } catch (error) {
+      console.error('[ChallengerStep] Error:', error);
+      return `Challenger error: ${error.message}`;
+    }
   }
 
   async generateSynthesis(debateId) {
@@ -723,11 +941,29 @@ Note: AI synthesis failed. See full debate transcript above for complete details
         content: r.content
       }));
 
+      // === IRON-FORGED: Build debate evolution context ===
+      let evolutionContext = '';
+      const totalRounds = debate.debateRounds.length;
+
+      if (Object.keys(this.roundSyntheses).length > 0 || Object.keys(this.challengerResponses).length > 0) {
+        evolutionContext = '\n=== DEBATE EVOLUTION ===\n';
+        for (let r = 1; r <= totalRounds; r++) {
+          if (this.roundSyntheses[r]) {
+            evolutionContext += `Round ${r} Summary: ${this.roundSyntheses[r]}\n`;
+          }
+          if (this.challengerResponses[r]) {
+            evolutionContext += `  → Challenger (Round ${r}): ${this.challengerResponses[r].substring(0, 300)}...\n`;
+          }
+        }
+        evolutionContext += '=== END EVOLUTION ===\n\n';
+        evolutionContext += 'IMPORTANT: Consider whether participants addressed the Challenger\'s concerns. Penalize those who ignored legitimate challenges. Reward those who adapted thoughtfully or provided good counter-arguments.\n\n';
+      }
+
       const prompt = `As the judge, evaluate the QUALITY OF ARGUMENTS in this debate.
 
 Topic: ${debate.topic}
 
-${failedCount > 0 ? `Note: ${failedCount} model(s) failed to respond. Analysis based on ${validResponses.length} successful participant(s).\n\n` : ''}Available Round ${analysisRound.roundNumber} Positions:
+${evolutionContext}${failedCount > 0 ? `Note: ${failedCount} model(s) failed to respond. Analysis based on ${validResponses.length} successful participant(s).\n\n` : ''}Final Round ${analysisRound.roundNumber} Positions:
 ${finalPositions.map(p => `
 ${p.model}:
 - Position: ${p.position}

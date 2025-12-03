@@ -371,6 +371,60 @@ router.post('/', async (req, res) => {
       } else {
         console.log(`Completed round ${i} with ${roundResponses.length} responses`);
       }
+
+      // === IRON-FORGED DEBATE: Generate Round Synthesis ===
+      try {
+        console.log(`[Round ${i}] Generating round synthesis...`);
+        const roundSynthesis = await orchestrator.generateRoundSynthesis(i, roundResponses, config.topic);
+
+        // Save synthesis to database (uses existing consensus field)
+        await prisma.debateRound.update({
+          where: { id: savedRound.id },
+          data: { consensus: roundSynthesis }
+        });
+
+        const synthesisUpdate = {
+          type: 'round-synthesis',
+          data: {
+            round: i,
+            synthesis: roundSynthesis,
+            debateId: debate.id
+          }
+        };
+        safeWrite(synthesisUpdate, true);
+        console.log(`[Round ${i}] Synthesis complete: ${roundSynthesis.substring(0, 100)}...`);
+      } catch (error) {
+        console.error(`[Round ${i}] Synthesis generation failed:`, error);
+      }
+
+      // === IRON-FORGED DEBATE: Run Challenger (if enabled) ===
+      if (config.challenger?.enabled && config.challenger?.model) {
+        try {
+          console.log(`[Round ${i}] Running Challenger...`);
+          const challengerResponse = await orchestrator.runChallengerStep(
+            i,
+            orchestrator.roundSyntheses[i] || 'No synthesis available',
+            config.topic,
+            config.challenger.model
+          );
+
+          if (challengerResponse) {
+            const challengerUpdate = {
+              type: 'challenger-response',
+              data: {
+                round: i,
+                modelId: config.challenger.model.id || config.challenger.model.modelId,
+                content: challengerResponse,
+                debateId: debate.id
+              }
+            };
+            safeWrite(challengerUpdate, true);
+            console.log(`[Round ${i}] Challenger complete: ${challengerResponse.substring(0, 100)}...`);
+          }
+        } catch (error) {
+          console.error(`[Round ${i}] Challenger failed:`, error);
+        }
+      }
     }
 
     // Clear timeout
