@@ -1,7 +1,7 @@
 export function Footer() {
   return (
     <footer className="border-t border-slate-200/50 bg-white/60 backdrop-blur-sm">
-      <div className="max-w-5xl mx-auto px-4 py-6">
+      <div className="max-w-5xl mx-auto px-4 py-4">
         <div className="flex flex-col sm:flex-row justify-between items-center gap-3">
           {/* Links */}
           <div className="flex items-center gap-4 text-xs text-slate-400">
