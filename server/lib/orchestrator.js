@@ -587,67 +587,127 @@ Confidence: [0-100]% that remaining risks have been identified`;
   }
 
   /**
-   * Generate a brief synthesis of a round's arguments
-   * This creates context for the next round - NOT the final answer
+   * Summarize a single model's full response for use in round synthesis
+   * This extracts the key arguments without losing substance
+   */
+  async summarizeModelResponse(modelId, content, topic) {
+    const prompt = `Summarize this model's argument in 200-300 words. Capture:
+- Their position and confidence
+- Key evidence, data, or logic cited
+- Specific recommendations or concerns
+- Any unique insights not likely shared by others
+
+Topic: ${topic}
+
+${modelId}'s full response:
+${content}
+
+Provide a dense, substantive summary. This feeds into a round synthesis for other models.`;
+
+    if (this.anthropic) {
+      const response = await this.anthropic.messages.create({
+        model: 'claude-sonnet-4-5-20250929',
+        messages: [{ role: 'user', content: prompt }],
+        max_tokens: 500,
+        temperature: 0.3
+      });
+      return response.content[0].text;
+    } else if (this.openai) {
+      const response = await this.openai.chat.completions.create({
+        model: 'gpt-4o-mini',
+        messages: [{ role: 'user', content: prompt }],
+        max_tokens: 500,
+        temperature: 0.3
+      });
+      return response.choices[0].message.content;
+    }
+
+    // Fallback: just truncate
+    return content.substring(0, 1000) + '...';
+  }
+
+  /**
+   * Generate a comprehensive synthesis of a round's arguments using two-pass approach
+   * Pass 1: Summarize each model's full response individually (parallel)
+   * Pass 2: Combine summaries into a comprehensive round synthesis
    */
   async generateRoundSynthesis(roundNumber, roundResponses, topic) {
     if (!roundResponses || roundResponses.length === 0) {
       return 'No responses to synthesize.';
     }
 
-    // Build a summary of positions
-    const positionsSummary = roundResponses.map(r => {
-      const content = r.content ? r.content.substring(0, 300) : 'No content';
-      return `${r.modelId} (${r.position}, ${r.confidence || 75}% confident): ${content}...`;
-    }).join('\n\n');
+    console.log(`[Round ${roundNumber}] Starting two-pass synthesis for ${roundResponses.length} responses...`);
 
-    const prompt = `Summarize Round ${roundNumber} of this debate in 2-3 sentences.
+    try {
+      // PASS 1: Summarize each model's full response (in parallel)
+      const summaryPromises = roundResponses.map(r =>
+        this.summarizeModelResponse(r.modelId, r.content, topic)
+          .then(summary => {
+            console.log(`[Round ${roundNumber}] Summarized ${r.modelId}`);
+            return { modelId: r.modelId, position: r.position, confidence: r.confidence, summary };
+          })
+          .catch(err => {
+            console.error(`[Synthesis] Failed to summarize ${r.modelId}:`, err);
+            // Fallback to truncation if summarization fails
+            return {
+              modelId: r.modelId,
+              position: r.position,
+              confidence: r.confidence,
+              summary: r.content.substring(0, 1000) + '...'
+            };
+          })
+      );
+
+      const modelSummaries = await Promise.all(summaryPromises);
+      console.log(`[Round ${roundNumber}] All ${modelSummaries.length} summaries complete, generating synthesis...`);
+
+      // PASS 2: Combine summaries into round synthesis
+      const summariesText = modelSummaries.map(s =>
+        `**${s.modelId}** (${s.position}, ${s.confidence}% confident):\n${s.summary}`
+      ).join('\n\n---\n\n');
+
+      const synthesisPrompt = `Create a comprehensive Round ${roundNumber} synthesis.
 
 Topic: ${topic}
 
-Arguments this round:
-${positionsSummary}
+Model Summaries:
+${summariesText}
 
-Your synthesis should:
-1. State how many favor each position (e.g., "3 models favor X, 1 favors Y")
-2. Identify the KEY point of disagreement (if any)
-3. Note any surprising arguments or shifts
+Your synthesis must include:
 
-Keep it to 2-3 sentences MAX. This is context for the next round, not a conclusion.
+1. **POSITIONS**: How many favor each option, with confidence levels
 
-Example good synthesis:
-"3 models (Claude, GPT, Grok) favor BUY citing equity building and forced savings. Gemini favors RENT citing flexibility and opportunity cost. Key disagreement: whether job security is sufficient to commit to a 30-year mortgage."`;
+2. **KEY ARGUMENTS BY MODEL**: 2-3 sentences per model on their core reasoning
 
-    try {
+3. **POINTS OF AGREEMENT**: Specific shared reasoning (not just "all agree")
+
+4. **POINTS OF DISAGREEMENT**: Where models diverge, what concerns some raised
+
+5. **OPEN QUESTIONS**: What wasn't addressed or remains uncertain
+
+Target: 400-600 words. This is passed to ALL models in the next round.`;
+
       let synthesisText;
 
       if (this.anthropic) {
         const response = await this.anthropic.messages.create({
           model: 'claude-sonnet-4-5-20250929',
-          messages: [{ role: 'user', content: prompt }],
-          max_tokens: 300,
+          messages: [{ role: 'user', content: synthesisPrompt }],
+          max_tokens: 1200,
           temperature: 0.3
         });
         synthesisText = response.content[0].text;
       } else if (this.openai) {
         const response = await this.openai.chat.completions.create({
-          model: 'gpt-4o-mini',
-          messages: [{ role: 'user', content: prompt }],
-          max_tokens: 300,
+          model: 'gpt-4o',
+          messages: [{ role: 'user', content: synthesisPrompt }],
+          max_tokens: 1200,
           temperature: 0.3
         });
         synthesisText = response.choices[0].message.content;
       } else {
-        // Fallback: generate simple synthesis without AI
-        const positionCounts = {};
-        roundResponses.forEach(r => {
-          const pos = r.position || 'neutral';
-          positionCounts[pos] = (positionCounts[pos] || 0) + 1;
-        });
-        const positionList = Object.entries(positionCounts)
-          .map(([pos, count]) => `${count} model(s) ${pos}`)
-          .join(', ');
-        synthesisText = `Round ${roundNumber}: ${positionList}.`;
+        // Fallback: just concatenate summaries
+        synthesisText = `Round ${roundNumber} Summary:\n${summariesText}`;
       }
 
       // Store for later use
