@@ -309,8 +309,9 @@ router.post('/', async (req, res) => {
       console.log(`✓ Challenger model included: ${config.challenger.model.displayName || config.challenger.model.id}`);
     }
 
-    // Initialize orchestrator with all participating models
-    const orchestrator = new Orchestrator(modelsToSave, config);
+    // Initialize orchestrator with ONLY regular debate models (not Challenger)
+    // Challenger runs separately via runChallengerStep after each round
+    const orchestrator = new Orchestrator(config.models, config);
 
     // Run debate rounds
     for (let i = 1; i <= config.rounds; i++) {
