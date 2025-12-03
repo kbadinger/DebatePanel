@@ -16,7 +16,11 @@ export async function GET(
         modelSelections: true,
         debateRounds: {
           include: {
-            responses: true
+            responses: {
+              orderBy: {
+                createdAt: 'asc'
+              }
+            }
           },
           orderBy: {
             roundNumber: 'asc'

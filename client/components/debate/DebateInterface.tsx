@@ -705,8 +705,17 @@ export function DebateInterface({ config, onComplete }: DebateInterfaceProps) {
               Round {round.roundNumber}
             </h3>
 
-            {/* Round Responses */}
-            {round.responses?.map((response, idx) => (
+            {/* Round Responses - sort to put Challenger last */}
+            {round.responses
+              ?.slice()
+              .sort((a, b) => {
+                const aIsChallenger = a.modelId.startsWith('challenger-');
+                const bIsChallenger = b.modelId.startsWith('challenger-');
+                if (aIsChallenger && !bIsChallenger) return 1;
+                if (!aIsChallenger && bIsChallenger) return -1;
+                return 0;
+              })
+              .map((response, idx) => (
               <ModelResponseCard
                 key={`${response.modelId}-${round.roundNumber}-${idx}`}
                 response={response}
