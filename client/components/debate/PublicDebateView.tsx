@@ -312,14 +312,14 @@ export function PublicDebateView({ debate }: { debate: PublicDebate }) {
                         key={idx}
                         className={`rounded-lg p-5 ${
                           isChallengerResponse
-                            ? 'bg-amber-50 border-2 border-amber-300'
+                            ? 'bg-red-50 border-2 border-red-300'
                             : 'bg-slate-50'
                         }`}
                       >
                         <div className="flex items-center justify-between mb-3">
                           <div className="flex items-center gap-2">
                             {isChallengerResponse && (
-                              <span className="px-2 py-0.5 bg-amber-500 text-white rounded text-xs font-bold">🔥 CHALLENGER</span>
+                              <span className="px-2 py-0.5 bg-red-500 text-white rounded text-xs font-bold">🔥 CHALLENGER</span>
                             )}
                             <span className={`px-2.5 py-1 rounded-full text-xs font-medium border ${getProviderColor(response.modelProvider)}`}>
                               {getModelDisplayName(response.modelId, debate.models)}
