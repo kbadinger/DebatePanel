@@ -280,6 +280,11 @@ export function DebateInterface({ config, onComplete }: DebateInterfaceProps) {
 
           const status = await statusResponse.json();
           console.log(`Poll ${attempts + 1}: status=${status.status}, round=${status.currentRound}/${status.totalRounds}`);
+          console.log('[DebateInterface] Rounds with consensus:', status.rounds?.map((r: any) => ({
+            roundNumber: r.roundNumber,
+            hasConsensus: !!r.consensus,
+            consensusPreview: r.consensus?.substring(0, 50)
+          })));
 
           // Update current round if changed
           if (status.currentRound > lastRoundSeen) {
