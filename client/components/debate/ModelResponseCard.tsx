@@ -15,6 +15,7 @@ interface ModelResponseCardProps {
 export function ModelResponseCard({ response, isStreaming, debateId }: ModelResponseCardProps) {
   const model = AVAILABLE_MODELS.find(m => m.id === response.modelId);
   const isHuman = response.isHuman || response.modelId.startsWith('human-');
+  const isChallenger = response.modelId.startsWith('challenger-') || response.modelId.toLowerCase().includes('challenger');
   const [copied, setCopied] = useState(false);
   
   // Check if this is an error or context limit exceeded response
@@ -116,6 +117,7 @@ export function ModelResponseCard({ response, isStreaming, debateId }: ModelResp
   return (
     <div className={clsx(
       'rounded-2xl border-2 p-6 mb-4 transition-all shadow-xl hover-lift debate-card-enter relative',
+      isChallenger ? 'border-red-400 bg-gradient-to-br from-red-50 to-orange-50' :
       isHuman ? 'border-purple-400 bg-gradient-to-br from-purple-50 to-blue-50' : (colorScheme || 'border-slate-400 bg-slate-50'),
       isStreaming && 'animate-pulse'
     )}>
@@ -125,7 +127,12 @@ export function ModelResponseCard({ response, isStreaming, debateId }: ModelResp
       <div className="flex justify-between items-start mb-4 relative z-10">
         <div className="flex-1">
           <h3 className="font-bold text-xl text-slate-800 flex items-center gap-2">
-            {isHuman ? (
+            {isChallenger ? (
+              <>
+                <span className="px-2 py-0.5 bg-red-500 text-white rounded text-xs font-bold">🔥 CHALLENGER</span>
+                {model?.displayName || response.modelId.replace('challenger-', '')}
+              </>
+            ) : isHuman ? (
               <>
                 <User className="w-5 h-5 text-purple-600" />
                 {response.userName || 'Human Participant'}
