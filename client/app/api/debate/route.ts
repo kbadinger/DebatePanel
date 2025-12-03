@@ -9,13 +9,40 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/auth';
 
 const prisma = new PrismaClient();
+const RAILWAY_URL = process.env.NEXT_PUBLIC_RAILWAY_URL;
 
-// Background debate execution - runs after response is sent
+// Background debate execution - calls Railway if configured, otherwise runs locally
 async function executeDebateAsync(
   debateId: string,
   config: DebateConfig,
   userId: string | null
 ) {
+  // If Railway URL is configured, delegate to Railway service
+  if (RAILWAY_URL) {
+    console.log(`[Async] Delegating debate ${debateId} to Railway: ${RAILWAY_URL}`);
+    try {
+      const response = await fetch(`${RAILWAY_URL}/api/debate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ config, debateId, userId }),
+      });
+
+      if (!response.ok) {
+        const error = await response.text();
+        console.error(`[Async] Railway error: ${error}`);
+        throw new Error(`Railway returned ${response.status}: ${error}`);
+      }
+
+      console.log(`[Async] Railway accepted debate ${debateId}`);
+      return; // Railway handles the rest
+    } catch (error) {
+      console.error(`[Async] Railway call failed, falling back to local:`, error);
+      // Fall through to local execution
+    }
+  }
+
+  // Local execution (fallback or no Railway configured)
+  console.log(`[Async] Running debate ${debateId} locally`);
   const logger = new DebateLogger();
   const orchestrator = new ModelOrchestrator(logger);
 
