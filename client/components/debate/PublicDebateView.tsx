@@ -77,7 +77,21 @@ function getProviderColor(provider: string): string {
 
 export function PublicDebateView({ debate }: { debate: PublicDebate }) {
   const [expandedRounds, setExpandedRounds] = useState<number[]>([1]);
+  const [expandedResponses, setExpandedResponses] = useState<string[]>([]);
   const [copied, setCopied] = useState(false);
+
+  const toggleResponse = (responseKey: string) => {
+    setExpandedResponses(prev =>
+      prev.includes(responseKey)
+        ? prev.filter(r => r !== responseKey)
+        : [...prev, responseKey]
+    );
+  };
+
+  const truncateContent = (content: string, maxLength: number = 300) => {
+    if (content.length <= maxLength) return content;
+    return content.substring(0, maxLength).trim() + '...';
+  };
 
   const toggleRound = (roundNumber: number) => {
     setExpandedRounds(prev =>
@@ -247,29 +261,52 @@ export function PublicDebateView({ debate }: { debate: PublicDebate }) {
 
               {expandedRounds.includes(round.roundNumber) && (
                 <div className="px-6 pb-6 space-y-4 border-t border-slate-100 pt-4">
-                  {round.responses.map((response, idx) => (
-                    <div key={idx} className="bg-slate-50 rounded-lg p-5">
-                      <div className="flex items-center justify-between mb-3">
-                        <div className="flex items-center gap-2">
-                          <span className={`px-2.5 py-1 rounded-full text-xs font-medium border ${getProviderColor(response.modelProvider)}`}>
-                            {getModelDisplayName(response.modelId, debate.models)}
-                          </span>
-                          {response.isHuman && (
-                            <span className="px-2 py-0.5 bg-purple-100 text-purple-800 rounded text-xs">Human</span>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-3 text-sm">
-                          <span className="text-slate-500">Confidence: {response.confidence}%</span>
-                          {response.argumentScore && (
-                            <span className="text-slate-500">Score: {response.argumentScore.toFixed(1)}</span>
-                          )}
-                        </div>
-                      </div>
-                      <div className="text-slate-700 whitespace-pre-wrap text-sm leading-relaxed">
-                        {response.content}
-                      </div>
+                  {/* Round Synthesis */}
+                  {round.consensus && (
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                      <p className="text-sm font-medium text-blue-800 mb-1">📋 Round Summary</p>
+                      <p className="text-sm text-blue-900">{round.consensus}</p>
                     </div>
-                  ))}
+                  )}
+
+                  {/* Responses */}
+                  {round.responses.map((response, idx) => {
+                    const responseKey = `${round.roundNumber}-${idx}`;
+                    const isExpanded = expandedResponses.includes(responseKey);
+                    const needsTruncation = response.content.length > 300;
+
+                    return (
+                      <div key={idx} className="bg-slate-50 rounded-lg p-5">
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="flex items-center gap-2">
+                            <span className={`px-2.5 py-1 rounded-full text-xs font-medium border ${getProviderColor(response.modelProvider)}`}>
+                              {getModelDisplayName(response.modelId, debate.models)}
+                            </span>
+                            {response.isHuman && (
+                              <span className="px-2 py-0.5 bg-purple-100 text-purple-800 rounded text-xs">Human</span>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-3 text-sm">
+                            <span className="text-slate-500">Confidence: {response.confidence}%</span>
+                            {response.argumentScore && (
+                              <span className="text-slate-500">Score: {response.argumentScore.toFixed(1)}</span>
+                            )}
+                          </div>
+                        </div>
+                        <div className="text-slate-700 whitespace-pre-wrap text-sm leading-relaxed">
+                          {isExpanded ? response.content : truncateContent(response.content)}
+                        </div>
+                        {needsTruncation && (
+                          <button
+                            onClick={() => toggleResponse(responseKey)}
+                            className="mt-2 text-sm text-blue-600 hover:text-blue-800 font-medium"
+                          >
+                            {isExpanded ? '← Show less' : 'Read more →'}
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </div>
