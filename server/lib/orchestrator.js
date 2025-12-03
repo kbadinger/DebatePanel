@@ -1121,7 +1121,8 @@ Judge the arguments, not the conclusions.`;
     for (const pattern of winnerPatterns) {
       const match = analysisText.match(pattern);
       if (match) {
-        const winnerName = match[1].trim();
+        // Strip markdown formatting (bold, italic) from winner name
+        const winnerName = match[1].trim().replace(/\*+/g, '').trim();
 
         const participant = participants.find(p =>
           p.model.toLowerCase().includes(winnerName.toLowerCase()) ||
