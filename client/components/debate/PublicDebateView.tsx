@@ -344,8 +344,8 @@ export function PublicDebateView({ debate }: { debate: PublicDebate }) {
                       </div>
                     )}
 
-                    {/* 3. Challenger (after synthesis) */}
-                    {challengerResponse && (() => {
+                    {/* 3. Challenger (after synthesis, but NOT on final round - nothing to stress-test) */}
+                    {challengerResponse && round.roundNumber < debate.rounds.length && (() => {
                       const challengerKey = `${round.roundNumber}-challenger`;
                       const isExpanded = expandedResponses.includes(challengerKey);
                       const needsTruncation = challengerResponse.content.length > 250;

@@ -730,8 +730,8 @@ export function DebateInterface({ config, onComplete }: DebateInterfaceProps) {
                 </div>
               )}
 
-              {/* 3. Challenger (after synthesis) */}
-              {challengerResponse && (
+              {/* 3. Challenger (after synthesis, but NOT on final round) */}
+              {challengerResponse && round.roundNumber < (debate?.rounds?.length || 0) && (
                 <ModelResponseCard
                   key={`challenger-${round.roundNumber}`}
                   response={challengerResponse}
