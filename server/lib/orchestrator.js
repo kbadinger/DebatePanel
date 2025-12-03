@@ -1129,8 +1129,15 @@ Judge the arguments, not the conclusions.`;
         );
 
         if (participant) {
-          const reasonMatch = analysisText.match(new RegExp(`${winnerName}[^.]*because([^.]+)`, 'i'));
-          const reason = reasonMatch ? reasonMatch[1].trim() : 'Best overall arguments and reasoning';
+          // Escape special regex characters in winner name to prevent regex errors
+          const escapedWinnerName = winnerName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+          let reason = 'Best overall arguments and reasoning';
+          try {
+            const reasonMatch = analysisText.match(new RegExp(`${escapedWinnerName}[^.]*because([^.]+)`, 'i'));
+            if (reasonMatch) reason = reasonMatch[1].trim();
+          } catch (regexError) {
+            console.warn('Regex failed for reason extraction:', regexError.message);
+          }
 
           return {
             id: participant.model,
