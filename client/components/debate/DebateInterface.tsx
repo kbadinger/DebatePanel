@@ -683,7 +683,7 @@ export function DebateInterface({ config, onComplete }: DebateInterfaceProps) {
           modelStatuses={modelStatuses}
           hasJudge={config.judge?.enabled || false}
           isInteractive={config.isInteractive || false}
-          completedModels={Object.values(modelStatuses).filter(status => status === 'completed').length}
+          completedModels={config.models.filter(m => modelStatuses[m.id] === 'completed').length}
           startTime={debateStartTime || undefined}
         />
       )}
