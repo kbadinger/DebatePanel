@@ -88,9 +88,40 @@ export function PublicDebateView({ debate }: { debate: PublicDebate }) {
     );
   };
 
-  const truncateContent = (content: string, maxLength: number = 300) => {
-    if (content.length <= maxLength) return content;
-    return content.substring(0, maxLength).trim() + '...';
+  // Truncate to ~3-4 sentences
+  const truncateContent = (content: string) => {
+    // Find the end of the 3rd or 4th sentence within first 500 chars
+    const maxScan = Math.min(content.length, 500);
+    const snippet = content.substring(0, maxScan);
+
+    // Count sentence endings
+    let sentenceCount = 0;
+    let lastSentenceEnd = 0;
+
+    for (let i = 0; i < snippet.length; i++) {
+      if (snippet[i] === '.' || snippet[i] === '!' || snippet[i] === '?') {
+        // Check it's not a decimal or abbreviation
+        if (i + 1 < snippet.length && (snippet[i + 1] === ' ' || snippet[i + 1] === '\n')) {
+          sentenceCount++;
+          lastSentenceEnd = i + 1;
+          if (sentenceCount >= 3) break;
+        }
+      }
+    }
+
+    if (sentenceCount >= 2 && lastSentenceEnd > 100) {
+      return content.substring(0, lastSentenceEnd).trim();
+    }
+
+    // Fallback to character limit
+    if (content.length <= 250) return content;
+    return content.substring(0, 250).trim() + '...';
+  };
+
+  // Check if a response is from the Challenger
+  const isChallenger = (modelId: string) => {
+    return modelId.toLowerCase().includes('challenger') ||
+           debate.models.some(m => m.id === modelId && m.name.toLowerCase().includes('challenger'));
   };
 
   const toggleRound = (roundNumber: number) => {
@@ -273,12 +304,23 @@ export function PublicDebateView({ debate }: { debate: PublicDebate }) {
                   {round.responses.map((response, idx) => {
                     const responseKey = `${round.roundNumber}-${idx}`;
                     const isExpanded = expandedResponses.includes(responseKey);
-                    const needsTruncation = response.content.length > 300;
+                    const needsTruncation = response.content.length > 250;
+                    const isChallengerResponse = isChallenger(response.modelId);
 
                     return (
-                      <div key={idx} className="bg-slate-50 rounded-lg p-5">
+                      <div
+                        key={idx}
+                        className={`rounded-lg p-5 ${
+                          isChallengerResponse
+                            ? 'bg-amber-50 border-2 border-amber-300'
+                            : 'bg-slate-50'
+                        }`}
+                      >
                         <div className="flex items-center justify-between mb-3">
                           <div className="flex items-center gap-2">
+                            {isChallengerResponse && (
+                              <span className="px-2 py-0.5 bg-amber-500 text-white rounded text-xs font-bold">🔥 CHALLENGER</span>
+                            )}
                             <span className={`px-2.5 py-1 rounded-full text-xs font-medium border ${getProviderColor(response.modelProvider)}`}>
                               {getModelDisplayName(response.modelId, debate.models)}
                             </span>
