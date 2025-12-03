@@ -126,20 +126,77 @@ Give me 25 ranked by engagement potential.
 
 ## Posting Strategy
 
-**Frequency:** 3x per week (Monday / Wednesday / Friday)
+### Schedule: 6 posts per week (3 Twitter + 3 LinkedIn)
 
-**Mix:**
-- 2 trending/timely topics per week (from Prompt 1)
-- 1 evergreen banger per week (from Prompt 2 bank)
+| Day | Twitter | LinkedIn |
+|-----|---------|----------|
+| Monday | ✅ | |
+| Tuesday | | ✅ |
+| Wednesday | ✅ | |
+| Thursday | | ✅ |
+| Friday | ✅ | |
+| Saturday | | ✅ |
 
-**When to break the pattern:**
-- Something huge happens (major layoffs, market crash, viral moment) → post that day
+### Content Mix Per Platform
+
+**Twitter (3x/week):**
+- 2 trending/timely topics (from Prompt 1)
+- 1 evergreen banger
+- Can be spicier, more personal, hot takes welcome
+- Shorter attention span - hook matters most
+
+**LinkedIn (3x/week):**
+- 2 trending/timely topics (filtered for professional relevance)
+- 1 evergreen banger
+- More buttoned-up, career/business focused
+- Longer form engagement - people actually read
+
+### When to break the pattern:
+- Something huge happens (major layoffs, market crash, viral moment) → post that day on BOTH
 - An evergreen topic is clearly better than weak trending options → go evergreen
 
-**Reply format when posting results:**
+---
+
+## Platform-Specific Guidance
+
+### Twitter Topics (Go Here)
+- Personal finance decisions
+- Spicy/contrarian takes
+- Relationship + career intersections ("Should I date a coworker?")
+- Consumer tech choices
+- Life decisions (rent/buy, relocate, etc.)
+- Anything memeable or quotable
+
+### LinkedIn Topics (Go Here)
+- Hiring/management decisions
+- Leadership dilemmas
+- Enterprise tech adoption
+- Startup strategy
+- Career progression
+- Workplace policy debates
+- B2B decisions
+
+### Topic Reframing Examples
+
+Same core topic, different framing:
+
+| Topic | Twitter Frame | LinkedIn Frame |
+|-------|--------------|----------------|
+| Salary negotiation | "Should I negotiate or accept?" | "Should hiring managers penalize candidates who negotiate aggressively?" |
+| Remote work | "Should I take a pay cut to stay remote?" | "Should companies pay remote workers less than in-office peers?" |
+| Job hopping | "Should I leave after 1 year for 30% raise?" | "Should managers hire candidates who job-hop every 1-2 years?" |
+| AI tools | "Should I use AI to write my cover letters?" | "Should hiring managers reject candidates who clearly used AI?" |
+
+The LinkedIn flip: Frame it from the **decision-maker's perspective** (manager, founder, exec) not the individual.
+
+---
+
+## Post Templates
+
+### Twitter Post:
 
 ```
-[DEBATE TOPIC AS QUESTION]
+[DEBATE QUESTION]
 
 4 AI models started at [X]% confident.
 They ended at [Y]%.
@@ -150,7 +207,7 @@ Here's what changed their minds: [LINK]
 Or if confidence didn't drop much:
 
 ```
-[DEBATE TOPIC AS QUESTION]
+[DEBATE QUESTION]
 
 4 AI models debated this.
 Winner: [MODEL NAME]
@@ -158,26 +215,84 @@ Winner: [MODEL NAME]
 See the full fight: [LINK]
 ```
 
+### LinkedIn Post:
+
+```
+[DEBATE QUESTION]
+
+I ran this through DecisionForge - 4 AI models debating and challenging each other.
+
+The result surprised me:
+
+→ They started at [X]% confident
+→ They ended at [Y]%
+→ Confidence DROPPED as they thought harder
+
+That's the opposite of how most AI works.
+
+Here's the full debate: [LINK]
+
+What would you decide?
+```
+
+Or longer form:
+
+```
+[PROVOCATIVE STATEMENT RELATED TO TOPIC]
+
+I've been thinking about this a lot, so I ran it through DecisionForge - a tool I built where AI models debate each other and challenge assumptions.
+
+The question: [DEBATE QUESTION]
+
+What happened:
+• 4 models argued different sides
+• A "Challenger" AI stress-tested every argument
+• Confidence levels started at [X]% and dropped to [Y]%
+
+The verdict: [ONE LINE SUMMARY]
+
+But here's what was interesting: [KEY INSIGHT FROM DEBATE]
+
+Full debate: [LINK]
+
+Curious what this community thinks. Where do you land?
+```
+
 ---
 
-## Example Evergreen Topics (Starter Bank)
+## Evergreen Topics by Platform
 
+### Twitter Evergreens (Personal/Spicy)
 1. Should I negotiate salary or accept a strong first offer?
 2. Should I buy or rent if I'll be somewhere 5+ years?
 3. Should I take the promotion with more stress or stay comfortable?
 4. Should I pay off debt aggressively or invest in index funds?
 5. Should I co-found a startup with a close friend?
 6. Should I take a pay cut to work at a startup?
-7. Should I learn the hot new framework or master fundamentals?
-8. Should I accept equity over higher salary at a Series A?
-9. Should I tell my employer about a competing offer?
-10. Should remote workers take a pay cut vs in-office peers?
+7. Should I tell my employer about a competing offer?
+8. Should I quit without another job lined up?
+9. Should I move to SF/NYC for my career or stay in a LCOL city?
+10. Should I go back to school or learn on the job?
+
+### LinkedIn Evergreens (Professional/Leadership)
+1. Should companies require return-to-office?
+2. Should managers hire job-hoppers with great skills?
+3. Should startups pay market rate or trade equity for lower salary?
+4. Should founders take VC money or bootstrap?
+5. Should companies promote top performers into management?
+6. Should hiring managers value culture fit over raw skills?
+7. Should leaders share company struggles with their team?
+8. Should companies do layoffs or cut everyone's pay 20%?
+9. Should remote-first companies pay location-adjusted salaries?
+10. Should founders fire fast or coach underperformers?
 
 ---
 
 ## Notes
 
 - Run Prompt 1 every posting day (or day before)
+- Add "for LinkedIn" or "for Twitter" to the prompt to get platform-appropriate framing
 - Refresh evergreen bank monthly with Prompt 2
 - Track which topics get best engagement → inform future selection
 - The confidence drop is THE hook - always highlight it when it happens
+- Cross-post winners: If something bangs on Twitter, reframe it for LinkedIn (and vice versa)
