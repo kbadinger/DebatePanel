@@ -1001,6 +1001,51 @@ Note: AI synthesis failed. See full debate transcript above for complete details
         content: r.content
       }));
 
+      // === IRON-FORGED: Build confidence trajectory across all rounds ===
+      const confidenceTrajectory = {};
+      debate.debateRounds.forEach(round => {
+        round.responses.forEach(r => {
+          if (!r.modelId.startsWith('challenger-') && r.confidence > 0) {
+            if (!confidenceTrajectory[r.modelId]) {
+              confidenceTrajectory[r.modelId] = [];
+            }
+            confidenceTrajectory[r.modelId].push({
+              round: round.roundNumber,
+              confidence: r.confidence
+            });
+          }
+        });
+      });
+
+      // Format confidence changes for the judge
+      let confidenceAnalysis = '';
+      const significantDrops = [];
+      Object.entries(confidenceTrajectory).forEach(([modelId, trajectory]) => {
+        if (trajectory.length >= 2) {
+          const first = trajectory[0].confidence;
+          const last = trajectory[trajectory.length - 1].confidence;
+          const change = last - first;
+          if (Math.abs(change) >= 10) {
+            significantDrops.push({
+              model: modelId,
+              start: first,
+              end: last,
+              change: change
+            });
+          }
+        }
+      });
+
+      if (significantDrops.length > 0) {
+        confidenceAnalysis = '\n=== CONFIDENCE TRAJECTORY ===\n';
+        significantDrops.forEach(d => {
+          const direction = d.change < 0 ? 'dropped' : 'increased';
+          confidenceAnalysis += `${d.model}: ${d.start}% → ${d.end}% (${direction} ${Math.abs(d.change)} points)\n`;
+        });
+        confidenceAnalysis += '\nNOTE: Confidence drops often indicate genuine deliberation - models grappling with valid challenges rather than blindly defending their initial position. This is the OPPOSITE of sycophantic AI behavior. Highlight significant confidence changes in your analysis.\n';
+        confidenceAnalysis += '=== END TRAJECTORY ===\n\n';
+      }
+
       // === IRON-FORGED: Build debate evolution context ===
       let evolutionContext = '';
       const totalRounds = debate.debateRounds.length;
@@ -1023,7 +1068,7 @@ Note: AI synthesis failed. See full debate transcript above for complete details
 
 Topic: ${debate.topic}
 
-${evolutionContext}${failedCount > 0 ? `Note: ${failedCount} model(s) failed to respond. Analysis based on ${validResponses.length} successful participant(s).\n\n` : ''}Final Round ${analysisRound.roundNumber} Positions:
+${confidenceAnalysis}${evolutionContext}${failedCount > 0 ? `Note: ${failedCount} model(s) failed to respond. Analysis based on ${validResponses.length} successful participant(s).\n\n` : ''}Final Round ${analysisRound.roundNumber} Positions:
 ${finalPositions.map(p => `
 ${p.model}:
 - Position: ${p.position}
