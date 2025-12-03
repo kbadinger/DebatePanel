@@ -120,8 +120,8 @@ export function PublicDebateView({ debate }: { debate: PublicDebate }) {
 
   // Check if a response is from the Challenger
   const isChallenger = (modelId: string) => {
-    return modelId.toLowerCase().includes('challenger') ||
-           debate.models.some(m => m.id === modelId && m.name.toLowerCase().includes('challenger'));
+    return modelId.startsWith('challenger-') ||
+           modelId.toLowerCase().includes('challenger');
   };
 
   const toggleRound = (roundNumber: number) => {
