@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import Script from "next/script";
 import { Header } from "@/components/ui/header";
+import { Footer } from "@/components/ui/Footer";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import AuthSessionProvider from "@/components/providers/session-provider";
 import "./globals.css";
@@ -63,8 +64,13 @@ export default function RootLayout({
       >
         <AuthSessionProvider>
           <ErrorBoundary>
-            <Header />
-            {children}
+            <div className="min-h-screen flex flex-col">
+              <Header />
+              <main className="flex-1">
+                {children}
+              </main>
+              <Footer />
+            </div>
           </ErrorBoundary>
         </AuthSessionProvider>
       </body>
