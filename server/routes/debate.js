@@ -227,8 +227,7 @@ router.post('/', async (req, res) => {
       debate = await prisma.debate.update({
         where: { id: existingDebateId },
         data: {
-          status: 'running',
-          startedAt: new Date()
+          status: 'running'
         },
         include: { modelSelections: true }
       });
