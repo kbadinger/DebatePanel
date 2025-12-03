@@ -89,7 +89,7 @@ router.post('/', async (req, res) => {
     'X-Accel-Buffering': 'no' // Disable nginx buffering
   });
 
-  const { config, userId } = req.body;
+  const { config, userId, debateId: existingDebateId } = req.body;
   const streamStartTime = Date.now();
 
   let streamClosed = false;
@@ -221,32 +221,45 @@ router.post('/', async (req, res) => {
       }
     }
 
-    // Create debate in database
-    debate = await prisma.debate.create({
-      data: {
-        userId: user.id,
-        topic: config.topic,
-        description: config.description,
-        rounds: config.rounds || 3,
-        format: config.format || 'structured',
-        convergenceThreshold: config.convergenceThreshold || null,
-        isInteractive: config.includeHuman || false,
-        status: 'running',
-        modelSelections: {
-          create: modelsToSave.map(model => ({
-            modelId: model.id,
-            provider: model.provider,
-            name: model.name || model.id,  // API model ID
-            displayName: model.isChallenger
-              ? `${model.displayName || model.name || model.id} (Challenger)`
-              : (model.displayName || model.name || model.id)
-          }))
+    // Use existing debate if ID provided (from Vercel), otherwise create new
+    if (existingDebateId) {
+      console.log(`[Railway] Using existing debate from Vercel: ${existingDebateId}`);
+      debate = await prisma.debate.update({
+        where: { id: existingDebateId },
+        data: {
+          status: 'running',
+          startedAt: new Date()
+        },
+        include: { modelSelections: true }
+      });
+    } else {
+      // Create debate in database (direct Railway call without Vercel)
+      debate = await prisma.debate.create({
+        data: {
+          userId: user.id,
+          topic: config.topic,
+          description: config.description,
+          rounds: config.rounds || 3,
+          format: config.format || 'structured',
+          convergenceThreshold: config.convergenceThreshold || null,
+          isInteractive: config.includeHuman || false,
+          status: 'running',
+          modelSelections: {
+            create: modelsToSave.map(model => ({
+              modelId: model.id,
+              provider: model.provider,
+              name: model.name || model.id,  // API model ID
+              displayName: model.isChallenger
+                ? `${model.displayName || model.name || model.id} (Challenger)`
+                : (model.displayName || model.name || model.id)
+            }))
+          }
+        },
+        include: {
+          modelSelections: true
         }
-      },
-      include: {
-        modelSelections: true
-      }
-    });
+      });
+    }
 
     // Store the full config for use in the orchestrator
     const fullDebateConfig = {
