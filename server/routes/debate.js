@@ -409,8 +409,9 @@ router.post('/', async (req, res) => {
         console.error(`[Round ${i}] Synthesis generation failed:`, error);
       }
 
-      // === IRON-FORGED DEBATE: Run Challenger (if enabled) ===
-      if (config.challenger?.enabled && config.challenger?.model) {
+      // === IRON-FORGED DEBATE: Run Challenger (if enabled and NOT final round) ===
+      // Challenger stress-tests for the NEXT round, so skip after final round
+      if (config.challenger?.enabled && config.challenger?.model && i < config.rounds) {
         try {
           console.log(`[Round ${i}] Running Challenger...`);
           const challengerResponse = await orchestrator.runChallengerStep(
