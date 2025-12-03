@@ -169,7 +169,7 @@ Industry & Society:
   }
   
   return (
-    <div className="min-h-screen gradient-bg-mesh relative overflow-hidden">
+    <div className="gradient-bg-mesh relative overflow-hidden pb-8">
       {/* Animated background orbs */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-20 left-10 w-72 h-72 bg-blue-200 rounded-full mix-blend-multiply filter blur-3xl opacity-10 animate-float"></div>
