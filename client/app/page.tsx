@@ -1061,7 +1061,7 @@ Industry & Society:
                     challenger: {
                       ...config.challenger,
                       enabled: e.target.checked,
-                      model: config.challenger?.model || AVAILABLE_MODELS.find(m => m.id === 'grok-3')
+                      model: config.challenger?.model || AVAILABLE_MODELS.find(m => m.id === 'claude-sonnet-4-20250514')
                     }
                   })}
                   className="mr-3 h-4 w-4 text-blue-600 rounded focus:ring-blue-500"
@@ -1072,7 +1072,7 @@ Industry & Society:
               {config.challenger?.enabled && (
                 <div className="ml-7">
                   <select
-                    value={config.challenger.model?.id || 'grok-3'}
+                    value={config.challenger.model?.id || 'claude-sonnet-4-20250514'}
                     onChange={(e) => {
                       const model = AVAILABLE_MODELS.find(m => m.id === e.target.value);
                       setConfig({
