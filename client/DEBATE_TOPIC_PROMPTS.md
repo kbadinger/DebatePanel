@@ -62,6 +62,70 @@ Give me the single best option. Make the call.
 
 ---
 
+## PROMPT 1B: LinkedIn Daily Topic Finder
+
+```
+I run DecisionForge - a platform where multiple AI models debate decisions and challenge each other. The hook: confidence levels often DROP as they think harder. It's anti-sycophantic AI - they argue, stress-test, and sometimes change their minds.
+
+I need THE SINGLE BEST debate topic for LINKEDIN today. Not a list - pick the winner.
+
+**LinkedIn-specific framing:**
+- Frame from the DECISION-MAKER perspective (manager, founder, exec, leader)
+- Professional stakes: hiring, strategy, leadership, policy, business growth
+- Thought leadership angle - makes people look smart for engaging
+- Avoid personal/individual framing - flip it to the organizational view
+
+**What makes a great LinkedIn DecisionForge debate:**
+- A business/professional decision someone needs to make
+- Has 2-4 clear options with real trade-offs
+- No obvious answer - experienced professionals genuinely split
+- Stakes: team performance, company culture, career trajectory, business outcomes
+- The kind of question that sparks debate in leadership meetings or board rooms
+
+**Search these sources from the last 48 hours:**
+- LinkedIn trending posts and discussions
+- Business news (TechCrunch, Bloomberg, WSJ, Fortune)
+- HackerNews top discussions (business/startup angle)
+- Major corporate news (layoffs, policy changes, M&A, funding rounds)
+- Viral workplace/management discussions on Twitter
+
+**Categories for LinkedIn:**
+- Hiring & Talent (should we hire X type of person, interview practices, remote policies)
+- Leadership & Management (transparency, feedback, team structure)
+- Strategy & Growth (bootstrapping vs VC, pivots, market timing)
+- Workplace Policy (RTO, compensation philosophy, AI adoption)
+- Founder Decisions (co-founders, board dynamics, fundraising)
+
+**Hard avoid:**
+- Personal finance framing (flip to business perspective)
+- Political hot takes
+- Individual career advice (flip to hiring manager perspective)
+- Anything too junior/entry-level
+
+**Your output:**
+
+1. **THE TOPIC** (framed as a leadership/business decision question)
+
+2. **WHY TODAY** (what triggered this - news, viral post, trending discussion)
+
+3. **THE SIDES** (each position in ~15 words)
+
+4. **DESCRIPTION FOR THE DEBATE** (2-3 sentences of context I'll feed to the AI models)
+
+5. **LINKEDIN ANGLE** (why this makes someone look thoughtful for engaging)
+
+6. **TIMING SCORE:**
+   - 🔥🔥🔥 = Must post today, moment will pass
+   - 🔥🔥 = Good topic, timing helps but not critical
+   - 🔥 = Solid evergreen, post anytime
+
+**Important:** If nothing trending beats a timeless leadership topic, tell me. Quality over recency.
+
+Give me the single best option. Make the call.
+```
+
+---
+
 ## PROMPT 2: Evergreen Bank Builder
 
 ```
