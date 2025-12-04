@@ -592,19 +592,27 @@ export async function DELETE(req: NextRequest) {
     console.log('[DELETE] Request to delete:', idsToDelete.length, 'debates');
     console.log('[DELETE] User ID from session:', session.user.id);
 
-    // Verify user owns all debates before deleting
+    // Check if user is admin
+    const user = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { isAdmin: true }
+    });
+    const isAdmin = user?.isAdmin || false;
+
+    // Verify user owns all debates (or is admin)
+    const whereClause = isAdmin
+      ? { id: { in: idsToDelete } }
+      : { id: { in: idsToDelete }, userId: session.user.id };
+
     const debates = await prisma.debate.findMany({
-      where: {
-        id: { in: idsToDelete },
-        userId: session.user.id
-      },
+      where: whereClause,
       select: { id: true, userId: true }
     });
 
-    console.log('[DELETE] Found', debates.length, 'debates owned by user');
+    console.log('[DELETE] Found', debates.length, 'debates', isAdmin ? '(admin mode)' : 'owned by user');
 
     if (debates.length !== idsToDelete.length) {
-      // Check which debates exist but aren't owned by user
+      // Check which debates exist but aren't accessible
       const allDebates = await prisma.debate.findMany({
         where: { id: { in: idsToDelete } },
         select: { id: true, userId: true }
@@ -620,10 +628,7 @@ export async function DELETE(req: NextRequest) {
 
     // Delete debates (cascade will handle related records)
     const result = await prisma.debate.deleteMany({
-      where: {
-        id: { in: idsToDelete },
-        userId: session.user.id
-      }
+      where: whereClause
     });
 
     return Response.json({
