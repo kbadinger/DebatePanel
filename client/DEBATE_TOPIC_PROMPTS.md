@@ -1,266 +1,205 @@
 # DecisionForge Debate Topic Prompts
 
-Use these prompts with Perplexity (or similar with real-time data) to find high-impact debate topics.
+Use these prompts with Perplexity to get copy-paste ready debate topics.
 
 ---
 
-## PROMPT 1: Daily Topic Finder (The Banger Finder)
+## PROMPT 1: Twitter Daily Topic
 
 ```
-I run DecisionForge - a platform where multiple AI models debate decisions and challenge each other. The hook: confidence levels often DROP as they think harder. It's anti-sycophantic AI - they argue, stress-test, and sometimes change their minds.
+Find me ONE trending debate topic for Twitter/X today.
 
-I need THE SINGLE BEST debate topic to post TODAY. Not a list - pick the winner.
+Context: I run DecisionForge where AI models debate decisions. I need a topic that will get engagement on Twitter.
 
-**What makes a great DecisionForge debate:**
-- A specific decision someone needs to make (not a general discussion)
-- Has 2-4 clear options (e.g., "Buy vs Rent", "Accept vs Counter vs Walk away")
-- No obvious answer - smart people genuinely split on this
-- Real stakes: money, career, relationships, health, business
-- AI models will argue different sides, challenge each other, and may lower their confidence as they find holes in their own arguments
-- The best debates make people think "shit, I actually don't know the right answer"
+**Twitter audience wants:**
+- Personal decisions with real stakes (money, career, life)
+- Spicy takes that split opinions
+- Relatable "I've been there" moments
+- Quick to understand, strong to opinionated on
 
-**Search these sources from the last 48 hours:**
+**Search the last 48 hours:**
 - Twitter/X trending discussions
-- Reddit front page and popular subreddits (r/cscareer, r/personalfinance, r/startups, r/relationships, r/technology)
-- HackerNews top discussions
-- Major news that forces decisions (layoffs, policy changes, market moves, tech releases)
+- Reddit (r/cscareer, r/personalfinance, r/startups, r/technology)
+- HackerNews front page
+- News forcing decisions (layoffs, market moves, tech releases)
 
-**Categories to consider:**
-- Tech/AI decisions (tools, career pivots, adoption timing)
-- Career/Money (offers, negotiations, investments, side hustles)
-- Startups/Business (funding, hiring, pivots, launches)
-- Life decisions (relocation, relationships, major purchases)
-- Spicy/contrarian (challenges conventional wisdom)
+**Good examples:**
+- "Should I negotiate salary or accept a strong first offer?"
+- "Should I quit without another job lined up?"
+- "Should I buy or rent if I'm staying 5+ years?"
+- "Should I take a pay cut to work at a startup?"
 
-**Hard avoid:**
-- Pure politics (too toxic, kills engagement)
-- Celebrity drama (no real stakes)
-- Topics where one side is obviously right (boring)
-- Vague philosophical questions ("Is AI good?")
+**Avoid:**
+- Politics
+- Obvious answers
+- Vague philosophy ("Is AI good?")
 
-**Your output:**
+---
 
-1. **THE TOPIC** (framed as a decision question)
+**OUTPUT FORMAT (exactly like this):**
 
-2. **WHY TODAY** (what triggered this - news, viral post, trending discussion)
+TOPIC: [One clear decision question starting with "Should"]
 
-3. **THE SIDES** (each position in ~15 words)
+DESCRIPTION: [2-3 sentences of context. Be specific - include numbers, scenarios, or stakes that make this real.]
 
-4. **DESCRIPTION FOR THE DEBATE** (2-3 sentences of context I'll feed to the AI models)
+WHY TODAY: [One sentence on what's trending that makes this relevant]
 
-5. **WHY THIS WINS** (one sentence on why this beats alternatives you considered)
+---
 
-6. **TIMING SCORE:**
-   - 🔥🔥🔥 = Must post today, moment will pass
-   - 🔥🔥 = Good topic, timing helps but not critical
-   - 🔥 = Solid evergreen, post anytime
-
-**Important:** If nothing trending beats a timeless evergreen topic, tell me. I'd rather post a banger that's always relevant than a weak trending topic. Quality over recency.
-
-Give me the single best option. Make the call.
+Give me ONE topic. Use EXACTLY the format above. Nothing else.
 ```
 
 ---
 
-## PROMPT 1B: LinkedIn Daily Topic Finder
+## PROMPT 2: LinkedIn Daily Topic
 
 ```
-I run DecisionForge - a platform where multiple AI models debate business decisions. LinkedIn audience = managers, founders, execs, senior ICs who make real decisions.
+Find me ONE trending debate topic for LinkedIn today.
 
-I need THE SINGLE BEST debate topic for LINKEDIN today. This is DIFFERENT from Twitter content.
+Context: I run DecisionForge where AI models debate business decisions. LinkedIn audience = managers, founders, execs.
 
-**LinkedIn is NOT Twitter. Key differences:**
-- LinkedIn users want to look SMART and THOUGHTFUL in comments
-- They're decision-makers, not individuals asking for advice
-- Topics should make a VP or founder say "I've literally debated this in a meeting"
-- Engagement comes from people sharing their experience/expertise
-- No personal life stuff, no spicy hot takes, no memes
+**LinkedIn is different from Twitter:**
+- Decision-maker perspective (not individual asking for advice)
+- Business stakes: revenue, retention, team performance
+- Makes commenters look smart and experienced
+- Topics VPs actually debate in meetings
 
-**The LinkedIn content formula:**
-1. A real business decision that leaders/managers face
-2. No clear right answer - smart people on both sides
-3. Commenting makes you look experienced and thoughtful
-4. Reading it makes you better at your job
+**Search the last 48 hours:**
+- LinkedIn viral posts
+- Business news (layoffs, funding, policy changes)
+- WSJ, HBR, Fortune, Bloomberg workplace pieces
+- Major company decisions setting precedent
 
-**Search these sources from the last 48 hours:**
-- Business news: layoffs, fundraising, policy changes, earnings calls
-- LinkedIn viral posts (management/leadership discussions)
-- Industry reports or studies released this week
-- Major company decisions that set precedent
-- Workplace trend pieces (WSJ, HBR, Fortune, Bloomberg)
+**Good examples:**
+- "Should companies counter-offer employees who resign?"
+- "Should you hire for potential or proven track record?"
+- "Should remote-first companies pay location-adjusted salaries?"
+- "Should founders fire fast or coach underperformers?"
 
-**LinkedIn-specific categories:**
-- **Hiring Philosophy**: "Should you hire for potential or proven skills?"
-- **Management Dilemmas**: "Should managers be technical or people-focused?"
-- **Compensation Strategy**: "Should you pay above market or offer equity?"
-- **Team Structure**: "Should engineers specialize or be generalists?"
-- **Growth Decisions**: "Should you raise prices or chase volume?"
-- **AI/Automation**: "Should you replace roles with AI or augment existing staff?"
-- **Culture Calls**: "Should you enforce RTO or trust async work?"
+**Avoid:**
+- Personal framing ("Should I...")
+- Entry-level decisions
+- Politics
 
-**Hard requirements:**
-- Must be framed as a BUSINESS decision, not personal
-- Must have real stakes: revenue, retention, team performance, growth
-- Must be something a hiring manager, VP, or founder actually decides
-- NO: "Should I quit my job?" YES: "Should companies counter-offer employees who resign?"
+---
 
-**Your output:**
+**OUTPUT FORMAT (exactly like this):**
 
-1. **THE TOPIC** (framed as an organizational/leadership decision)
+TOPIC: [One clear business decision question starting with "Should"]
 
-2. **WHY TODAY** (specific news, report, or trend driving this)
+DESCRIPTION: [2-3 sentences of business context. Frame for decision-makers - include trade-offs, stakes, or data points.]
 
-3. **THE SIDES** (each position in ~15 words, framed for decision-makers)
+WHY TODAY: [One sentence on what's trending that makes this relevant]
 
-4. **DESCRIPTION FOR THE DEBATE** (2-3 sentences - business context, not personal)
+---
 
-5. **COMMENT BAIT** (what will make senior people want to share their take?)
-
-6. **TIMING SCORE:**
-   - 🔥🔥🔥 = Tied to breaking news, post today
-   - 🔥🔥 = Trending topic, this week is good
-   - 🔥 = Evergreen leadership question
-
-Give me the single best option for LinkedIn. Make the call.
+Give me ONE topic. Use EXACTLY the format above. Nothing else.
 ```
 
 ---
 
-## PROMPT 2: Evergreen Bank Builder
+## PROMPT 3: Evergreen Bank (Twitter)
 
 ```
-I need to build a bank of 25 EVERGREEN debate topics for DecisionForge - debates that are always relevant, never expire, and will get engagement any day of the year.
+Give me 10 evergreen debate topics for Twitter/X.
 
-**What makes a great DecisionForge debate:**
-- A specific decision someone needs to make (not a general discussion)
-- Has 2-4 clear options
-- No obvious answer - smart people genuinely split
-- Real stakes that many people face
-- Triggers strong opinions but both sides are defensible
-- The kind of question people argue about at dinner parties or in Slack channels
+Context: These should work any day - not tied to news. Personal decisions with real stakes.
 
-**Categories (aim for 4-6 per category):**
+**Good Twitter evergreens:**
+- Personal finance dilemmas
+- Career crossroads
+- Life decisions (housing, location, relationships)
+- Contrarian takes on conventional wisdom
 
-**Career & Money:**
-- Job decisions (offers, negotiations, quitting, promotions)
-- Financial choices (debt, investing, major purchases)
-- Work-life tradeoffs
+**Each topic needs clear sides where smart people genuinely disagree.**
 
-**Tech & Tools:**
-- Technology adoption timing
-- Build vs buy decisions
-- Platform/tool choices that people are religious about
+---
 
-**Startups & Business:**
-- Founder decisions (co-founders, funding, hiring, pivots)
-- Strategy calls that split smart operators
-- Risk vs safety tradeoffs
+**OUTPUT FORMAT (repeat for each):**
 
-**Life Decisions:**
-- Major purchases (house, car)
-- Relationship/family decisions (framed carefully, not too personal)
-- Location/lifestyle choices
+1.
+TOPIC: [Decision question starting with "Should I"]
+DESCRIPTION: [2-3 sentences with specific scenario and stakes]
 
-**Spicy/Contrarian:**
-- Challenges conventional wisdom
-- "Unpopular opinion" territory where both sides have merit
-- Topics that make people say "wait, actually..."
+2.
+TOPIC: ...
+DESCRIPTION: ...
 
-**For each topic, provide:**
+[Continue through 10]
 
-1. **DEBATE QUESTION** (the decision, framed clearly)
+---
 
-2. **THE SIDES** (each position in ~10 words)
-
-3. **DESCRIPTION** (2-3 sentences of context for the AI models)
-
-4. **WHY IT WORKS** (one sentence on why this splits smart people)
-
-5. **ENGAGEMENT POTENTIAL:**
-   - 💎💎💎 = Universal, everyone has an opinion
-   - 💎💎 = Strong niche appeal
-   - 💎 = Solid but narrower audience
-
-**Quality bar:** Each topic should make me think "oh shit, I'd actually want to see AI models fight about this." If it has an obvious answer, cut it.
-
-Give me 25 ranked by engagement potential.
+Give me 10 topics. Use EXACTLY the format above. No extra commentary.
 ```
 
 ---
 
-## Posting Strategy
+## PROMPT 4: Evergreen Bank (LinkedIn)
 
-### Schedule: 6 posts per week (3 Twitter + 3 LinkedIn)
+```
+Give me 10 evergreen debate topics for LinkedIn.
 
-| Day | Twitter | LinkedIn |
-|-----|---------|----------|
-| Monday | ✅ | |
-| Tuesday | | ✅ |
-| Wednesday | ✅ | |
-| Thursday | | ✅ |
-| Friday | ✅ | |
-| Saturday | | ✅ |
+Context: These should work any day - not tied to news. Business/leadership decisions for managers and founders.
 
-### Content Mix Per Platform
+**Good LinkedIn evergreens:**
+- Hiring philosophy debates
+- Management style tradeoffs
+- Compensation and equity decisions
+- Team structure choices
+- Growth vs stability tradeoffs
 
-**Twitter (3x/week):**
-- 2 trending/timely topics (from Prompt 1)
-- 1 evergreen banger
-- Can be spicier, more personal, hot takes welcome
-- Shorter attention span - hook matters most
-
-**LinkedIn (3x/week):**
-- 2 trending/timely topics (filtered for professional relevance)
-- 1 evergreen banger
-- More buttoned-up, career/business focused
-- Longer form engagement - people actually read
-
-### When to break the pattern:
-- Something huge happens (major layoffs, market crash, viral moment) → post that day on BOTH
-- An evergreen topic is clearly better than weak trending options → go evergreen
+**Each topic needs clear sides where experienced leaders genuinely disagree.**
 
 ---
 
-## Platform-Specific Guidance
+**OUTPUT FORMAT (repeat for each):**
 
-### Twitter Topics (Go Here)
-- Personal finance decisions
-- Spicy/contrarian takes
-- Relationship + career intersections ("Should I date a coworker?")
-- Consumer tech choices
-- Life decisions (rent/buy, relocate, etc.)
-- Anything memeable or quotable
+1.
+TOPIC: [Business decision question starting with "Should companies/founders/managers"]
+DESCRIPTION: [2-3 sentences with business context and trade-offs]
 
-### LinkedIn Topics (Go Here)
-- Hiring/management decisions
-- Leadership dilemmas
-- Enterprise tech adoption
-- Startup strategy
-- Career progression
-- Workplace policy debates
-- B2B decisions
+2.
+TOPIC: ...
+DESCRIPTION: ...
 
-### Topic Reframing Examples
+[Continue through 10]
 
-Same core topic, different framing:
+---
 
-| Topic | Twitter Frame | LinkedIn Frame |
-|-------|--------------|----------------|
-| Salary negotiation | "Should I negotiate or accept?" | "Should hiring managers penalize candidates who negotiate aggressively?" |
-| Remote work | "Should I take a pay cut to stay remote?" | "Should companies pay remote workers less than in-office peers?" |
-| Job hopping | "Should I leave after 1 year for 30% raise?" | "Should managers hire candidates who job-hop every 1-2 years?" |
-| AI tools | "Should I use AI to write my cover letters?" | "Should hiring managers reject candidates who clearly used AI?" |
+Give me 10 topics. Use EXACTLY the format above. No extra commentary.
+```
 
-The LinkedIn flip: Frame it from the **decision-maker's perspective** (manager, founder, exec) not the individual.
+---
+
+## How to Use
+
+1. **Daily posting**: Run Prompt 1 (Twitter) or Prompt 2 (LinkedIn) in Perplexity
+2. **Copy the output** directly into DecisionForge:
+   - TOPIC → "Topic" field
+   - DESCRIPTION → "Description" field
+3. **Build your bank**: Run Prompts 3 & 4 monthly, save the list
+4. **Mix it up**: 2 trending + 1 evergreen per platform per week
+
+---
+
+## Posting Schedule
+
+| Day | Platform |
+|-----|----------|
+| Monday | Twitter |
+| Tuesday | LinkedIn |
+| Wednesday | Twitter |
+| Thursday | LinkedIn |
+| Friday | Twitter |
+| Saturday | LinkedIn |
 
 ---
 
 ## Post Templates
 
-### Twitter Post:
-
+### Twitter:
 ```
-[DEBATE QUESTION]
+[TOPIC]
 
 4 AI models started at [X]% confident.
 They ended at [Y]%.
@@ -268,25 +207,11 @@ They ended at [Y]%.
 Here's what changed their minds: [LINK]
 ```
 
-Or if confidence didn't drop much:
-
+### LinkedIn:
 ```
-[DEBATE QUESTION]
-
-4 AI models debated this.
-Winner: [MODEL NAME]
-
-See the full fight: [LINK]
-```
-
-### LinkedIn Post:
-
-```
-[DEBATE QUESTION]
+[TOPIC]
 
 I ran this through DecisionForge - 4 AI models debating and challenging each other.
-
-The result surprised me:
 
 → They started at [X]% confident
 → They ended at [Y]%
@@ -294,69 +219,7 @@ The result surprised me:
 
 That's the opposite of how most AI works.
 
-Here's the full debate: [LINK]
+Full debate: [LINK]
 
 What would you decide?
 ```
-
-Or longer form:
-
-```
-[PROVOCATIVE STATEMENT RELATED TO TOPIC]
-
-I've been thinking about this a lot, so I ran it through DecisionForge - a tool I built where AI models debate each other and challenge assumptions.
-
-The question: [DEBATE QUESTION]
-
-What happened:
-• 4 models argued different sides
-• A "Challenger" AI stress-tested every argument
-• Confidence levels started at [X]% and dropped to [Y]%
-
-The verdict: [ONE LINE SUMMARY]
-
-But here's what was interesting: [KEY INSIGHT FROM DEBATE]
-
-Full debate: [LINK]
-
-Curious what this community thinks. Where do you land?
-```
-
----
-
-## Evergreen Topics by Platform
-
-### Twitter Evergreens (Personal/Spicy)
-1. Should I negotiate salary or accept a strong first offer?
-2. Should I buy or rent if I'll be somewhere 5+ years?
-3. Should I take the promotion with more stress or stay comfortable?
-4. Should I pay off debt aggressively or invest in index funds?
-5. Should I co-found a startup with a close friend?
-6. Should I take a pay cut to work at a startup?
-7. Should I tell my employer about a competing offer?
-8. Should I quit without another job lined up?
-9. Should I move to SF/NYC for my career or stay in a LCOL city?
-10. Should I go back to school or learn on the job?
-
-### LinkedIn Evergreens (Professional/Leadership)
-1. Should companies require return-to-office?
-2. Should managers hire job-hoppers with great skills?
-3. Should startups pay market rate or trade equity for lower salary?
-4. Should founders take VC money or bootstrap?
-5. Should companies promote top performers into management?
-6. Should hiring managers value culture fit over raw skills?
-7. Should leaders share company struggles with their team?
-8. Should companies do layoffs or cut everyone's pay 20%?
-9. Should remote-first companies pay location-adjusted salaries?
-10. Should founders fire fast or coach underperformers?
-
----
-
-## Notes
-
-- Run Prompt 1 every posting day (or day before)
-- Add "for LinkedIn" or "for Twitter" to the prompt to get platform-appropriate framing
-- Refresh evergreen bank monthly with Prompt 2
-- Track which topics get best engagement → inform future selection
-- The confidence drop is THE hook - always highlight it when it happens
-- Cross-post winners: If something bangs on Twitter, reframe it for LinkedIn (and vice versa)
