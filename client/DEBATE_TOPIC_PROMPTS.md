@@ -65,63 +65,63 @@ Give me the single best option. Make the call.
 ## PROMPT 1B: LinkedIn Daily Topic Finder
 
 ```
-I run DecisionForge - a platform where multiple AI models debate decisions and challenge each other. The hook: confidence levels often DROP as they think harder. It's anti-sycophantic AI - they argue, stress-test, and sometimes change their minds.
+I run DecisionForge - a platform where multiple AI models debate business decisions. LinkedIn audience = managers, founders, execs, senior ICs who make real decisions.
 
-I need THE SINGLE BEST debate topic for LINKEDIN today. Not a list - pick the winner.
+I need THE SINGLE BEST debate topic for LINKEDIN today. This is DIFFERENT from Twitter content.
 
-**LinkedIn-specific framing:**
-- Frame from the DECISION-MAKER perspective (manager, founder, exec, leader)
-- Professional stakes: hiring, strategy, leadership, policy, business growth
-- Thought leadership angle - makes people look smart for engaging
-- Avoid personal/individual framing - flip it to the organizational view
+**LinkedIn is NOT Twitter. Key differences:**
+- LinkedIn users want to look SMART and THOUGHTFUL in comments
+- They're decision-makers, not individuals asking for advice
+- Topics should make a VP or founder say "I've literally debated this in a meeting"
+- Engagement comes from people sharing their experience/expertise
+- No personal life stuff, no spicy hot takes, no memes
 
-**What makes a great LinkedIn DecisionForge debate:**
-- A business/professional decision someone needs to make
-- Has 2-4 clear options with real trade-offs
-- No obvious answer - experienced professionals genuinely split
-- Stakes: team performance, company culture, career trajectory, business outcomes
-- The kind of question that sparks debate in leadership meetings or board rooms
+**The LinkedIn content formula:**
+1. A real business decision that leaders/managers face
+2. No clear right answer - smart people on both sides
+3. Commenting makes you look experienced and thoughtful
+4. Reading it makes you better at your job
 
 **Search these sources from the last 48 hours:**
-- LinkedIn trending posts and discussions
-- Business news (TechCrunch, Bloomberg, WSJ, Fortune)
-- HackerNews top discussions (business/startup angle)
-- Major corporate news (layoffs, policy changes, M&A, funding rounds)
-- Viral workplace/management discussions on Twitter
+- Business news: layoffs, fundraising, policy changes, earnings calls
+- LinkedIn viral posts (management/leadership discussions)
+- Industry reports or studies released this week
+- Major company decisions that set precedent
+- Workplace trend pieces (WSJ, HBR, Fortune, Bloomberg)
 
-**Categories for LinkedIn:**
-- Hiring & Talent (should we hire X type of person, interview practices, remote policies)
-- Leadership & Management (transparency, feedback, team structure)
-- Strategy & Growth (bootstrapping vs VC, pivots, market timing)
-- Workplace Policy (RTO, compensation philosophy, AI adoption)
-- Founder Decisions (co-founders, board dynamics, fundraising)
+**LinkedIn-specific categories:**
+- **Hiring Philosophy**: "Should you hire for potential or proven skills?"
+- **Management Dilemmas**: "Should managers be technical or people-focused?"
+- **Compensation Strategy**: "Should you pay above market or offer equity?"
+- **Team Structure**: "Should engineers specialize or be generalists?"
+- **Growth Decisions**: "Should you raise prices or chase volume?"
+- **AI/Automation**: "Should you replace roles with AI or augment existing staff?"
+- **Culture Calls**: "Should you enforce RTO or trust async work?"
 
-**Hard avoid:**
-- Personal finance framing (flip to business perspective)
-- Political hot takes
-- Individual career advice (flip to hiring manager perspective)
-- Anything too junior/entry-level
+**Hard requirements:**
+- Must be framed as a BUSINESS decision, not personal
+- Must have real stakes: revenue, retention, team performance, growth
+- Must be something a hiring manager, VP, or founder actually decides
+- NO: "Should I quit my job?" YES: "Should companies counter-offer employees who resign?"
 
 **Your output:**
 
-1. **THE TOPIC** (framed as a leadership/business decision question)
+1. **THE TOPIC** (framed as an organizational/leadership decision)
 
-2. **WHY TODAY** (what triggered this - news, viral post, trending discussion)
+2. **WHY TODAY** (specific news, report, or trend driving this)
 
-3. **THE SIDES** (each position in ~15 words)
+3. **THE SIDES** (each position in ~15 words, framed for decision-makers)
 
-4. **DESCRIPTION FOR THE DEBATE** (2-3 sentences of context I'll feed to the AI models)
+4. **DESCRIPTION FOR THE DEBATE** (2-3 sentences - business context, not personal)
 
-5. **LINKEDIN ANGLE** (why this makes someone look thoughtful for engaging)
+5. **COMMENT BAIT** (what will make senior people want to share their take?)
 
 6. **TIMING SCORE:**
-   - 🔥🔥🔥 = Must post today, moment will pass
-   - 🔥🔥 = Good topic, timing helps but not critical
-   - 🔥 = Solid evergreen, post anytime
+   - 🔥🔥🔥 = Tied to breaking news, post today
+   - 🔥🔥 = Trending topic, this week is good
+   - 🔥 = Evergreen leadership question
 
-**Important:** If nothing trending beats a timeless leadership topic, tell me. Quality over recency.
-
-Give me the single best option. Make the call.
+Give me the single best option for LinkedIn. Make the call.
 ```
 
 ---
