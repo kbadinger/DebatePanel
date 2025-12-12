@@ -137,11 +137,11 @@ class Orchestrator {
         const isReasoningModel = typeof model.name === 'string'
           && (model.name.includes('gpt-5') || model.name.includes('gpt-4.2') || model.name.includes('gpt-4o-reasoning'));
 
-        // gpt-5-chat-latest is the working variant (base gpt-5 returns empty content)
-        const isGpt5ChatVariant = model.name === 'gpt-5-chat-latest';
+        // gpt-5-chat-latest and gpt-5.2-chat-latest are the working chat variants
+        const isGpt5ChatVariant = model.name === 'gpt-5-chat-latest' || model.name === 'gpt-5.2-chat-latest';
 
-        // gpt-5-pro requires Responses API instead of Chat Completions API
-        const usesResponsesAPI = model.name === 'gpt-5-pro';
+        // gpt-5-pro and gpt-5.2-pro require Responses API instead of Chat Completions API
+        const usesResponsesAPI = model.name === 'gpt-5-pro' || model.name === 'gpt-5.2-pro';
 
         let completion;
 
@@ -1120,8 +1120,8 @@ Judge the arguments, not the conclusions.`;
         normalizedJudgeModel = 'claude-sonnet-4-5-20250929';
       } else if (judgeModel === 'gpt-4o') {
         normalizedJudgeModel = 'gpt-4o';
-      } else if (judgeModel && judgeModel.includes('gpt-5')) {
-        // GPT-5 models pass through as-is
+      } else if (judgeModel && (judgeModel.includes('gpt-5') || judgeModel.includes('gpt-5.2'))) {
+        // GPT-5 and GPT-5.2 models pass through as-is
         normalizedJudgeModel = judgeModel;
       }
 
@@ -1143,9 +1143,9 @@ Judge the arguments, not the conclusions.`;
           throw new Error('OpenAI API not configured for judge model');
         }
 
-        // GPT-5 Pro uses Responses API
-        if (normalizedJudgeModel === 'gpt-5-pro') {
-          console.log('[Judge] Using Responses API for gpt-5-pro');
+        // GPT-5 Pro and GPT-5.2 Pro use Responses API
+        if (normalizedJudgeModel === 'gpt-5-pro' || normalizedJudgeModel === 'gpt-5.2-pro') {
+          console.log(`[Judge] Using Responses API for ${normalizedJudgeModel}`);
           const response = await this.openai.responses.create({
             model: normalizedJudgeModel,
             input: prompt,
