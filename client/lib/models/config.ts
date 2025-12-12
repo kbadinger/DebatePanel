@@ -9,6 +9,10 @@ export const MODEL_CONTEXT_LIMITS = {
   'gpt-5-mini': 1000000, // 1M token context window
   'gpt-5-nano': 128000, // 128k token context window
   'gpt-5-codex': 1000000, // 1M token context window
+  // GPT-5.2 Series (December 2025 Release)
+  'gpt-5.2': 400000, // 400k context window
+  'gpt-5.2-chat-latest': 400000, // 400k context window (Instant variant)
+  'gpt-5.2-pro': 400000, // 400k context window (Pro with reasoning)
   // GPT-5.1 Series (January 2025 Release)
   'gpt-5.1': 400000, // 400k context window
   'gpt-5.1-codex': 400000, // 400k context window
@@ -84,6 +88,10 @@ const MODEL_ROLES: Record<string, { strengths: ModelStrength[], role: string }> 
   'gpt-5-mini': { strengths: ['business', 'analytical', 'general'], role: 'Fast and efficient variant of GPT-5' },
   'gpt-5-nano': { strengths: ['business', 'general'], role: 'Ultra-efficient GPT-5 for quick tasks' },
   'gpt-5-codex': { strengths: ['technical', 'analytical'], role: 'Specialized coding and software development model' },
+  // GPT-5.2 Series (December 2025 Release)
+  'gpt-5.2': { strengths: ['business', 'analytical', 'creative', 'technical'], role: 'Most capable GPT-5.2 with advanced reasoning for professional knowledge work' },
+  'gpt-5.2-chat-latest': { strengths: ['business', 'creative', 'general'], role: 'GPT-5.2 Instant - fast and efficient for writing and information seeking' },
+  'gpt-5.2-pro': { strengths: ['analytical', 'technical', 'business'], role: 'GPT-5.2 Pro - most accurate with extended reasoning for complex tasks' },
   // GPT-5.1 Series (January 2025 Release)
   'gpt-5.1': { strengths: ['business', 'analytical', 'creative', 'technical'], role: 'Latest GPT-5.1 with improved reasoning and natural conversational style' },
   'gpt-5.1-codex': { strengths: ['technical', 'analytical'], role: 'Specialized GPT-5.1 for software engineering and coding workflows' },
@@ -186,6 +194,7 @@ const MODEL_ROLES: Record<string, { strengths: ModelStrength[], role: string }> 
 // Model performance characteristics for slow thinking/reasoning models
 const MODEL_PERFORMANCE_CHARACTERISTICS: Record<string, { isSlowThinking: boolean, avgTimePerRound: number }> = {
   // OpenAI Reasoning Models - Very slow but high quality
+  'gpt-5.2-pro': { isSlowThinking: true, avgTimePerRound: 300 }, // ~5 minutes per round (extended reasoning)
   'gpt-5-pro': { isSlowThinking: true, avgTimePerRound: 360 }, // ~6 minutes per round
   'o1': { isSlowThinking: true, avgTimePerRound: 180 }, // ~3 minutes per round
   'o1-mini': { isSlowThinking: true, avgTimePerRound: 120 }, // ~2 minutes per round
@@ -252,42 +261,24 @@ export interface ProviderExpansion {
 
 // FEATURED MODELS (always visible in primary tier)
 const FEATURED_MODELS: Model[] = [
-  // OpenAI - Flagship Models (Curated via Model Discovery System)
+  // OpenAI - GPT-5.2 Series (December 2025 - Latest)
   withModelInfo({
-    id: 'gpt-5.1',
+    id: 'gpt-5.2',
     provider: 'openai',
-    name: 'gpt-5.1',
-    displayName: 'GPT-5.1'
+    name: 'gpt-5.2',
+    displayName: 'GPT-5.2'
   }),
   withModelInfo({
-    id: 'gpt-5.1-codex',
+    id: 'gpt-5.2-chat-latest',
     provider: 'openai',
-    name: 'gpt-5.1-codex',
-    displayName: 'GPT-5.1-Codex'
+    name: 'gpt-5.2-chat-latest',
+    displayName: 'GPT-5.2 Instant'
   }),
   withModelInfo({
-    id: 'gpt-5.1-chat',
+    id: 'gpt-5.2-pro',
     provider: 'openai',
-    name: 'gpt-5.1-chat',
-    displayName: 'GPT-5.1 Chat'
-  }),
-  withModelInfo({
-    id: 'gpt-5-chat-latest',
-    provider: 'openai',
-    name: 'gpt-5-chat-latest',
-    displayName: 'GPT-5'
-  }),
-  withModelInfo({
-    id: 'gpt-5-pro',
-    provider: 'openai',
-    name: 'gpt-5-pro',
-    displayName: 'GPT-5 Pro'
-  }),
-  withModelInfo({
-    id: 'gpt-5-mini',
-    provider: 'openai',
-    name: 'gpt-5-mini',
-    displayName: 'GPT-5 Mini'
+    name: 'gpt-5.2-pro',
+    displayName: 'GPT-5.2 Pro'
   }),
   withModelInfo({
     id: 'o4-mini',
@@ -388,11 +379,49 @@ const FEATURED_MODELS: Model[] = [
 // EXPANDABLE MODELS (shown when provider is expanded)
 const EXPANDABLE_MODELS: Record<string, Model[]> = {
   openai: [
+    // GPT-5.1 Series (demoted from featured)
+    withModelInfo({
+      id: 'gpt-5.1',
+      provider: 'openai',
+      name: 'gpt-5.1',
+      displayName: 'GPT-5.1'
+    }),
+    withModelInfo({
+      id: 'gpt-5.1-codex',
+      provider: 'openai',
+      name: 'gpt-5.1-codex',
+      displayName: 'GPT-5.1-Codex'
+    }),
+    withModelInfo({
+      id: 'gpt-5.1-chat',
+      provider: 'openai',
+      name: 'gpt-5.1-chat',
+      displayName: 'GPT-5.1 Chat'
+    }),
     withModelInfo({
       id: 'gpt-5.1-codex-mini',
       provider: 'openai',
       name: 'gpt-5.1-codex-mini',
       displayName: 'GPT-5.1-Codex-Mini'
+    }),
+    // GPT-5 Series
+    withModelInfo({
+      id: 'gpt-5-chat-latest',
+      provider: 'openai',
+      name: 'gpt-5-chat-latest',
+      displayName: 'GPT-5'
+    }),
+    withModelInfo({
+      id: 'gpt-5-pro',
+      provider: 'openai',
+      name: 'gpt-5-pro',
+      displayName: 'GPT-5 Pro'
+    }),
+    withModelInfo({
+      id: 'gpt-5-mini',
+      provider: 'openai',
+      name: 'gpt-5-mini',
+      displayName: 'GPT-5 Mini'
     }),
     withModelInfo({
       id: 'o3-deep-research',
