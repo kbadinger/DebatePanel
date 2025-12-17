@@ -19,14 +19,12 @@ jobs:
         with:
           node-version: '20'
           cache: 'npm'
-          cache-dependency-path: debate-panel/package-lock.json
+          cache-dependency-path: package-lock.json
 
       - name: Install dependencies
-        working-directory: ./debate-panel
         run: npm ci
 
       - name: Run OpenRouter model discovery
-        working-directory: ./debate-panel
         env:
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
         run: |
@@ -35,7 +33,6 @@ jobs:
 
       - name: Check for generated config files
         id: check_changes
-        working-directory: ./debate-panel
         run: |
           # Check if config was generated
           if [ -d "generated" ] && ls generated/model-updates-*.ts 1> /dev/null 2>&1; then
@@ -119,8 +116,8 @@ jobs:
         with:
           name: model-discovery-report-${{ github.run_number }}
           path: |
-            debate-panel/discovery-report.txt
-            debate-panel/generated/*.ts
+            discovery-report.txt
+            generated/*.ts
           retention-days: 30
           if-no-files-found: warn
 

@@ -19,14 +19,12 @@ jobs:
         with:
           node-version: '20'
           cache: 'npm'
-          cache-dependency-path: debate-panel/package-lock.json
+          cache-dependency-path: package-lock.json
 
       - name: Install dependencies
-        working-directory: ./debate-panel
         run: npm ci
 
       - name: Analyze model usage from database
-        working-directory: ./debate-panel
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: |
@@ -128,7 +126,6 @@ jobs:
 
       - name: Check for high-usage OpenRouter models
         id: check_recommendations
-        working-directory: ./debate-panel
         run: |
           if [ -f usage-report.txt ] && grep -q "RECOMMENDATIONS FOR DIRECT INTEGRATION" usage-report.txt; then
             echo "has_recommendations=true" >> $GITHUB_OUTPUT
@@ -144,7 +141,7 @@ jobs:
         with:
           script: |
             const fs = require('fs');
-            const usageReport = fs.readFileSync('debate-panel/usage-report.txt', 'utf8');
+            const usageReport = fs.readFileSync('usage-report.txt', 'utf8');
 
             // Extract recommendations section
             const recommendationsMatch = usageReport.match(/RECOMMENDATIONS FOR DIRECT INTEGRATION[\s\S]*/);
@@ -193,7 +190,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: model-usage-report-${{ github.run_number }}
-          path: debate-panel/usage-report.txt
+          path: usage-report.txt
           retention-days: 90
           if-no-files-found: warn
 
