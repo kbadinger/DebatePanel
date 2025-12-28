@@ -49,6 +49,7 @@ export interface DebateConfig {
     model?: Model;
   };
   isInteractive?: boolean;
+  profileContext?: string; // Preprocessed user profile context to inject into prompts
 }
 
 export interface ModelResponse {

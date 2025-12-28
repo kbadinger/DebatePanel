@@ -7,6 +7,7 @@ import { UsageTracker } from '@/lib/usage-tracking';
 import { RATE_LIMITS, createRateLimitResponse } from '@/lib/rate-limit';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/auth';
+import { processProfileMentions } from '@/lib/profile-context';
 
 const prisma = new PrismaClient();
 const RAILWAY_URL = process.env.NEXT_PUBLIC_RAILWAY_URL;
@@ -441,6 +442,26 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // Process @mentions for profile context
+    let profileContext = '';
+    let profileIds: string[] = [];
+    if (userId) {
+      try {
+        const profileResult = await processProfileMentions(
+          userId,
+          config.topic,
+          config.description || ''
+        );
+        if (profileResult.condensedContext) {
+          profileContext = profileResult.condensedContext;
+          profileIds = profileResult.profilesUsed;
+          console.log(`Processed ${profileIds.length} profile(s) for debate context`);
+        }
+      } catch (err) {
+        console.error('Profile processing failed (continuing without):', err);
+      }
+    }
+
     console.log('Creating debate in database...');
 
     // Create debate in database with pending status
@@ -457,6 +478,8 @@ export async function POST(req: NextRequest) {
         convergenceThreshold: config.convergenceThreshold,
         userId,
         isInteractive: config.isInteractive || false,
+        profileIds,
+        profileContext: profileContext || null,
         modelSelections: {
           create: config.models.map((model: { id: string; provider: string; name: string; displayName?: string }) => ({
             modelId: model.id,
@@ -472,7 +495,9 @@ export async function POST(req: NextRequest) {
 
     // Fire async execution - don't await, returns immediately
     // This prevents network timeouts on long debates
-    executeDebateAsync(dbDebate.id, config, userId).catch(err => {
+    // Include profileContext in config for prompt injection
+    const configWithProfile = profileContext ? { ...config, profileContext } : config;
+    executeDebateAsync(dbDebate.id, configWithProfile, userId).catch(err => {
       console.error('Background debate execution failed:', err);
     });
 

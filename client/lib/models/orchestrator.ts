@@ -548,6 +548,11 @@ Format your response as a clear argument with supporting points.`;
       const analysisDepth = config.analysisDepth || 'thorough';
       basePrompt = this.addAnalysisDepthGuidance(basePrompt, analysisDepth, !isAdversarial);
 
+      // Add profile context awareness if present
+      if (config.profileContext) {
+        basePrompt += `\n\nIMPORTANT: The user has provided personal context relevant to this debate. Use this context to tailor your analysis and recommendations to their specific situation, background, and constraints. Make your advice actionable and relevant to THEIR circumstances.`;
+      }
+
       // Add sensitive topic guidance if needed
       return isSensitiveTopic
         ? this.addSensitiveTopicGuidance(basePrompt, config)
@@ -577,6 +582,11 @@ Format your response as a clear argument with supporting points.`;
     // Add analysis depth guidance for later rounds too
     const analysisDepth = config.analysisDepth || 'thorough';
     basePrompt = this.addAnalysisDepthGuidance(basePrompt, analysisDepth, !isAdversarial);
+
+    // Add profile context awareness if present
+    if (config.profileContext) {
+      basePrompt += `\n\nIMPORTANT: The user has provided personal context relevant to this debate. Use this context to tailor your analysis and recommendations to their specific situation, background, and constraints. Make your advice actionable and relevant to THEIR circumstances.`;
+    }
 
     return isSensitiveTopic
       ? this.addSensitiveTopicGuidance(basePrompt, config)
@@ -1638,7 +1648,12 @@ ${privateOps}`;
     roundNumber: number,
     previousRounds: DebateRound[]
   ): string {
-    const basePrompt = `Topic: ${config.topic}\n${config.description ? `\nDescription: ${config.description}` : ''}`;
+    let basePrompt = `Topic: ${config.topic}\n${config.description ? `\nDescription: ${config.description}` : ''}`;
+
+    // Inject profile context if available
+    if (config.profileContext) {
+      basePrompt += `\n\n---\nUSER CONTEXT (consider this background when formulating your response):\n${config.profileContext}\n---`;
+    }
     
     if (roundNumber === 1) {
       return `${basePrompt}\n\nProvide your initial critical analysis of this topic. Take a STRONG, CLEAR position - either strongly agree, strongly disagree, or propose a specific alternative. DO NOT be neutral or say "it depends". Make a concrete argument that others will have to reckon with.`;

@@ -30,7 +30,8 @@ export default function Home() {
   }>({ isOpen: false, type: 'total-limit' });
   const [configuredProviders, setConfiguredProviders] = useState<ModelProvider[]>([]);
   const [loading, setLoading] = useState(true);
-  
+  const [userProfiles, setUserProfiles] = useState<Array<{ id: string; name: string }>>([]);
+
   // Fetch configured providers on mount
   useEffect(() => {
     fetch('/api/providers')
@@ -44,6 +45,20 @@ export default function Home() {
         setLoading(false);
       });
   }, []);
+
+  // Fetch user profiles for @mention feature
+  useEffect(() => {
+    if (session) {
+      fetch('/api/profiles')
+        .then(res => res.json())
+        .then(data => {
+          if (data.profiles) {
+            setUserProfiles(data.profiles.map((p: { id: string; name: string }) => ({ id: p.id, name: p.name })));
+          }
+        })
+        .catch(err => console.error('Failed to fetch profiles:', err));
+    }
+  }, [session]);
   
   // Filter models based on configured providers and tier them
   const availableModels = AVAILABLE_MODELS.filter(model => 
@@ -417,8 +432,29 @@ Industry & Society:
               placeholder="Provide detailed context, constraints, and key considerations for the debate..."
               required
             />
+            {/* Profile @mention hint */}
+            {session && userProfiles.length > 0 && (
+              <p className="mt-2 text-xs text-blue-600">
+                <span className="font-medium">Tip:</span> Use{' '}
+                {userProfiles.slice(0, 3).map((p, i) => (
+                  <span key={p.id}>
+                    <code className="bg-blue-50 px-1 py-0.5 rounded">@{p.name}</code>
+                    {i < Math.min(userProfiles.length, 3) - 1 && ', '}
+                  </span>
+                ))}
+                {userProfiles.length > 3 && ` +${userProfiles.length - 3} more`}
+                {' '}to add personal context.{' '}
+                <Link href="/profiles" className="underline hover:text-blue-800">Manage profiles</Link>
+              </p>
+            )}
+            {session && userProfiles.length === 0 && (
+              <p className="mt-2 text-xs text-slate-500">
+                <Link href="/profiles" className="text-blue-600 underline hover:text-blue-800">Create a profile</Link>
+                {' '}to add personal context to debates using @mentions.
+              </p>
+            )}
           </div>
-          
+
           <div className="mb-4">
             <label className="block text-sm font-semibold text-slate-700 mb-2">
               Select Models ({config.models.length}/6 selected, max 2 per provider)

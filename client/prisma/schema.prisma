@@ -41,6 +41,9 @@ model User {
   // Model requests and voting
   modelRequests ModelRequest[]
   modelRequestVotes ModelRequestVote[]
+
+  // Background profiles for debate context
+  profiles  Profile[]
 }
 
 model Account {
@@ -179,6 +182,11 @@ model Debate {
   victoryReason        String?          // Why they won
   userId               String?
   user                 User?            @relation(fields: [userId], references: [id])
+
+  // Profile context for personalized debates
+  profileIds           String[]         // IDs of profiles used in this debate
+  profileContext       String?          @db.Text  // Preprocessed context that was injected
+
   debateRounds         DebateRound[]
   modelSelections      ModelSelection[]
   usageRecords         UsageRecord[]
@@ -324,4 +332,17 @@ model Waitlist {
   notes     String?
 
   @@index([status, createdAt])
+}
+
+model Profile {
+  id        String   @id @default(cuid())
+  userId    String
+  name      String   // The @mention name (e.g., "kevin-work", "personal")
+  content   Json     // Flexible profile content as JSON blob
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, name])  // Each user can have unique profile names
+  @@index([userId])
 }

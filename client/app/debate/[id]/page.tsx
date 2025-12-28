@@ -128,6 +128,7 @@ export default function DebateViewPage() {
           rounds: data.rounds,
           format: data.format || 'structured',
           style: 'consensus-seeking', // Default for existing debates
+          profileContext: data.profileContext || undefined,
           judge: {
             enabled: !!data.judgeAnalysis
           }
@@ -381,6 +382,16 @@ export default function DebateViewPage() {
             <p className="text-gray-800 text-base max-w-4xl mx-auto whitespace-pre-wrap leading-relaxed font-medium">
               {debate.config.description}
             </p>
+          )}
+          {debate.config.profileContext && (
+            <details className="mt-4 max-w-2xl mx-auto text-left">
+              <summary className="cursor-pointer text-sm text-blue-600 hover:text-blue-800 font-medium">
+                User Context Applied
+              </summary>
+              <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-800 whitespace-pre-wrap">
+                {debate.config.profileContext}
+              </div>
+            </details>
           )}
           <div className="flex justify-center items-center gap-4 mt-4 text-sm text-slate-600">
             <span>{debate.rounds.length} rounds</span>
