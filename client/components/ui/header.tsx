@@ -58,6 +58,14 @@ export function Header() {
             >
               <span>🗳️</span> Vote Models
             </button>
+            {session && (
+              <button
+                onClick={() => router.push('/profiles')}
+                className="text-slate-800 hover:text-purple-600 font-bold transition-all hover:scale-105 cursor-pointer"
+              >
+                <span>👤</span> Profiles
+              </button>
+            )}
             {session?.user?.isAdmin && (
               <Link href="/admin" className="text-purple-600 hover:text-purple-700 font-medium transition-colors flex items-center gap-1">
                 <Shield size={16} />
