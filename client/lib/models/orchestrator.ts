@@ -454,9 +454,19 @@ Format your response as a clear argument with supporting points.`;
     this.logger.logRoundAnalysis(analysis.consensus, analysis.disagreements);
     
     // Save to database if debateId provided
+    // Use upsert to handle race conditions (e.g., timeout'd API calls that eventually return)
     if (debateId) {
-      const dbRound = await prisma.debateRound.create({
-        data: {
+      const dbRound = await prisma.debateRound.upsert({
+        where: {
+          debateId_roundNumber: {
+            debateId,
+            roundNumber,
+          }
+        },
+        update: {
+          // If round already exists, keep existing data (first save wins)
+        },
+        create: {
           debateId,
           roundNumber,
           consensus: analysis.consensus,
