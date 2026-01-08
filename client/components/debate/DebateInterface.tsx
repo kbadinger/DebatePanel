@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Debate, DebateConfig, DebateRound, DebateStatus, ModelResponse } from '@/types/debate';
+import { Debate, DebateConfig, DebateRound, DebateStatus, ModelResponse, IDEATION_ROUND_NAMES } from '@/types/debate';
 import { ModelResponseCard } from './ModelResponseCard';
 import { RatingsKey } from './RatingsKey';
 import { HumanInputPanel } from './HumanInputPanel';
@@ -713,6 +713,11 @@ export function DebateInterface({ config, onComplete }: DebateInterfaceProps) {
               {/* Round Header */}
               <h3 className="text-lg font-semibold text-slate-700 border-b pb-2">
                 Round {round.roundNumber}
+                {config.style === 'ideation' && IDEATION_ROUND_NAMES[round.roundNumber] && (
+                  <span className="ml-2 text-purple-600 font-medium">
+                    — {IDEATION_ROUND_NAMES[round.roundNumber]}
+                  </span>
+                )}
               </h3>
 
               {/* 1. Model Responses (not Challenger) */}

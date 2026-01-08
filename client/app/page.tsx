@@ -82,6 +82,7 @@ export default function Home() {
     ].filter(Boolean) as Model[], // Default to top primary tier models
     rounds: 5, // Default to Standard mode (5-round debate)
     format: 'structured',
+    style: 'consensus-seeking', // Default debate style
     analysisDepth: 'thorough', // Default to thorough analysis
     convergenceThreshold: 0.75,
     responseLength: 'standard' as ResponseLength, // Default response length
@@ -855,6 +856,70 @@ Industry & Society:
                     Exhaustive genius-level analysis. Warning: May discuss peanut varietals, roasting curves, and molecular structures.
                     Example: "Valencia vs Spanish peanuts, grinding textures, Maillard reactions"
                   </p>
+                </div>
+              </label>
+            </div>
+          </div>
+
+          <div className="mb-4">
+            <label className="block text-sm font-semibold text-slate-700 mb-2">
+              Debate Style
+            </label>
+            <div className="space-y-3">
+              <label className={`flex items-start p-3 border rounded-lg hover:bg-slate-50 cursor-pointer transition-colors ${
+                config.style === 'consensus-seeking' ? 'border-green-500 bg-green-50' : 'border-slate-300'
+              }`}>
+                <input
+                  type="radio"
+                  name="debate-style"
+                  checked={config.style === 'consensus-seeking'}
+                  onChange={() => setConfig({ ...config, style: 'consensus-seeking' })}
+                  className="mr-3 h-4 w-4 text-green-600 focus:ring-green-500 mt-1"
+                />
+                <div>
+                  <span className="text-slate-700 font-medium">🤝 Consensus-Seeking</span>
+                  <p className="text-xs text-slate-500 mt-1">
+                    Models collaborate to find the best solution. Challenge each other's ideas but work toward agreement.
+                  </p>
+                </div>
+              </label>
+              <label className={`flex items-start p-3 border rounded-lg hover:bg-slate-50 cursor-pointer transition-colors ${
+                config.style === 'adversarial' ? 'border-red-500 bg-red-50' : 'border-slate-300'
+              }`}>
+                <input
+                  type="radio"
+                  name="debate-style"
+                  checked={config.style === 'adversarial'}
+                  onChange={() => setConfig({ ...config, style: 'adversarial' })}
+                  className="mr-3 h-4 w-4 text-red-600 focus:ring-red-500 mt-1"
+                />
+                <div>
+                  <span className="text-slate-700 font-medium">⚔️ Adversarial</span>
+                  <p className="text-xs text-slate-500 mt-1">
+                    Models take opposing sides and argue to win. Stress-test ideas through intellectual combat.
+                  </p>
+                </div>
+              </label>
+              <label className={`flex items-start p-3 border rounded-lg hover:bg-slate-50 cursor-pointer transition-colors ${
+                config.style === 'ideation' ? 'border-purple-500 bg-purple-50' : 'border-slate-300'
+              }`}>
+                <input
+                  type="radio"
+                  name="debate-style"
+                  checked={config.style === 'ideation'}
+                  onChange={() => setConfig({ ...config, style: 'ideation', rounds: 7 })}
+                  className="mr-3 h-4 w-4 text-purple-600 focus:ring-purple-500 mt-1"
+                />
+                <div>
+                  <span className="text-slate-700 font-medium">💡 Ideation (7 rounds)</span>
+                  <p className="text-xs text-slate-500 mt-1">
+                    Structured brainstorming: Generate ideas → Cross-pollinate → Brutal critique → Vote → Refine → Pick winner.
+                  </p>
+                  {config.style === 'ideation' && (
+                    <div className="mt-2 text-xs text-purple-700 bg-purple-100 p-2 rounded">
+                      <strong>Round Flow:</strong> 1. Diverge • 2. Cross-pollinate • 3. Deathmatch • 4. Vote • 5-6. Refine • 7. Final Showdown
+                    </div>
+                  )}
                 </div>
               </label>
             </div>

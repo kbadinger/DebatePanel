@@ -28,7 +28,17 @@ export interface Model {
   };
 }
 
-export type DebateStyle = 'adversarial' | 'consensus-seeking';
+export type DebateStyle = 'adversarial' | 'consensus-seeking' | 'ideation';
+
+export const IDEATION_ROUND_NAMES: Record<number, string> = {
+  1: 'Diverge',
+  2: 'Cross-pollinate',
+  3: 'Deathmatch Critique',
+  4: 'Vote + Defend',
+  5: 'Refine',
+  6: 'Refine',
+  7: 'Final Showdown'
+};
 
 export interface DebateConfig {
   topic: string;

@@ -521,6 +521,11 @@ Format your response as a clear argument with supporting points.`;
       return this.buildGPT5MasterPrompt(model, previousResponses, config);
     }
 
+    // Use ideation-specific prompts for ideation mode
+    if (config.style === 'ideation') {
+      return this.buildIdeationPrompt(model, previousResponses, config);
+    }
+
     const roundNumber = previousResponses.length > 0
       ? Math.max(...previousResponses.map(r => r.round)) + 1
       : 1;
@@ -1509,6 +1514,254 @@ Stance: [Your position going into final round]
 Confidence: [0-100]% confident in this stance`;
   }
 
+  // === IDEATION MODE PROMPTS ===
+  // Structured brainstorming: diverge → cross-pollinate → critique → vote → refine → decide
+
+  private buildIdeationPrompt(model: Model, previousResponses: ModelResponse[], config: DebateConfig): string {
+    const roundNumber = previousResponses.length > 0
+      ? Math.max(...previousResponses.map(r => r.round)) + 1
+      : 1;
+
+    const lastRoundResponses = previousResponses.filter(r => r.round === roundNumber - 1);
+    const previousIdeas = lastRoundResponses.length > 0
+      ? `\n\nIDEAS FROM PREVIOUS ROUND:\n${lastRoundResponses.map(r => `**${r.modelId}:**\n${r.content}`).join('\n\n---\n\n')}`
+      : '';
+
+    switch (roundNumber) {
+      case 1:
+        return this.buildIdeationRound1Diverge(config);
+      case 2:
+        return this.buildIdeationRound2CrossPollinate(config, previousIdeas);
+      case 3:
+        return this.buildIdeationRound3Deathmatch(config, previousIdeas);
+      case 4:
+        return this.buildIdeationRound4VoteDefend(config, previousIdeas);
+      case 5:
+      case 6:
+        return this.buildIdeationRound5_6Refine(config, previousIdeas, roundNumber);
+      case 7:
+        return this.buildIdeationRound7FinalShowdown(config, previousIdeas);
+      default:
+        return this.buildIdeationRound7FinalShowdown(config, previousIdeas);
+    }
+  }
+
+  private buildIdeationRound1Diverge(config: DebateConfig): string {
+    return `You are participating in an IDEATION BRAINSTORM.
+
+TOPIC: ${config.topic}
+${config.description ? `CONTEXT: ${config.description}` : ''}
+
+YOUR MISSION: Generate 3-4 DISTINCT, creative ideas that could address this topic.
+
+FORMAT YOUR IDEAS AS A NUMBERED LIST:
+1. **[IDEA TITLE]**: [2-3 sentences explaining the core concept and why it could work]
+2. **[IDEA TITLE]**: [2-3 sentences explaining the core concept and why it could work]
+3. **[IDEA TITLE]**: [2-3 sentences explaining the core concept and why it could work]
+4. (Optional) **[IDEA TITLE]**: [2-3 sentences explaining the core concept and why it could work]
+
+REQUIREMENTS:
+- Each idea must be DISTINCT - not variations of the same concept
+- Ideas must be ACTIONABLE - something that could actually be implemented
+- Include at least ONE unconventional/surprising idea that others might not think of
+- Be SPECIFIC - vague ideas like "improve communication" are not valuable
+- Think BIG but stay grounded in feasibility
+
+DO NOT critique ideas in this round - that comes later. Focus purely on GENERATING possibilities.
+
+At the end of your response, explicitly state:
+Stance: [Your favorite idea from your list and a one-sentence reason why]
+Confidence: [0-100]% confident in your ideas`;
+  }
+
+  private buildIdeationRound2CrossPollinate(config: DebateConfig, previousIdeas: string): string {
+    return `ROUND 2: CROSS-POLLINATION
+
+You've now seen ideas from all participants. Time to ADOPT, COMBINE, and IMPROVE.
+
+TOPIC: ${config.topic}
+${previousIdeas}
+
+YOUR MISSION:
+1. **ADOPT**: Pick 1-2 ideas from OTHER participants that you think are strong. Explain why they're compelling.
+2. **COMBINE**: Can you merge 2+ ideas (yours or others') into something BETTER than either alone? Create hybrid ideas.
+3. **IMPROVE**: Take any idea and make it more specific, actionable, or powerful. What's missing? What would make it bulletproof?
+4. **DEFEND** (optional): If you believe one of YOUR original ideas deserves more attention, advocate for it.
+
+FORMAT:
+**ADOPTING:**
+- [Idea from another participant]: [Why this is strong]
+
+**COMBINING:**
+- [Idea A] + [Idea B] = **[NEW HYBRID TITLE]**: [How combining them creates something better]
+
+**IMPROVING:**
+- [Original idea] → **[Enhanced version]**: [What you changed and why it's better]
+
+**DEFENDING** (optional):
+- [Your original idea]: [Why it deserves serious consideration]
+
+Be generous in recognizing good ideas from others. The goal is finding the BEST solution, not defending your territory.
+
+At the end of your response, explicitly state:
+Stance: [The idea (original, adopted, or hybrid) you think is strongest right now]
+Confidence: [0-100]% confident in this direction`;
+  }
+
+  private buildIdeationRound3Deathmatch(config: DebateConfig, previousIdeas: string): string {
+    return `ROUND 3: DEATHMATCH CRITIQUE
+
+Time to DESTROY weak ideas. Be BRUTAL but FAIR. The best ideas will survive; weak ones must die.
+
+TOPIC: ${config.topic}
+${previousIdeas}
+
+YOUR MISSION: Find the FATAL FLAWS in EVERY idea on the table, INCLUDING YOUR OWN.
+
+FOR EACH MAJOR IDEA, identify:
+- **FATAL FLAWS**: Problems that make this idea unworkable. Deal-breakers.
+- **MAJOR WEAKNESSES**: Significant issues that MUST be addressed for this to succeed.
+- **MINOR CONCERNS**: Nice-to-have improvements, but not critical.
+
+FORMAT:
+**IDEA: [Title]**
+- FATAL: [If any - explain why this kills the idea]
+- MAJOR: [Significant problems that need solving]
+- MINOR: [Smaller issues]
+
+RULES:
+- You MUST critique ALL major ideas - no sacred cows
+- You MUST critique your OWN ideas too - be honest
+- Be SPECIFIC - "this won't work" is not a valid critique
+- Back up every critique with REASONING
+- If you can't find fatal flaws, acknowledge the idea is strong
+- Brutal honesty now saves wasted effort later
+
+The goal is stress-testing: ideas that survive this round are worth pursuing.
+
+At the end of your response, explicitly state:
+Stance: [Which ideas survived your critique best - name 2-3]
+Confidence: [0-100]% confident in your critique`;
+  }
+
+  private buildIdeationRound4VoteDefend(config: DebateConfig, previousIdeas: string): string {
+    return `ROUND 4: VOTE + DEFEND
+
+Critiques are in. Now: VOTE for the ideas worth pursuing and DEFEND them against attacks.
+
+TOPIC: ${config.topic}
+${previousIdeas}
+
+YOUR MISSION:
+1. **VOTE**: Select your TOP 2 ideas that should advance to refinement.
+2. **DEFEND**: For each idea you're voting for, respond to the critiques raised against it.
+
+FORMAT:
+**MY VOTES:**
+1. **[Idea Title]** - [One sentence: why this should advance despite critiques]
+2. **[Idea Title]** - [One sentence: why this should advance despite critiques]
+
+**DEFENDING [First Voted Idea]:**
+- Critique: "[The critique raised]"
+  Response: [How this can be addressed or why it's not actually fatal]
+- Critique: "[Another critique]"
+  Response: [Your counter-argument]
+
+**DEFENDING [Second Voted Idea]:**
+- Critique: "[The critique raised]"
+  Response: [How this can be addressed or why it's not actually fatal]
+
+RULES:
+- You can vote for ANY ideas - yours or others'
+- You can ONLY defend ideas you're voting for
+- Be honest - if a critique is valid and has no answer, acknowledge it and explain why the idea is still worth pursuing
+- The top 2 ideas based on votes will advance to refinement
+
+At the end of your response, explicitly state:
+Stance: VOTES: 1. [First choice title], 2. [Second choice title]
+Confidence: [0-100]% confident in these selections`;
+  }
+
+  private buildIdeationRound5_6Refine(config: DebateConfig, previousIdeas: string, roundNumber: number): string {
+    return `ROUND ${roundNumber}: REFINEMENT
+
+The top ideas have been selected. Now make them BULLETPROOF.
+
+TOPIC: ${config.topic}
+${previousIdeas}
+
+YOUR MISSION: Take the leading ideas and refine them into something implementable.
+
+FOR EACH TOP IDEA:
+1. **ADDRESS REMAINING CRITIQUES**: How do we solve the problems that were raised?
+2. **ADD IMPLEMENTATION DETAILS**: What are the specific steps to make this real?
+3. **IDENTIFY RISKS**: What could go wrong? How do we mitigate?
+4. **STRENGTHEN THE CASE**: What's the compelling argument for this idea?
+
+FORMAT:
+**REFINING: [Idea Title]**
+
+*Addressing Critiques:*
+- [Critique]: [Specific solution]
+
+*Implementation Plan:*
+1. [First step]
+2. [Second step]
+3. [Third step]
+
+*Risks & Mitigations:*
+- Risk: [What could go wrong] → Mitigation: [How to prevent/handle]
+
+*Why This Should Win:*
+[2-3 sentences making the strongest case for this idea]
+
+Focus on making ideas CONCRETE and ACTIONABLE. Vague refinements don't count.
+
+At the end of your response, explicitly state:
+Stance: [Which refined idea is strongest and why]
+Confidence: [0-100]% confident in this refinement`;
+  }
+
+  private buildIdeationRound7FinalShowdown(config: DebateConfig, previousIdeas: string): string {
+    return `ROUND 7: FINAL SHOWDOWN
+
+This is it. Two ideas remain. One must be declared the WINNER.
+
+TOPIC: ${config.topic}
+${previousIdeas}
+
+YOUR MISSION: Compare the finalists and declare a winner with clear reasoning.
+
+COMPARE ON THESE DIMENSIONS:
+1. **FEASIBILITY**: Which is more realistic to implement?
+2. **IMPACT**: Which solves the problem better?
+3. **INNOVATION**: Which is more creative/novel?
+4. **ROBUSTNESS**: Which survived critique better and has fewer remaining risks?
+5. **ACTIONABILITY**: Which has a clearer path to execution?
+
+FORMAT:
+**HEAD-TO-HEAD COMPARISON:**
+
+| Dimension | [Idea A Title] | [Idea B Title] |
+|-----------|----------------|----------------|
+| Feasibility | [Score 1-5 + brief reason] | [Score 1-5 + brief reason] |
+| Impact | [Score 1-5 + brief reason] | [Score 1-5 + brief reason] |
+| Innovation | [Score 1-5 + brief reason] | [Score 1-5 + brief reason] |
+| Robustness | [Score 1-5 + brief reason] | [Score 1-5 + brief reason] |
+| Actionability | [Score 1-5 + brief reason] | [Score 1-5 + brief reason] |
+
+**MY VERDICT:**
+WINNER: **[Idea Title]**
+
+REASONING: [3-4 sentences explaining why this idea is the best choice. Be specific about what makes it superior.]
+
+RUNNER-UP VALUE: [1-2 sentences on what's still valuable about the losing idea - could it be a backup or combined with the winner?]
+
+At the end of your response, explicitly state:
+Stance: WINNER: [Winning idea title]
+Confidence: [0-100]% confident in this choice`;
+  }
+
   // Helper to get the right prompt based on round number
   private getRoundSpecificPrompt(
     roundNumber: number,
@@ -1845,9 +2098,14 @@ ${privateOps}`;
     debate: DebateRound[],
     topic: string,
     judgeModel: Model,
-    isConsensusMode: boolean = false,
+    debateStyleOrIsConsensus: 'consensus-seeking' | 'adversarial' | 'ideation' | boolean = false,
     analysisDepth: 'practical' | 'thorough' | 'excellence' = 'thorough'
   ): Promise<{ analysis: string; winner?: { id: string; name: string; type: 'model' | 'human'; reason: string }; scores?: Array<{ id: string; name: string; score: number }> }> {
+    // Handle backward compatibility: boolean -> style string
+    const debateStyle: 'consensus-seeking' | 'adversarial' | 'ideation' =
+      typeof debateStyleOrIsConsensus === 'boolean'
+        ? (debateStyleOrIsConsensus ? 'consensus-seeking' : 'adversarial')
+        : debateStyleOrIsConsensus;
     
     // Check if we have any debate rounds at all
     if (!debate || debate.length === 0) {
@@ -1936,7 +2194,15 @@ ANALYSIS DEPTH EXPECTATIONS (${analysisDepth.toUpperCase()}):
 ${this.getJudgeDepthGuidance(analysisDepth)}
 
 Your SECONDARY tasks:
-${isConsensusMode
+${debateStyle === 'ideation'
+  ? `5. IDENTIFY WINNING IDEA: Which idea should be implemented? Name it clearly.
+6. RUNNER-UP IDEA: What's the second-best idea and what value does it still offer?
+7. Score each participant (0-100) based on:
+   - Quality and creativity of ideas generated
+   - Constructiveness during cross-pollination
+   - Fairness and insight of critiques
+   - Quality of refinements and defense`
+  : debateStyle === 'consensus-seeking'
   ? `5. IDENTIFY LEADING CONTRIBUTOR: Which participant contributed most effectively to reaching the consensus?
 6. Score each participant (0-100) based on:
    - Quality of reasoning and evidence
@@ -1957,12 +2223,18 @@ IMPORTANT SCORING GUIDANCE:
 - "Wrong conclusion" is NOT valid criticism - evaluate the REASONING, not the position
 
 Provide:
-- YOUR RECOMMENDATION (in 1-2 clear sentences)
+${debateStyle === 'ideation'
+  ? `- WINNING IDEA: [Name of the winning idea]
+- WHY THIS IDEA WINS: [2-3 sentences explaining why]
+- RUNNER-UP VALUE: [What's valuable about the second-best idea]
+- SCORES: Rate each participant on ideation quality
+- CONFIDENCE: How confident in this recommendation (0-100%)`
+  : `- YOUR RECOMMENDATION (in 1-2 clear sentences)
 - WHY this recommendation is best supported (brief justification)
 - WHEN THE OPPOSITE MIGHT BE BETTER (acknowledge valid counter-scenarios)
-- ${isConsensusMode ? 'LEADING CONTRIBUTOR: Who facilitated the best consensus' : 'WINNER: Who made the strongest case'}
+- ${debateStyle === 'consensus-seeking' ? 'LEADING CONTRIBUTOR: Who facilitated the best consensus' : 'WINNER: Who made the strongest case'}
 - SCORES: Rate each participant on reasoning quality
-- CONFIDENCE: How confident in this recommendation (0-100%)
+- CONFIDENCE: How confident in this recommendation (0-100%)`}
 
 BE DECISIVE but intellectually honest. A strong recommendation acknowledges its limitations.`;
 

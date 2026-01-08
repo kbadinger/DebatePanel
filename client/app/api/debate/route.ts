@@ -176,7 +176,7 @@ async function executeDebateAsync(
             transformedRounds,
             config.topic,
             judgeModel,
-            config.style === 'consensus-seeking',
+            config.style || 'consensus-seeking',
             (config.analysisDepth || 'thorough') as 'practical' | 'thorough' | 'excellence'
           );
 
