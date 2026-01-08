@@ -411,6 +411,8 @@ class Orchestrator {
   }
 
   buildPrompt(round, topic, description, isConsensusMode, model = null, debateStyle = null) {
+    console.log(`[buildPrompt] Round ${round}, debateStyle: ${debateStyle}, isConsensusMode: ${isConsensusMode}`);
+
     // Check if this model is the Challenger
     if (model?.isChallenger) {
       return this.buildChallengerPrompt(round, topic, description);
@@ -418,6 +420,7 @@ class Orchestrator {
 
     // Check for ideation mode
     if (debateStyle === 'ideation') {
+      console.log(`[buildPrompt] Using IDEATION mode for round ${round}`);
       return this.buildIdeationPrompt(round, topic, description, model);
     }
 

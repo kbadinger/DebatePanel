@@ -279,7 +279,7 @@ router.post('/', async (req, res) => {
       res.end();
     }, config.rounds * 10 * 60 * 1000);
 
-    console.log(`Starting debate ${debate.id} with ${config.rounds} rounds`);
+    console.log(`Starting debate ${debate.id} with ${config.rounds} rounds, style: ${config.style || 'not set'}`);
 
     // Set up keepalive to prevent stream timeout during long model API calls
     // Send SSE comment every 15 seconds to keep connection alive
