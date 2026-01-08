@@ -79,7 +79,7 @@ class Orchestrator {
         };
 
         responses.push(responseData);
-        this.responses.push(response);
+        this.responses.push(responseData);  // Use responseData which includes round number
 
         // Call callback immediately after model completes (keeps stream alive)
         if (onModelComplete) {
