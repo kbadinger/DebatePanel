@@ -55,7 +55,7 @@ class Orchestrator {
       : null;
   }
 
-  async runRound(roundNumber, topic, description, isConsensusMode = false, onModelComplete = null) {
+  async runRound(roundNumber, topic, description, isConsensusMode = false, onModelComplete = null, debateStyle = null) {
     const responses = [];
 
     for (const model of this.models) {
@@ -65,7 +65,8 @@ class Orchestrator {
           roundNumber,
           topic,
           description,
-          isConsensusMode
+          isConsensusMode,
+          debateStyle
         );
 
         const responseData = {
@@ -126,8 +127,8 @@ class Orchestrator {
     return { responses };
   }
 
-  async getModelResponse(model, round, topic, description, isConsensusMode) {
-    const prompt = this.buildPrompt(round, topic, description, isConsensusMode, model);
+  async getModelResponse(model, round, topic, description, isConsensusMode, debateStyle = null) {
+    const prompt = this.buildPrompt(round, topic, description, isConsensusMode, model, debateStyle);
     
     try {
       let content = '';
@@ -409,10 +410,15 @@ class Orchestrator {
     return '';
   }
 
-  buildPrompt(round, topic, description, isConsensusMode, model = null) {
+  buildPrompt(round, topic, description, isConsensusMode, model = null, debateStyle = null) {
     // Check if this model is the Challenger
     if (model?.isChallenger) {
       return this.buildChallengerPrompt(round, topic, description);
+    }
+
+    // Check for ideation mode
+    if (debateStyle === 'ideation') {
+      return this.buildIdeationPrompt(round, topic, description, model);
     }
 
     let prompt = `Round ${round} of debate on: "${topic}"\n\n`;
@@ -556,6 +562,288 @@ Confidence: [0-100]% that remaining risks have been identified`;
 
     return prompt;
   }
+
+  // ========== IDEATION MODE PROMPTS ==========
+
+  buildIdeationPrompt(round, topic, description, model) {
+    // Route to round-specific ideation prompt
+    switch (round) {
+      case 1:
+        return this.buildIdeationRound1Diverge(topic, description, model);
+      case 2:
+        return this.buildIdeationRound2CrossPollinate(topic, description, model);
+      case 3:
+        return this.buildIdeationRound3Deathmatch(topic, description, model);
+      case 4:
+        return this.buildIdeationRound4VoteDefend(topic, description, model);
+      case 5:
+      case 6:
+        return this.buildIdeationRound5_6Refine(round, topic, description, model);
+      case 7:
+        return this.buildIdeationRound7FinalShowdown(topic, description, model);
+      default:
+        // Fallback for rounds beyond 7
+        return this.buildIdeationRound5_6Refine(round, topic, description, model);
+    }
+  }
+
+  buildIdeationRound1Diverge(topic, description, model) {
+    let prompt = `IDEATION ROUND 1: DIVERGE
+
+Topic: "${topic}"
+${description ? `Context: ${description}\n` : ''}
+
+YOUR MISSION: Generate 3-4 DISTINCT ideas that could solve or address this topic.
+
+RULES FOR THIS ROUND:
+1. Each idea MUST be meaningfully different from the others
+2. Format each idea as a numbered list:
+   1. [IDEA TITLE]: [2-3 sentence description of the idea and why it could work]
+   2. [IDEA TITLE]: [2-3 sentence description]
+   ...etc
+3. Include at least ONE unconventional or contrarian idea
+4. Don't self-censor - wild ideas often contain seeds of brilliance
+5. Be specific enough that someone could understand and evaluate the idea
+
+IMPORTANT: This is a brainstorming phase. Quantity and diversity of thinking matters more than perfection. Push beyond your first instinct.
+
+At the end, state:
+Stance: Divergent thinking
+Confidence: [0-100]% in the overall quality of these initial ideas`;
+
+    return prompt;
+  }
+
+  buildIdeationRound2CrossPollinate(topic, description, model) {
+    let prompt = `IDEATION ROUND 2: CROSS-POLLINATE
+
+Topic: "${topic}"
+${description ? `Context: ${description}\n` : ''}
+
+You've seen all the ideas generated in Round 1.
+
+YOUR MISSION: Build on the collective creativity. You may:
+- ADOPT: Take an idea you like from another participant and champion it
+- COMBINE: Merge two or more ideas into something stronger
+- IMPROVE: Take any idea and make it better with specific enhancements
+- EVOLVE: Use an idea as inspiration for something new
+
+`;
+
+    // Add previous responses from Round 1
+    if (this.responses.length > 0) {
+      prompt += '=== IDEAS FROM ROUND 1 ===\n';
+      this.responses.forEach(r => {
+        prompt += `${r.modelId}:\n${r.content}\n\n---\n\n`;
+      });
+      prompt += '=== END ROUND 1 IDEAS ===\n\n';
+    }
+
+    prompt += `FORMAT YOUR RESPONSE:
+1. List 2-3 ideas you're championing (can be adopted, combined, or evolved)
+2. For each, explain WHY this is promising and WHAT makes it work
+3. Be specific about any improvements or combinations
+
+Remember: The best ideas often come from unexpected combinations. Don't just pick favorites - actively improve them.
+
+At the end, state:
+Stance: Cross-pollinating
+Confidence: [0-100]% in the refined idea set`;
+
+    return prompt;
+  }
+
+  buildIdeationRound3Deathmatch(topic, description, model) {
+    let prompt = `IDEATION ROUND 3: DEATHMATCH CRITIQUE
+
+Topic: "${topic}"
+${description ? `Context: ${description}\n` : ''}
+
+YOUR MISSION: Brutally critique EVERY idea on the table, including your own.
+
+`;
+
+    // Add all responses so far
+    if (this.responses.length > 0) {
+      prompt += '=== ALL IDEAS TO CRITIQUE ===\n';
+      const round2Responses = this.responses.filter(r => r.round === 2);
+      const responsesToShow = round2Responses.length > 0 ? round2Responses : this.responses;
+      responsesToShow.forEach(r => {
+        prompt += `${r.modelId}:\n${r.content}\n\n---\n\n`;
+      });
+      prompt += '=== END IDEAS ===\n\n';
+    }
+
+    prompt += `DEATHMATCH RULES:
+1. Find FATAL FLAWS in every idea - the showstoppers that would kill it
+2. Find MAJOR WEAKNESSES - significant problems that need solving
+3. Find MINOR ISSUES - things that would need attention but aren't dealbreakers
+4. Be BRUTAL but FAIR - back up every critique with reasoning
+5. DO NOT SPARE YOUR OWN IDEAS - if they're weak, expose them
+
+FORMAT:
+For each major idea, provide:
+IDEA: [Name]
+- FATAL: [Any fatal flaws, or "None identified"]
+- MAJOR: [List major weaknesses]
+- MINOR: [List minor issues]
+
+The goal is to STRESS-TEST every idea so only the strongest survive. Be the critic you'd want reviewing your own work.
+
+At the end, state:
+Stance: Critical analysis
+Confidence: [0-100]% that I've identified the real problems`;
+
+    return prompt;
+  }
+
+  buildIdeationRound4VoteDefend(topic, description, model) {
+    let prompt = `IDEATION ROUND 4: VOTE + DEFEND
+
+Topic: "${topic}"
+${description ? `Context: ${description}\n` : ''}
+
+Round 3 exposed the weaknesses. Now it's time to decide what survives.
+
+`;
+
+    // Add Round 3 critiques
+    if (this.responses.length > 0) {
+      prompt += '=== ROUND 3 CRITIQUES ===\n';
+      const round3Responses = this.responses.filter(r => r.round === 3);
+      if (round3Responses.length > 0) {
+        round3Responses.forEach(r => {
+          prompt += `${r.modelId} critiques:\n${r.content}\n\n---\n\n`;
+        });
+      }
+      prompt += '=== END CRITIQUES ===\n\n';
+    }
+
+    prompt += `YOUR MISSION:
+1. VOTE for your TOP 2 ideas (from any participant)
+2. DEFEND those ideas against the critiques from Round 3
+
+FORMAT YOUR RESPONSE:
+
+VOTES:
+1. [Idea Title] - [One sentence why]
+2. [Idea Title] - [One sentence why]
+
+DEFENSE OF VOTE #1:
+[Address the critiques raised against this idea. Either:
+- Explain why the critique is wrong/overstated
+- Propose a modification that solves the problem
+- Acknowledge the risk but explain why it's acceptable]
+
+DEFENSE OF VOTE #2:
+[Same format]
+
+Be honest: If a critique is valid and you can't defend against it, that idea probably shouldn't be in your top 2.
+
+At the end, state:
+Stance: [Your top pick]
+Confidence: [0-100]% in this selection`;
+
+    return prompt;
+  }
+
+  buildIdeationRound5_6Refine(round, topic, description, model) {
+    const roundLabel = round === 5 ? 'FIRST REFINEMENT' : 'FINAL REFINEMENT';
+
+    let prompt = `IDEATION ROUND ${round}: ${roundLabel}
+
+Topic: "${topic}"
+${description ? `Context: ${description}\n` : ''}
+
+The votes are in. Now we refine the top ideas.
+
+`;
+
+    // Add voting results from Round 4
+    if (this.responses.length > 0) {
+      prompt += '=== VOTING RESULTS FROM ROUND 4 ===\n';
+      const round4Responses = this.responses.filter(r => r.round === 4);
+      if (round4Responses.length > 0) {
+        round4Responses.forEach(r => {
+          prompt += `${r.modelId}:\n${r.content}\n\n---\n\n`;
+        });
+      }
+      prompt += '=== END VOTES ===\n\n';
+    }
+
+    prompt += `YOUR MISSION: Make the leading idea(s) BULLETPROOF
+
+Focus on:
+1. ADDRESSING remaining critiques that weren't fully resolved
+2. ADDING implementation details - how would this actually work?
+3. STRENGTHENING the value proposition - why is this the best approach?
+4. IDENTIFYING edge cases and how to handle them
+5. CREATING a clear path from idea to execution
+
+${round === 6 ? 'This is the FINAL refinement round. Polish these ideas to their best possible form.' : 'Focus on the structural improvements. Details will be polished in Round 6.'}
+
+At the end, state:
+Stance: Refining [idea name]
+Confidence: [0-100]% this is ready for final evaluation`;
+
+    return prompt;
+  }
+
+  buildIdeationRound7FinalShowdown(topic, description, model) {
+    let prompt = `IDEATION ROUND 7: FINAL SHOWDOWN
+
+Topic: "${topic}"
+${description ? `Context: ${description}\n` : ''}
+
+This is it. Time to pick the WINNER.
+
+`;
+
+    // Add refined ideas from Rounds 5-6
+    if (this.responses.length > 0) {
+      prompt += '=== REFINED IDEAS FROM ROUNDS 5-6 ===\n';
+      const refinedResponses = this.responses.filter(r => r.round === 5 || r.round === 6);
+      if (refinedResponses.length > 0) {
+        refinedResponses.forEach(r => {
+          prompt += `${r.modelId} (Round ${r.round}):\n${r.content}\n\n---\n\n`;
+        });
+      }
+      prompt += '=== END REFINED IDEAS ===\n\n';
+    }
+
+    prompt += `YOUR MISSION: Declare a WINNER
+
+EVALUATION CRITERIA:
+1. FEASIBILITY: Can this actually be done?
+2. IMPACT: How much value does this create?
+3. RESILIENCE: Did it survive the critiques?
+4. CLARITY: Is the path to execution clear?
+5. DIFFERENTIATION: Does this offer something meaningfully better?
+
+FORMAT YOUR RESPONSE:
+
+WINNER: [Idea Title]
+
+HEAD-TO-HEAD ANALYSIS:
+[Compare the top 2 finalists on each criterion above]
+
+WHY THIS WINS:
+[2-3 sentences on the decisive factor(s)]
+
+RUNNER-UP VALUE:
+[What's worth preserving from the second-place idea?]
+
+FINAL RECOMMENDATION:
+[One paragraph executive summary of what to do and why]
+
+At the end, state:
+Stance: [Winner idea name]
+Confidence: [0-100]% this is the right choice`;
+
+    return prompt;
+  }
+
+  // ========== END IDEATION MODE PROMPTS ==========
 
   analyzeResponse(content) {
     // Ensure content is a string

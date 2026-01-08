@@ -366,7 +366,8 @@ router.post('/', async (req, res) => {
             console.warn(`[Round ${i}] Stream closed, client disconnected - continuing debate in background`);
             // Don't throw - debate will complete and polling will pick up result
           }
-        }
+        },
+        config.style // Pass debate style for ideation mode
       );
 
       // All models completed, send round-complete
