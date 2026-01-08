@@ -907,7 +907,7 @@ Industry & Society:
                   type="radio"
                   name="debate-style"
                   checked={config.style === 'ideation'}
-                  onChange={() => setConfig({ ...config, style: 'ideation', rounds: 7 })}
+                  onChange={() => setConfig({ ...config, style: 'ideation', rounds: 7, challenger: { enabled: false } })}
                   className="mr-3 h-4 w-4 text-purple-600 focus:ring-purple-500 mt-1"
                 />
                 <div>
@@ -1148,58 +1148,61 @@ Industry & Society:
             </div>
           </div>
 
-          <div className="mb-6">
-            <label className="block text-sm font-semibold text-slate-700 mb-2">
-              Challenger (Stress Tester)
-            </label>
-            <div className="space-y-3">
-              <label className="flex items-center">
-                <input
-                  type="checkbox"
-                  checked={config.challenger?.enabled || false}
-                  onChange={(e) => setConfig({
-                    ...config,
-                    challenger: {
-                      ...config.challenger,
-                      enabled: e.target.checked,
-                      model: config.challenger?.model || AVAILABLE_MODELS.find(m => m.id === 'claude-sonnet-4-5-20250929')
-                    }
-                  })}
-                  className="mr-3 h-4 w-4 text-blue-600 rounded focus:ring-blue-500"
-                />
-                <span className="text-slate-700 font-medium">Enable Challenger</span>
+          {/* Hide Challenger for Ideation mode - Round 3 Deathmatch already does brutal critique */}
+          {config.style !== 'ideation' && (
+            <div className="mb-6">
+              <label className="block text-sm font-semibold text-slate-700 mb-2">
+                Challenger (Stress Tester)
               </label>
+              <div className="space-y-3">
+                <label className="flex items-center">
+                  <input
+                    type="checkbox"
+                    checked={config.challenger?.enabled || false}
+                    onChange={(e) => setConfig({
+                      ...config,
+                      challenger: {
+                        ...config.challenger,
+                        enabled: e.target.checked,
+                        model: config.challenger?.model || AVAILABLE_MODELS.find(m => m.id === 'claude-sonnet-4-5-20250929')
+                      }
+                    })}
+                    className="mr-3 h-4 w-4 text-blue-600 rounded focus:ring-blue-500"
+                  />
+                  <span className="text-slate-700 font-medium">Enable Challenger</span>
+                </label>
 
-              {config.challenger?.enabled && (
-                <div className="ml-7">
-                  <select
-                    value={config.challenger.model?.id || 'claude-sonnet-4-5-20250929'}
-                    onChange={(e) => {
-                      const model = AVAILABLE_MODELS.find(m => m.id === e.target.value);
-                      setConfig({
-                        ...config,
-                        challenger: {
-                          ...config.challenger,
-                          enabled: true,
-                          model
-                        }
-                      });
-                    }}
-                    className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-slate-900 bg-white font-medium"
-                  >
-                    {availableModels.map(model => (
-                      <option key={model.id} value={model.id}>
-                        {model.displayName}
-                      </option>
-                    ))}
-                  </select>
-                  <p className="mt-1 text-xs text-slate-500">
-                    The Challenger stress-tests all positions to forge stronger answers. Attacks to improve, not destroy.
-                  </p>
-                </div>
-              )}
+                {config.challenger?.enabled && (
+                  <div className="ml-7">
+                    <select
+                      value={config.challenger.model?.id || 'claude-sonnet-4-5-20250929'}
+                      onChange={(e) => {
+                        const model = AVAILABLE_MODELS.find(m => m.id === e.target.value);
+                        setConfig({
+                          ...config,
+                          challenger: {
+                            ...config.challenger,
+                            enabled: true,
+                            model
+                          }
+                        });
+                      }}
+                      className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-slate-900 bg-white font-medium"
+                    >
+                      {availableModels.map(model => (
+                        <option key={model.id} value={model.id}>
+                          {model.displayName}
+                        </option>
+                      ))}
+                    </select>
+                    <p className="mt-1 text-xs text-slate-500">
+                      The Challenger stress-tests all positions to forge stronger answers. Attacks to improve, not destroy.
+                    </p>
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
+          )}
 
           {(() => {
             const cost = calculateDebateCost(
