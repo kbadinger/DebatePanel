@@ -138,7 +138,7 @@ class DebateQueue {
         i,
         debate.topic,
         debate.description,
-        debate.format === 'consensus-seeking',
+        debate.style === 'consensus-seeking',
         async (responseData) => {
           const savedResponse = await prisma.modelResponse.create({
             data: {
@@ -152,7 +152,8 @@ class DebateQueue {
             }
           });
           roundResponses.push(savedResponse);
-        }
+        },
+        debate.style // Pass style for ideation mode
       );
 
       console.log(`   ✓ Round ${i} completed with ${roundResponses.length} responses`);
