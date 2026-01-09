@@ -591,28 +591,40 @@ Confidence: [0-100]% that remaining risks have been identified`;
   }
 
   buildIdeationRound1Diverge(topic, description, model) {
-    let prompt = `IDEATION ROUND 1: DIVERGE
+    let prompt = `IDEATION ROUND 1: GENERATE IDEAS
 
 Topic: "${topic}"
 ${description ? `Context: ${description}\n` : ''}
 
 YOUR MISSION: Generate 3-4 DISTINCT ideas that could solve or address this topic.
 
-RULES FOR THIS ROUND:
-1. Each idea MUST be meaningfully different from the others
-2. Format each idea as a numbered list:
-   1. [IDEA TITLE]: [2-3 sentence description of the idea and why it could work]
-   2. [IDEA TITLE]: [2-3 sentence description]
-   ...etc
-3. Include at least ONE unconventional or contrarian idea
-4. Don't self-censor - wild ideas often contain seeds of brilliance
-5. Be specific enough that someone could understand and evaluate the idea
+⚠️ WARNING: A DESTRUCTION PHASE IS COMING
+In Round 3, every idea will be brutally stress-tested. Models will try to find fatal flaws in every single idea. Only ideas that can survive real-world scrutiny will advance.
 
-IMPORTANT: This is a brainstorming phase. Quantity and diversity of thinking matters more than perfection. Push beyond your first instinct.
+BEFORE YOU SUBMIT AN IDEA, attack it yourself:
+- What's the obvious way this fails?
+- Why hasn't someone done this already?
+- What will people ACTUALLY do vs what you hope they'll do?
+- What's the simpler alternative that makes this pointless?
+
+If you can kill your own idea easily, DON'T SUBMIT IT. Only propose ideas you believe can survive attack.
+
+FORMAT each idea as:
+1. [IDEA TITLE]: [2-3 sentence description]
+   - WHY IT SURVIVES: [One sentence on why this isn't easily killed]
+
+2. [IDEA TITLE]: [2-3 sentence description]
+   - WHY IT SURVIVES: [One sentence on why this isn't easily killed]
+
+RULES:
+- Each idea MUST be meaningfully different from the others
+- Include at least ONE unconventional idea (that you still believe can survive)
+- Be specific enough that someone could actually implement it
+- Quality over quantity - 3 solid ideas beat 4 weak ones
 
 At the end, state:
 Stance: Divergent thinking
-Confidence: [0-100]% in the overall quality of these initial ideas`;
+Confidence: [0-100]% these ideas can survive the destruction phase`;
 
     return prompt;
   }
@@ -657,20 +669,20 @@ Confidence: [0-100]% in the refined idea set`;
   }
 
   buildIdeationRound3Deathmatch(topic, description, model) {
-    let prompt = `IDEATION ROUND 3: DESTRUCTION PHASE
+    let prompt = `IDEATION ROUND 3: STRESS TEST
 
 Topic: "${topic}"
 ${description ? `Context: ${description}\n` : ''}
 
-YOUR JOB: KILL THESE IDEAS. Find the fatal flaws that will make them fail in the real world.
+YOUR JOB: Find the REAL flaws that would make these ideas fail in practice.
 
-You are not here to "evaluate" or "provide balanced feedback." You are here to DESTROY weak ideas before someone wastes time on them. If an idea survives your attack, it might actually be good. If you can't find fatal flaws, YOU ARE FAILING AT YOUR JOB.
+The goal is to make ideas STRONGER by finding problems NOW, not to be clever about finding unlikely failure modes. We want ideas that work in the real world, not ideas that only fail during an EMP or zombie apocalypse.
 
 `;
 
     // Add all responses so far
     if (this.responses.length > 0) {
-      prompt += '=== IDEAS TO DESTROY ===\n';
+      prompt += '=== IDEAS TO STRESS TEST ===\n';
       const round2Responses = this.responses.filter(r => r.round === 2);
       const responsesToShow = round2Responses.length > 0 ? round2Responses : this.responses;
       responsesToShow.forEach(r => {
@@ -679,59 +691,63 @@ You are not here to "evaluate" or "provide balanced feedback." You are here to D
       prompt += '=== END IDEAS ===\n\n';
     }
 
-    prompt += `ATTACK VECTORS - You MUST consider each of these for EVERY idea:
+    prompt += `FIND REAL PROBLEMS - Ask these questions for EVERY idea:
 
 1. THE "ACTUALLY DO IT" TEST
-   - Walk through someone ACTUALLY implementing this. What breaks?
-   - What's the FIRST thing that goes wrong?
-   - Where does the plan have a gap that nobody noticed?
+   - Walk through someone ACTUALLY implementing this step by step
+   - What's the FIRST practical obstacle they hit?
+   - What obvious thing did the proposer forget to mention?
 
-2. THE "WHY HASN'T THIS BEEN DONE" TEST
-   - If this is such a good idea, why doesn't it exist already?
-   - What do you know that everyone else missed? (Hint: probably nothing)
-   - What's the REAL reason this fails that the proposer is ignoring?
+2. THE "HUMAN NATURE" TEST
+   - Will people ACTUALLY do this consistently? Or just the first time?
+   - What's the lazy/easy path that undermines the idea?
+   - What happens when someone is tired, busy, or doesn't care?
 
-3. THE "SECOND-ORDER EFFECTS" TEST
-   - What happens AFTER the initial implementation?
-   - What unintended consequences will emerge?
-   - How does this break when it scales or when edge cases appear?
+3. THE "ALREADY EXISTS" TEST
+   - Does something similar already exist? Why or why not?
+   - If it exists, why is this better? If it doesn't, what's the real barrier?
 
-4. THE "HUMAN NATURE" TEST
-   - Will people ACTUALLY do this? Or just say they will?
-   - What's the path of least resistance that kills this idea?
-   - Where does laziness, forgetfulness, or selfishness break it?
+4. THE "SIMPLER ALTERNATIVE" TEST
+   - Is there an obviously simpler way to achieve the same goal?
+   - What's the 80/20 version that gets most of the benefit?
 
-5. THE "COMPETITION/ALTERNATIVES" TEST
-   - Why is this better than just doing [obvious simpler alternative]?
-   - What existing solution does this ignore?
-   - Why would anyone choose this over the status quo?
+5. THE "WHAT BREAKS" TEST
+   - What happens at month 2? Month 6? Year 2?
+   - Where does this fail when the initial enthusiasm fades?
 
-FORMAT YOUR ATTACK:
-For each idea, provide:
+⚠️ RULES FOR VALID CRITIQUES:
+- Critiques must be REALISTIC and LIKELY, not theoretical edge cases
+- "What if there's a power outage" = INVALID (unless power is central to the idea)
+- "What if everyone stops caring after 2 weeks" = VALID (this actually happens)
+- "What if the economy crashes" = INVALID (too generic)
+- "What if the key person quits" = VALID (this actually happens)
+- Be SPECIFIC - "this won't work" is useless, "this won't work because X" is useful
 
-**[IDEA NAME]**: VERDICT: [DEAD / WOUNDED / SURVIVES]
+FORMAT:
+For each idea:
 
-FATAL SHOTS (must find at least one, or explain why you failed to):
-- [Specific fatal flaw with concrete reasoning]
+**[IDEA NAME]**: [FATAL FLAW / FIXABLE / SOLID]
 
-WOUNDS:
-- [Significant problems that could maybe be fixed]
+MAIN PROBLEMS (real issues that would actually happen):
+- [Specific problem #1]
+- [Specific problem #2]
 
-WHY THE PROPOSER IS BLIND TO THIS:
-- [What bias or wishful thinking made them miss these flaws?]
+IF FIXABLE, HOW:
+- [What would need to change to address the problems?]
 
 ---
 
-REMEMBER:
-- "None identified" is NOT acceptable for fatal flaws. Dig deeper. Every idea has a way to die.
-- If you're being nice, you're being useless.
-- The best thing you can do for a good idea is PROVE it's good by failing to kill it.
-- Vague critiques like "might not work" are worthless. Be SPECIFIC.
+The goal is CONSTRUCTIVE destruction. We want to either:
+1. Kill bad ideas with real reasons (so we don't waste time)
+2. Identify fixable problems (so we can fix them)
+3. Confirm solid ideas (by failing to find real problems)
 
 At the end, state:
-IDEAS I KILLED: [List]
-IDEAS THAT SURVIVED MY ATTACK: [List - if any, explain why you couldn't kill them]
-Confidence: [0-100]% that I found the real fatal flaws`;
+FATAL FLAW (kill these): [List ideas with unfixable real-world problems]
+FIXABLE (worth improving): [List ideas with problems that can be solved]
+SOLID (survived stress test): [List ideas you couldn't find real problems with]
+
+Confidence: [0-100]% that these are the real issues, not theoretical BS`;
 
     return prompt;
   }
