@@ -569,28 +569,32 @@ Confidence: [0-100]% that remaining risks have been identified`;
   // ========== IDEATION MODE PROMPTS ==========
 
   buildIdeationPrompt(round, topic, description, model) {
-    // Route to round-specific ideation prompt
+    // Route to round-specific ideation prompt (8 rounds total)
+    // R1: Generate → R2: Cross-pollinate → R3: Stress Test → R4: Rework
+    // R5: Vote → R6-7: Refine → R8: Final Showdown
     switch (round) {
       case 1:
-        return this.buildIdeationRound1Diverge(topic, description, model);
+        return this.buildIdeationRound1Generate(topic, description, model);
       case 2:
         return this.buildIdeationRound2CrossPollinate(topic, description, model);
       case 3:
-        return this.buildIdeationRound3Deathmatch(topic, description, model);
+        return this.buildIdeationRound3StressTest(topic, description, model);
       case 4:
-        return this.buildIdeationRound4VoteDefend(topic, description, model);
+        return this.buildIdeationRound4Rework(topic, description, model);
       case 5:
+        return this.buildIdeationRound5Vote(topic, description, model);
       case 6:
-        return this.buildIdeationRound5_6Refine(round, topic, description, model);
       case 7:
-        return this.buildIdeationRound7FinalShowdown(topic, description, model);
+        return this.buildIdeationRound6_7Refine(round, topic, description, model);
+      case 8:
+        return this.buildIdeationRound8FinalShowdown(topic, description, model);
       default:
-        // Fallback for rounds beyond 7
-        return this.buildIdeationRound5_6Refine(round, topic, description, model);
+        // Fallback for rounds beyond 8
+        return this.buildIdeationRound6_7Refine(round, topic, description, model);
     }
   }
 
-  buildIdeationRound1Diverge(topic, description, model) {
+  buildIdeationRound1Generate(topic, description, model) {
     let prompt = `IDEATION ROUND 1: GENERATE IDEAS
 
 Topic: "${topic}"
@@ -668,7 +672,7 @@ Confidence: [0-100]% in the refined idea set`;
     return prompt;
   }
 
-  buildIdeationRound3Deathmatch(topic, description, model) {
+  buildIdeationRound3StressTest(topic, description, model) {
     let prompt = `IDEATION ROUND 3: STRESS TEST
 
 Topic: "${topic}"
@@ -752,112 +756,278 @@ Confidence: [0-100]% that these are the real issues, not theoretical BS`;
     return prompt;
   }
 
-  buildIdeationRound4VoteDefend(topic, description, model) {
-    let prompt = `IDEATION ROUND 4: VOTE + DEFEND
+  buildIdeationRound4Rework(topic, description, model) {
+    let prompt = `IDEATION ROUND 4: REWORK
 
+═══════════════════════════════════════════════════════════════
+REQUIREMENT REMINDER - What we're solving for:
 Topic: "${topic}"
-${description ? `Context: ${description}\n` : ''}
+${description ? `Context: ${description}` : '(No additional context provided)'}
+═══════════════════════════════════════════════════════════════
 
-Round 3 exposed the weaknesses. Now it's time to decide what survives.
+Round 3 exposed real problems. Now you must RESPOND to those problems.
 
 `;
 
-    // Add Round 3 critiques
+    // Show ideas from Round 2 (what was proposed)
     if (this.responses.length > 0) {
-      prompt += '=== ROUND 3 CRITIQUES ===\n';
+      const round2Responses = this.responses.filter(r => r.round === 2);
+      if (round2Responses.length > 0) {
+        prompt += '=== YOUR IDEAS FROM ROUND 2 ===\n';
+        const myResponses = round2Responses.filter(r => r.modelId === model?.id);
+        if (myResponses.length > 0) {
+          myResponses.forEach(r => {
+            prompt += `${r.content}\n\n`;
+          });
+        } else {
+          // Show all ideas if we can't find this model's specific ideas
+          round2Responses.forEach(r => {
+            prompt += `${r.modelId}:\n${r.content}\n\n`;
+          });
+        }
+        prompt += '=== END YOUR IDEAS ===\n\n';
+      }
+    }
+
+    // Show stress test results from Round 3
+    if (this.responses.length > 0) {
+      prompt += '=== STRESS TEST RESULTS (Round 3) ===\n';
       const round3Responses = this.responses.filter(r => r.round === 3);
       if (round3Responses.length > 0) {
         round3Responses.forEach(r => {
-          prompt += `${r.modelId} critiques:\n${r.content}\n\n---\n\n`;
+          prompt += `${r.modelId} found these problems:\n${r.content}\n\n---\n\n`;
         });
       }
-      prompt += '=== END CRITIQUES ===\n\n';
+      prompt += '=== END STRESS TEST ===\n\n';
     }
 
-    prompt += `YOUR MISSION:
-1. VOTE for your TOP 2 ideas (from any participant)
-2. DEFEND those ideas against the critiques from Round 3
+    prompt += `YOUR MISSION: Respond to the stress test. You have THREE options:
 
+OPTION A: FIX IT
+If your idea got "FIXABLE" feedback, address the specific problems:
+- State the problem that was identified
+- Explain exactly how you're fixing it
+- Show the improved version of the idea
+
+OPTION B: KILL IT AND PIVOT
+If your idea got "FATAL FLAW" feedback and you agree:
+- Acknowledge what killed it
+- Propose a NEW idea that avoids that fatal flaw
+- Explain why the new idea won't die the same way
+
+OPTION C: DEFEND IT
+If you think the stress test was wrong:
+- Quote the specific critique you're disputing
+- Explain why it's not actually a real problem
+- Provide evidence or reasoning to support your defense
+
+═══════════════════════════════════════════════════════════════
 FORMAT YOUR RESPONSE:
 
-VOTES:
-1. [Idea Title] - [One sentence why]
-2. [Idea Title] - [One sentence why]
+CHOSEN OPTION: [A: Fix / B: Pivot / C: Defend]
 
-DEFENSE OF VOTE #1:
-[Address the critiques raised against this idea. Either:
-- Explain why the critique is wrong/overstated
-- Propose a modification that solves the problem
-- Acknowledge the risk but explain why it's acceptable]
+[If A - FIX:]
+PROBLEM ADDRESSED: [Quote the specific problem from Round 3]
+THE FIX: [Explain exactly what changes]
+IMPROVED IDEA: [Full description of the fixed idea]
 
-DEFENSE OF VOTE #2:
-[Same format]
+[If B - PIVOT:]
+WHAT KILLED IT: [Quote the fatal flaw]
+NEW IDEA: [Title]: [Full description]
+WHY THIS WON'T DIE THE SAME WAY: [Explain]
 
-Be honest: If a critique is valid and you can't defend against it, that idea probably shouldn't be in your top 2.
+[If C - DEFEND:]
+DISPUTED CRITIQUE: [Quote it]
+WHY IT'S WRONG: [Your defense with reasoning]
+THE IDEA STANDS AS: [Restate the idea]
+═══════════════════════════════════════════════════════════════
+
+REMEMBER:
+- You MUST pick one of the three options
+- If you're fixing, be SPECIFIC about what changes
+- If you're pivoting, the new idea must still solve the ORIGINAL REQUIREMENT above
+- If you're defending, you need actual reasoning, not just "I disagree"
 
 At the end, state:
-Stance: [Your top pick]
-Confidence: [0-100]% in this selection`;
+FINAL IDEA: [Name of the idea you're putting forward]
+Confidence: [0-100]% this idea can survive another stress test`;
 
     return prompt;
   }
 
-  buildIdeationRound5_6Refine(round, topic, description, model) {
-    const roundLabel = round === 5 ? 'FIRST REFINEMENT' : 'FINAL REFINEMENT';
+  buildIdeationRound5Vote(topic, description, model) {
+    let prompt = `IDEATION ROUND 5: VOTE
 
-    let prompt = `IDEATION ROUND ${round}: ${roundLabel}
-
+═══════════════════════════════════════════════════════════════
+REQUIREMENT REMINDER - What we're solving for:
 Topic: "${topic}"
-${description ? `Context: ${description}\n` : ''}
+${description ? `Context: ${description}` : '(No additional context provided)'}
+═══════════════════════════════════════════════════════════════
 
-The votes are in. Now we refine the top ideas.
+Ideas have been stress-tested AND reworked. Now we vote on the survivors.
 
 `;
 
-    // Add voting results from Round 4
+    // Show reworked ideas from Round 4
     if (this.responses.length > 0) {
-      prompt += '=== VOTING RESULTS FROM ROUND 4 ===\n';
+      prompt += '=== REWORKED IDEAS FROM ROUND 4 ===\n';
       const round4Responses = this.responses.filter(r => r.round === 4);
       if (round4Responses.length > 0) {
         round4Responses.forEach(r => {
           prompt += `${r.modelId}:\n${r.content}\n\n---\n\n`;
         });
       }
-      prompt += '=== END VOTES ===\n\n';
+      prompt += '=== END REWORKED IDEAS ===\n\n';
     }
 
-    prompt += `YOUR MISSION: Make the leading idea(s) BULLETPROOF
+    prompt += `YOUR MISSION: Vote for the TOP 2 ideas that best solve the requirement above.
 
-Focus on:
-1. ADDRESSING remaining critiques that weren't fully resolved
-2. ADDING implementation details - how would this actually work?
-3. STRENGTHENING the value proposition - why is this the best approach?
-4. IDENTIFYING edge cases and how to handle them
-5. CREATING a clear path from idea to execution
+VOTING CRITERIA:
+1. Does it actually solve the stated requirement?
+2. Did it survive the stress test (or successfully address the problems)?
+3. Is it practical and implementable?
+4. Is it better than the simpler alternatives?
 
-${round === 6 ? 'This is the FINAL refinement round. Polish these ideas to their best possible form.' : 'Focus on the structural improvements. Details will be polished in Round 6.'}
+═══════════════════════════════════════════════════════════════
+FORMAT YOUR RESPONSE:
+
+VOTE #1 (BEST):
+Idea: [Exact name of the idea]
+Why: [2-3 sentences on why this is the best solution to the requirement]
+
+VOTE #2 (RUNNER-UP):
+Idea: [Exact name of the idea]
+Why: [2-3 sentences on why this is second best]
+
+IDEAS I REJECTED AND WHY:
+- [Idea name]: [One sentence on why it didn't make top 2]
+- [Idea name]: [One sentence on why it didn't make top 2]
+═══════════════════════════════════════════════════════════════
+
+IMPORTANT:
+- You CAN vote for your own idea if you genuinely think it's best
+- You MUST vote for 2 different ideas
+- Base votes on how well they solve the REQUIREMENT, not how creative they are
 
 At the end, state:
-Stance: Refining [idea name]
-Confidence: [0-100]% this is ready for final evaluation`;
+Stance: [Your #1 pick]
+Confidence: [0-100]% this is the right choice`;
 
     return prompt;
   }
 
-  buildIdeationRound7FinalShowdown(topic, description, model) {
-    let prompt = `IDEATION ROUND 7: FINAL SHOWDOWN
+  buildIdeationRound6_7Refine(round, topic, description, model) {
+    const roundLabel = round === 6 ? 'FIRST REFINEMENT' : 'FINAL REFINEMENT';
 
+    let prompt = `IDEATION ROUND ${round}: ${roundLabel}
+
+═══════════════════════════════════════════════════════════════
+REQUIREMENT REMINDER - What we're solving for:
 Topic: "${topic}"
-${description ? `Context: ${description}\n` : ''}
+${description ? `Context: ${description}` : '(No additional context provided)'}
+═══════════════════════════════════════════════════════════════
 
-This is it. Time to pick the WINNER.
+The votes are in. Now we make the winning idea PERFECT.
 
 `;
 
-    // Add refined ideas from Rounds 5-6
+    // Add voting results from Round 5
     if (this.responses.length > 0) {
-      prompt += '=== REFINED IDEAS FROM ROUNDS 5-6 ===\n';
-      const refinedResponses = this.responses.filter(r => r.round === 5 || r.round === 6);
+      prompt += '=== VOTING RESULTS FROM ROUND 5 ===\n';
+      const round5Responses = this.responses.filter(r => r.round === 5);
+      if (round5Responses.length > 0) {
+        round5Responses.forEach(r => {
+          prompt += `${r.modelId}:\n${r.content}\n\n---\n\n`;
+        });
+      }
+      prompt += '=== END VOTES ===\n\n';
+    }
+
+    // For Round 7, also show Round 6 refinements
+    if (round === 7 && this.responses.length > 0) {
+      prompt += '=== ROUND 6 REFINEMENTS ===\n';
+      const round6Responses = this.responses.filter(r => r.round === 6);
+      if (round6Responses.length > 0) {
+        round6Responses.forEach(r => {
+          prompt += `${r.modelId}:\n${r.content}\n\n---\n\n`;
+        });
+      }
+      prompt += '=== END ROUND 6 ===\n\n';
+    }
+
+    prompt += `YOUR MISSION: Take the #1 voted idea and make it BULLETPROOF.
+
+${round === 6 ? `ROUND 6 FOCUS - Structure & Feasibility:
+1. HOW does this actually get implemented? Step by step.
+2. WHAT resources/tools/people are needed?
+3. WHAT could still go wrong? How do we prevent it?
+4. WHAT's the simplest version that still works? (MVP)
+5. WHY is this better than the alternatives that were rejected?` :
+
+`ROUND 7 FOCUS - Polish & Completeness:
+1. REVIEW Round 6 refinements - what's still missing?
+2. EDGE CASES - what weird scenarios need handling?
+3. CONTINGENCY - what's the backup plan if X fails?
+4. PRESENTATION - how do we explain this in one paragraph?
+5. FINAL CHECK - does this ACTUALLY solve the original requirement?`}
+
+═══════════════════════════════════════════════════════════════
+FORMAT YOUR RESPONSE:
+
+IDEA BEING REFINED: [Name of the top-voted idea]
+
+${round === 6 ? `IMPLEMENTATION PLAN:
+[Step-by-step how this gets done]
+
+RESOURCES NEEDED:
+[What's required to make this happen]
+
+REMAINING RISKS AND MITIGATIONS:
+[What could go wrong + how to prevent it]
+
+MVP VERSION:
+[Simplest version that still delivers value]` :
+
+`GAPS ADDRESSED FROM ROUND 6:
+[What was missing that you're adding]
+
+EDGE CASES HANDLED:
+[Weird scenarios and how to deal with them]
+
+BACKUP PLAN:
+[What if the main approach fails]
+
+ONE-PARAGRAPH PITCH:
+[Explain this idea to someone in 4-5 sentences]`}
+
+═══════════════════════════════════════════════════════════════
+
+At the end, state:
+IDEA: [Name]
+STATUS: [Ready for final showdown / Needs more work because X]
+Confidence: [0-100]% this is the best solution to the requirement`;
+
+    return prompt;
+  }
+
+  buildIdeationRound8FinalShowdown(topic, description, model) {
+    let prompt = `IDEATION ROUND 8: FINAL SHOWDOWN
+
+═══════════════════════════════════════════════════════════════
+REQUIREMENT REMINDER - What we're solving for:
+Topic: "${topic}"
+${description ? `Context: ${description}` : '(No additional context provided)'}
+═══════════════════════════════════════════════════════════════
+
+This is it. 8 rounds of ideation come down to this moment.
+Pick the WINNER.
+
+`;
+
+    // Add refined ideas from Rounds 6-7
+    if (this.responses.length > 0) {
+      prompt += '=== REFINED IDEAS FROM ROUNDS 6-7 ===\n';
+      const refinedResponses = this.responses.filter(r => r.round === 6 || r.round === 7);
       if (refinedResponses.length > 0) {
         refinedResponses.forEach(r => {
           prompt += `${r.modelId} (Round ${r.round}):\n${r.content}\n\n---\n\n`;
@@ -866,34 +1036,59 @@ This is it. Time to pick the WINNER.
       prompt += '=== END REFINED IDEAS ===\n\n';
     }
 
-    prompt += `YOUR MISSION: Declare a WINNER
+    prompt += `YOUR MISSION: Declare the WINNER that best solves the original requirement.
 
+THE JOURNEY SO FAR:
+- Round 1: Ideas were generated (with pre-attack defense)
+- Round 2: Ideas were combined and improved
+- Round 3: Ideas were stress-tested for real flaws
+- Round 4: Ideas were reworked based on feedback
+- Round 5: We voted on the survivors
+- Rounds 6-7: The winner was refined and polished
+
+NOW: Pick the final winner.
+
+═══════════════════════════════════════════════════════════════
 EVALUATION CRITERIA:
-1. FEASIBILITY: Can this actually be done?
-2. IMPACT: How much value does this create?
-3. RESILIENCE: Did it survive the critiques?
-4. CLARITY: Is the path to execution clear?
-5. DIFFERENTIATION: Does this offer something meaningfully better?
 
+1. SOLVES THE REQUIREMENT
+   Does this actually address what was asked in the original topic?
+
+2. SURVIVED THE GAUNTLET
+   Did this idea survive stress-testing and get stronger from it?
+
+3. IMPLEMENTABLE
+   Is there a clear, realistic path to making this happen?
+
+4. BETTER THAN ALTERNATIVES
+   Is this genuinely better than the simpler options that were rejected?
+
+═══════════════════════════════════════════════════════════════
 FORMAT YOUR RESPONSE:
 
-WINNER: [Idea Title]
+WINNER: [Exact idea name]
 
-HEAD-TO-HEAD ANALYSIS:
-[Compare the top 2 finalists on each criterion above]
+SOLVES THE REQUIREMENT BECAUSE:
+[2-3 sentences connecting the idea back to the original topic]
 
-WHY THIS WINS:
-[2-3 sentences on the decisive factor(s)]
+SURVIVED BECAUSE:
+[What critiques did it face? How did it overcome them?]
 
-RUNNER-UP VALUE:
-[What's worth preserving from the second-place idea?]
+IMPLEMENTATION PATH:
+[High-level steps to make this real]
 
-FINAL RECOMMENDATION:
-[One paragraph executive summary of what to do and why]
+RUNNER-UP:
+[What was second place? What value does it still have?]
+
+FINAL VERDICT:
+[One paragraph: "For [topic], the answer is [idea] because [reasons].
+The key to success is [critical factor]. Avoid [main pitfall]."]
+
+═══════════════════════════════════════════════════════════════
 
 At the end, state:
-Stance: [Winner idea name]
-Confidence: [0-100]% this is the right choice`;
+WINNER: [Idea name]
+Confidence: [0-100]% this is the right solution to the original requirement`;
 
     return prompt;
   }
@@ -1598,18 +1793,26 @@ Judge the arguments, not the conclusions.`;
       });
     }
 
-    // Round 4: Votes
+    // Round 4: Rework
     if (roundData[4]) {
-      journeyContext += '\n=== ROUND 4: VOTES ===\n';
+      journeyContext += '\n=== ROUND 4: REWORK RESPONSES ===\n';
       roundData[4].forEach(r => {
+        journeyContext += `${r.modelId}:\n${r.content.substring(0, 500)}\n\n`;
+      });
+    }
+
+    // Round 5: Votes
+    if (roundData[5]) {
+      journeyContext += '\n=== ROUND 5: VOTES ===\n';
+      roundData[5].forEach(r => {
         journeyContext += `${r.modelId}:\n${r.content.substring(0, 600)}\n\n`;
       });
     }
 
-    // Round 7: Final decisions
-    if (roundData[7]) {
-      journeyContext += '\n=== ROUND 7: FINAL DECISIONS ===\n';
-      roundData[7].forEach(r => {
+    // Round 8: Final decisions
+    if (roundData[8]) {
+      journeyContext += '\n=== ROUND 8: FINAL DECISIONS ===\n';
+      roundData[8].forEach(r => {
         journeyContext += `${r.modelId}:\n${r.content.substring(0, 600)}\n\n`;
       });
     }
@@ -1629,7 +1832,7 @@ Provide your analysis in this EXACT format:
 [Name the winning idea and describe it in 2-3 sentences]
 
 ## VOTE TALLY
-[List how many models voted for each top idea in Round 4 and Round 7]
+[List how many models voted for each top idea in Round 5 and Round 8]
 [Format: "Idea Name: X votes"]
 
 ## THE JOURNEY
