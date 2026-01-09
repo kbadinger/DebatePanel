@@ -13,6 +13,11 @@ class Orchestrator {
     // State for iron-forged debates
     this.roundSyntheses = {};      // { roundNumber: "synthesis text" }
     this.challengerResponses = {}; // { roundNumber: "challenger text" }
+
+    // State for ideation mode - structured idea tracking
+    this.ideas = [];               // Array of { id, title, description, defense, author, status, round }
+    this.ideaCount = config.ideaCount || 4;  // How many ideas each model generates
+    this.nextIdeaId = 1;           // Auto-increment ID for ideas
     
     // Initialize API clients
     this.openai = process.env.OPENAI_API_KEY ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY }) : null;
@@ -80,6 +85,20 @@ class Orchestrator {
 
         responses.push(responseData);
         this.responses.push(responseData);  // Use responseData which includes round number
+
+        // Parse ideas for ideation mode rounds
+        if (debateStyle === 'ideation') {
+          if (roundNumber === 1) {
+            // Parse ideas from R1 responses
+            this.parseIdeasFromResponse(responseData.content, model.id);
+          } else if (roundNumber === 3) {
+            // Update idea status from stress test
+            this.updateIdeaStatusFromStressTest(responseData.content);
+          } else if (roundNumber === 5) {
+            // Track votes
+            this.updateIdeaVotesFromVoting(responseData.content);
+          }
+        }
 
         // Call callback immediately after model completes (keeps stream alive)
         if (onModelComplete) {
@@ -566,7 +585,142 @@ Confidence: [0-100]% that remaining risks have been identified`;
     return prompt;
   }
 
-  // ========== IDEATION MODE PROMPTS ==========
+  // ========== IDEATION MODE ==========
+
+  /**
+   * Parse structured ideas from a model's R1 response
+   * Expected format:
+   * IDEA 1:
+   * TITLE: [Name]
+   * DESCRIPTION: [Text]
+   * WHY IT SURVIVES: [Defense]
+   */
+  parseIdeasFromResponse(responseContent, authorModelId) {
+    const ideas = [];
+
+    // Match IDEA blocks - flexible to handle slight format variations
+    const ideaBlocks = responseContent.split(/IDEA\s*\d+\s*:/i).filter(block => block.trim());
+
+    for (const block of ideaBlocks) {
+      // Extract TITLE
+      const titleMatch = block.match(/TITLE:\s*([^\n]+)/i);
+      // Extract DESCRIPTION
+      const descMatch = block.match(/DESCRIPTION:\s*([\s\S]*?)(?=WHY IT SURVIVES:|IDEA\s*\d+:|$)/i);
+      // Extract WHY IT SURVIVES / defense
+      const defenseMatch = block.match(/WHY IT SURVIVES:\s*([\s\S]*?)(?=IDEA\s*\d+:|$)/i);
+
+      if (titleMatch) {
+        const idea = {
+          id: this.nextIdeaId++,
+          title: titleMatch[1].trim(),
+          description: descMatch ? descMatch[1].trim() : '',
+          defense: defenseMatch ? defenseMatch[1].trim() : '',
+          author: authorModelId,
+          status: 'active',  // active, killed, fixable, advanced, winner
+          createdRound: 1,
+          votes: 0
+        };
+        ideas.push(idea);
+        this.ideas.push(idea);
+      }
+    }
+
+    console.log(`[Ideation] Parsed ${ideas.length} ideas from ${authorModelId}`);
+    return ideas;
+  }
+
+  /**
+   * Update idea status based on stress test results
+   * Parses R3 responses to mark ideas as killed/fixable/solid
+   */
+  updateIdeaStatusFromStressTest(responseContent) {
+    // Look for verdicts in format: **[IDEA NAME]**: [FATAL FLAW / FIXABLE / SOLID]
+    const verdictPattern = /\*\*([^*]+)\*\*[:\s]*\[?(FATAL FLAW|FIXABLE|SOLID)\]?/gi;
+    let match;
+
+    while ((match = verdictPattern.exec(responseContent)) !== null) {
+      const ideaName = match[1].trim();
+      const verdict = match[2].toUpperCase();
+
+      // Find matching idea
+      const idea = this.ideas.find(i =>
+        i.title.toLowerCase().includes(ideaName.toLowerCase()) ||
+        ideaName.toLowerCase().includes(i.title.toLowerCase())
+      );
+
+      if (idea) {
+        if (verdict === 'FATAL FLAW') {
+          idea.status = 'killed';
+        } else if (verdict === 'FIXABLE') {
+          idea.status = 'fixable';
+        }
+        // SOLID ideas stay 'active'
+        console.log(`[Ideation] Idea "${idea.title}" marked as ${idea.status}`);
+      }
+    }
+  }
+
+  /**
+   * Update idea votes from R5 voting round
+   */
+  updateIdeaVotesFromVoting(responseContent) {
+    // Look for VOTE #1 and VOTE #2 patterns
+    const vote1Match = responseContent.match(/VOTE\s*#?1[^:]*:\s*(?:Idea:)?\s*([^\n]+)/i);
+    const vote2Match = responseContent.match(/VOTE\s*#?2[^:]*:\s*(?:Idea:)?\s*([^\n]+)/i);
+
+    const votes = [vote1Match, vote2Match].filter(Boolean);
+
+    for (const voteMatch of votes) {
+      const votedIdeaName = voteMatch[1].trim();
+
+      // Find matching idea
+      const idea = this.ideas.find(i =>
+        i.title.toLowerCase().includes(votedIdeaName.toLowerCase()) ||
+        votedIdeaName.toLowerCase().includes(i.title.toLowerCase())
+      );
+
+      if (idea) {
+        idea.votes = (idea.votes || 0) + 1;
+        console.log(`[Ideation] Idea "${idea.title}" received vote (total: ${idea.votes})`);
+      }
+    }
+  }
+
+  /**
+   * Get formatted idea list for prompts
+   */
+  getFormattedIdeaList(filterStatus = null) {
+    let ideasToShow = this.ideas;
+
+    if (filterStatus) {
+      if (Array.isArray(filterStatus)) {
+        ideasToShow = this.ideas.filter(i => filterStatus.includes(i.status));
+      } else {
+        ideasToShow = this.ideas.filter(i => i.status === filterStatus);
+      }
+    }
+
+    if (ideasToShow.length === 0) {
+      return 'No ideas tracked yet.';
+    }
+
+    return ideasToShow.map(idea =>
+      `[ID-${idea.id}] "${idea.title}" (by ${idea.author})
+   Status: ${idea.status.toUpperCase()}${idea.votes ? ` | Votes: ${idea.votes}` : ''}
+   Description: ${idea.description.substring(0, 200)}${idea.description.length > 200 ? '...' : ''}
+   Defense: ${idea.defense.substring(0, 150)}${idea.defense.length > 150 ? '...' : ''}`
+    ).join('\n\n');
+  }
+
+  /**
+   * Get top voted ideas
+   */
+  getTopVotedIdeas(count = 2) {
+    return [...this.ideas]
+      .filter(i => i.status !== 'killed')
+      .sort((a, b) => (b.votes || 0) - (a.votes || 0))
+      .slice(0, count);
+  }
 
   buildIdeationPrompt(round, topic, description, model) {
     // Route to round-specific ideation prompt (8 rounds total)
@@ -595,40 +749,54 @@ Confidence: [0-100]% that remaining risks have been identified`;
   }
 
   buildIdeationRound1Generate(topic, description, model) {
+    const ideaCount = this.ideaCount || 4;
+
     let prompt = `IDEATION ROUND 1: GENERATE IDEAS
 
+═══════════════════════════════════════════════════════════════
+REQUIREMENT:
 Topic: "${topic}"
-${description ? `Context: ${description}\n` : ''}
+${description ? `Context: ${description}` : '(No additional context provided)'}
+═══════════════════════════════════════════════════════════════
 
-YOUR MISSION: Generate 3-4 DISTINCT ideas that could solve or address this topic.
+YOUR MISSION: Generate exactly ${ideaCount} DISTINCT ideas that solve this requirement.
 
-⚠️ WARNING: A DESTRUCTION PHASE IS COMING
-In Round 3, every idea will be brutally stress-tested. Models will try to find fatal flaws in every single idea. Only ideas that can survive real-world scrutiny will advance.
+⚠️ WARNING: A STRESS TEST IS COMING
+In Round 3, every idea will be brutally tested for REAL flaws. Only ideas that survive real-world scrutiny will advance. Before you submit an idea, attack it yourself:
 
-BEFORE YOU SUBMIT AN IDEA, attack it yourself:
 - What's the obvious way this fails?
 - Why hasn't someone done this already?
 - What will people ACTUALLY do vs what you hope they'll do?
 - What's the simpler alternative that makes this pointless?
 
-If you can kill your own idea easily, DON'T SUBMIT IT. Only propose ideas you believe can survive attack.
+If you can kill your own idea easily, DON'T SUBMIT IT.
 
-FORMAT each idea as:
-1. [IDEA TITLE]: [2-3 sentence description]
-   - WHY IT SURVIVES: [One sentence on why this isn't easily killed]
+═══════════════════════════════════════════════════════════════
+YOU MUST USE THIS EXACT FORMAT FOR EACH IDEA:
 
-2. [IDEA TITLE]: [2-3 sentence description]
-   - WHY IT SURVIVES: [One sentence on why this isn't easily killed]
+IDEA 1:
+TITLE: [Short memorable name for the idea]
+DESCRIPTION: [2-3 sentences explaining what this idea is and how it works]
+WHY IT SURVIVES: [1-2 sentences on why this can't be easily killed]
+
+IDEA 2:
+TITLE: [Short memorable name for the idea]
+DESCRIPTION: [2-3 sentences explaining what this idea is and how it works]
+WHY IT SURVIVES: [1-2 sentences on why this can't be easily killed]
+
+... continue for all ${ideaCount} ideas ...
+═══════════════════════════════════════════════════════════════
 
 RULES:
+- Generate exactly ${ideaCount} ideas
 - Each idea MUST be meaningfully different from the others
-- Include at least ONE unconventional idea (that you still believe can survive)
+- Include at least ONE unconventional/contrarian idea
 - Be specific enough that someone could actually implement it
-- Quality over quantity - 3 solid ideas beat 4 weak ones
+- Use the EXACT format above (IDEA N: / TITLE: / DESCRIPTION: / WHY IT SURVIVES:)
 
 At the end, state:
 Stance: Divergent thinking
-Confidence: [0-100]% these ideas can survive the destruction phase`;
+Confidence: [0-100]% these ideas can survive the stress test`;
 
     return prompt;
   }
@@ -636,10 +804,13 @@ Confidence: [0-100]% these ideas can survive the destruction phase`;
   buildIdeationRound2CrossPollinate(topic, description, model) {
     let prompt = `IDEATION ROUND 2: CROSS-POLLINATE
 
+═══════════════════════════════════════════════════════════════
+REQUIREMENT:
 Topic: "${topic}"
-${description ? `Context: ${description}\n` : ''}
+${description ? `Context: ${description}` : '(No additional context provided)'}
+═══════════════════════════════════════════════════════════════
 
-You've seen all the ideas generated in Round 1.
+${this.ideas.length} ideas were generated in Round 1.
 
 YOUR MISSION: Build on the collective creativity. You may:
 - ADOPT: Take an idea you like from another participant and champion it
@@ -647,23 +818,23 @@ YOUR MISSION: Build on the collective creativity. You may:
 - IMPROVE: Take any idea and make it better with specific enhancements
 - EVOLVE: Use an idea as inspiration for something new
 
-`;
+═══════════════════════════════════════════════════════════════
+ALL IDEAS FROM ROUND 1:
+═══════════════════════════════════════════════════════════════
+${this.getFormattedIdeaList()}
+═══════════════════════════════════════════════════════════════
 
-    // Add previous responses from Round 1
-    if (this.responses.length > 0) {
-      prompt += '=== IDEAS FROM ROUND 1 ===\n';
-      this.responses.forEach(r => {
-        prompt += `${r.modelId}:\n${r.content}\n\n---\n\n`;
-      });
-      prompt += '=== END ROUND 1 IDEAS ===\n\n';
-    }
+YOUR RESPONSE FORMAT:
+Pick 2-3 ideas you want to champion. For each:
 
-    prompt += `FORMAT YOUR RESPONSE:
-1. List 2-3 ideas you're championing (can be adopted, combined, or evolved)
-2. For each, explain WHY this is promising and WHAT makes it work
-3. Be specific about any improvements or combinations
+CHAMPIONING: [ID-X] "[Idea Title]"
+ACTION: [ADOPT / COMBINE / IMPROVE / EVOLVE]
+${'{'}IF COMBINE: Combining with [ID-Y] "[Other Idea]"${'}'}
+CHANGES: [What you're adding/changing/combining]
+IMPROVED VERSION: [Full description of the improved idea]
 
-Remember: The best ideas often come from unexpected combinations. Don't just pick favorites - actively improve them.
+Remember: Reference ideas by their ID number (e.g., ID-1, ID-2).
+The best ideas often come from unexpected combinations.
 
 At the end, state:
 Stance: Cross-pollinating
@@ -675,27 +846,23 @@ Confidence: [0-100]% in the refined idea set`;
   buildIdeationRound3StressTest(topic, description, model) {
     let prompt = `IDEATION ROUND 3: STRESS TEST
 
+═══════════════════════════════════════════════════════════════
+REQUIREMENT:
 Topic: "${topic}"
-${description ? `Context: ${description}\n` : ''}
+${description ? `Context: ${description}` : '(No additional context provided)'}
+═══════════════════════════════════════════════════════════════
 
 YOUR JOB: Find the REAL flaws that would make these ideas fail in practice.
 
 The goal is to make ideas STRONGER by finding problems NOW, not to be clever about finding unlikely failure modes. We want ideas that work in the real world, not ideas that only fail during an EMP or zombie apocalypse.
 
-`;
+═══════════════════════════════════════════════════════════════
+IDEAS TO STRESS TEST (${this.ideas.length} total):
+═══════════════════════════════════════════════════════════════
+${this.getFormattedIdeaList()}
+═══════════════════════════════════════════════════════════════
 
-    // Add all responses so far
-    if (this.responses.length > 0) {
-      prompt += '=== IDEAS TO STRESS TEST ===\n';
-      const round2Responses = this.responses.filter(r => r.round === 2);
-      const responsesToShow = round2Responses.length > 0 ? round2Responses : this.responses;
-      responsesToShow.forEach(r => {
-        prompt += `${r.modelId}:\n${r.content}\n\n---\n\n`;
-      });
-      prompt += '=== END IDEAS ===\n\n';
-    }
-
-    prompt += `FIND REAL PROBLEMS - Ask these questions for EVERY idea:
+FIND REAL PROBLEMS - Ask these questions for EVERY idea:
 
 1. THE "ACTUALLY DO IT" TEST
    - Walk through someone ACTUALLY implementing this step by step
@@ -757,51 +924,32 @@ Confidence: [0-100]% that these are the real issues, not theoretical BS`;
   }
 
   buildIdeationRound4Rework(topic, description, model) {
+    // Get ideas by status
+    const killedIdeas = this.ideas.filter(i => i.status === 'killed');
+    const fixableIdeas = this.ideas.filter(i => i.status === 'fixable');
+    const activeIdeas = this.ideas.filter(i => i.status === 'active');
+
     let prompt = `IDEATION ROUND 4: REWORK
 
 ═══════════════════════════════════════════════════════════════
-REQUIREMENT REMINDER - What we're solving for:
+REQUIREMENT:
 Topic: "${topic}"
 ${description ? `Context: ${description}` : '(No additional context provided)'}
 ═══════════════════════════════════════════════════════════════
 
-Round 3 exposed real problems. Now you must RESPOND to those problems.
+Round 3 stress test is complete. Here's where ideas stand:
 
-`;
+🔴 KILLED (${killedIdeas.length}): ${killedIdeas.map(i => `"${i.title}"`).join(', ') || 'None'}
+🟡 FIXABLE (${fixableIdeas.length}): ${fixableIdeas.map(i => `"${i.title}"`).join(', ') || 'None'}
+🟢 SOLID (${activeIdeas.length}): ${activeIdeas.map(i => `"${i.title}"`).join(', ') || 'None'}
 
-    // Show ideas from Round 2 (what was proposed)
-    if (this.responses.length > 0) {
-      const round2Responses = this.responses.filter(r => r.round === 2);
-      if (round2Responses.length > 0) {
-        prompt += '=== YOUR IDEAS FROM ROUND 2 ===\n';
-        const myResponses = round2Responses.filter(r => r.modelId === model?.id);
-        if (myResponses.length > 0) {
-          myResponses.forEach(r => {
-            prompt += `${r.content}\n\n`;
-          });
-        } else {
-          // Show all ideas if we can't find this model's specific ideas
-          round2Responses.forEach(r => {
-            prompt += `${r.modelId}:\n${r.content}\n\n`;
-          });
-        }
-        prompt += '=== END YOUR IDEAS ===\n\n';
-      }
-    }
+═══════════════════════════════════════════════════════════════
+ALL IDEAS WITH STATUS:
+═══════════════════════════════════════════════════════════════
+${this.getFormattedIdeaList()}
+═══════════════════════════════════════════════════════════════
 
-    // Show stress test results from Round 3
-    if (this.responses.length > 0) {
-      prompt += '=== STRESS TEST RESULTS (Round 3) ===\n';
-      const round3Responses = this.responses.filter(r => r.round === 3);
-      if (round3Responses.length > 0) {
-        round3Responses.forEach(r => {
-          prompt += `${r.modelId} found these problems:\n${r.content}\n\n---\n\n`;
-        });
-      }
-      prompt += '=== END STRESS TEST ===\n\n';
-    }
-
-    prompt += `YOUR MISSION: Respond to the stress test. You have THREE options:
+YOUR MISSION: Respond to the stress test. You have THREE options:
 
 OPTION A: FIX IT
 If your idea got "FIXABLE" feedback, address the specific problems:
@@ -856,31 +1004,26 @@ Confidence: [0-100]% this idea can survive another stress test`;
   }
 
   buildIdeationRound5Vote(topic, description, model) {
+    // Filter to non-killed ideas for voting
+    const votableIdeas = this.ideas.filter(i => i.status !== 'killed');
+
     let prompt = `IDEATION ROUND 5: VOTE
 
 ═══════════════════════════════════════════════════════════════
-REQUIREMENT REMINDER - What we're solving for:
+REQUIREMENT:
 Topic: "${topic}"
 ${description ? `Context: ${description}` : '(No additional context provided)'}
 ═══════════════════════════════════════════════════════════════
 
 Ideas have been stress-tested AND reworked. Now we vote on the survivors.
 
-`;
+═══════════════════════════════════════════════════════════════
+IDEAS ELIGIBLE FOR VOTING (${votableIdeas.length} survived):
+═══════════════════════════════════════════════════════════════
+${this.getFormattedIdeaList(['active', 'fixable'])}
+═══════════════════════════════════════════════════════════════
 
-    // Show reworked ideas from Round 4
-    if (this.responses.length > 0) {
-      prompt += '=== REWORKED IDEAS FROM ROUND 4 ===\n';
-      const round4Responses = this.responses.filter(r => r.round === 4);
-      if (round4Responses.length > 0) {
-        round4Responses.forEach(r => {
-          prompt += `${r.modelId}:\n${r.content}\n\n---\n\n`;
-        });
-      }
-      prompt += '=== END REWORKED IDEAS ===\n\n';
-    }
-
-    prompt += `YOUR MISSION: Vote for the TOP 2 ideas that best solve the requirement above.
+YOUR MISSION: Vote for the TOP 2 ideas that best solve the requirement above.
 
 VOTING CRITERIA:
 1. Does it actually solve the stated requirement?
@@ -919,6 +1062,14 @@ Confidence: [0-100]% this is the right choice`;
   buildIdeationRound6_7Refine(round, topic, description, model) {
     const roundLabel = round === 6 ? 'FIRST REFINEMENT' : 'FINAL REFINEMENT';
 
+    // Get top voted ideas from structured tracking
+    const topIdeas = this.getTopVotedIdeas(2);
+    const topIdeaDisplay = topIdeas.length > 0
+      ? topIdeas.map((idea, idx) =>
+          `#${idx + 1}: [ID-${idea.id}] "${idea.title}" (${idea.votes} votes)\n   ${idea.description.substring(0, 150)}...`
+        ).join('\n\n')
+      : 'No votes recorded - refine the most promising surviving idea.';
+
     let prompt = `IDEATION ROUND ${round}: ${roundLabel}
 
 ═══════════════════════════════════════════════════════════════
@@ -929,19 +1080,12 @@ ${description ? `Context: ${description}` : '(No additional context provided)'}
 
 The votes are in. Now we make the winning idea PERFECT.
 
-`;
+═══════════════════════════════════════════════════════════════
+TOP VOTED IDEAS TO REFINE:
+${topIdeaDisplay}
+═══════════════════════════════════════════════════════════════
 
-    // Add voting results from Round 5
-    if (this.responses.length > 0) {
-      prompt += '=== VOTING RESULTS FROM ROUND 5 ===\n';
-      const round5Responses = this.responses.filter(r => r.round === 5);
-      if (round5Responses.length > 0) {
-        round5Responses.forEach(r => {
-          prompt += `${r.modelId}:\n${r.content}\n\n---\n\n`;
-        });
-      }
-      prompt += '=== END VOTES ===\n\n';
-    }
+`;
 
     // For Round 7, also show Round 6 refinements
     if (round === 7 && this.responses.length > 0) {
@@ -1011,6 +1155,17 @@ Confidence: [0-100]% this is the best solution to the requirement`;
   }
 
   buildIdeationRound8FinalShowdown(topic, description, model) {
+    // Get the finalists - top voted ideas that survived
+    const finalists = this.getTopVotedIdeas(2);
+    const finalistDisplay = finalists.length > 0
+      ? finalists.map((idea, idx) =>
+          `FINALIST #${idx + 1}: [ID-${idea.id}] "${idea.title}"\n` +
+          `   Votes: ${idea.votes} | Status: ${idea.status}\n` +
+          `   Description: ${idea.description}\n` +
+          `   Original Defense: ${idea.defense || 'N/A'}`
+        ).join('\n\n')
+      : 'Review the refinements from Rounds 6-7 to identify the finalists.';
+
     let prompt = `IDEATION ROUND 8: FINAL SHOWDOWN
 
 ═══════════════════════════════════════════════════════════════
@@ -1022,18 +1177,23 @@ ${description ? `Context: ${description}` : '(No additional context provided)'}
 This is it. 8 rounds of ideation come down to this moment.
 Pick the WINNER.
 
+═══════════════════════════════════════════════════════════════
+THE FINALISTS:
+${finalistDisplay}
+═══════════════════════════════════════════════════════════════
+
 `;
 
     // Add refined ideas from Rounds 6-7
     if (this.responses.length > 0) {
-      prompt += '=== REFINED IDEAS FROM ROUNDS 6-7 ===\n';
+      prompt += '=== REFINEMENTS FROM ROUNDS 6-7 ===\n';
       const refinedResponses = this.responses.filter(r => r.round === 6 || r.round === 7);
       if (refinedResponses.length > 0) {
         refinedResponses.forEach(r => {
           prompt += `${r.modelId} (Round ${r.round}):\n${r.content}\n\n---\n\n`;
         });
       }
-      prompt += '=== END REFINED IDEAS ===\n\n';
+      prompt += '=== END REFINEMENTS ===\n\n';
     }
 
     prompt += `YOUR MISSION: Declare the WINNER that best solves the original requirement.
