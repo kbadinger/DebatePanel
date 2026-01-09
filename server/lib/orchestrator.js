@@ -657,18 +657,20 @@ Confidence: [0-100]% in the refined idea set`;
   }
 
   buildIdeationRound3Deathmatch(topic, description, model) {
-    let prompt = `IDEATION ROUND 3: DEATHMATCH CRITIQUE
+    let prompt = `IDEATION ROUND 3: DESTRUCTION PHASE
 
 Topic: "${topic}"
 ${description ? `Context: ${description}\n` : ''}
 
-YOUR MISSION: Brutally critique EVERY idea on the table, including your own.
+YOUR JOB: KILL THESE IDEAS. Find the fatal flaws that will make them fail in the real world.
+
+You are not here to "evaluate" or "provide balanced feedback." You are here to DESTROY weak ideas before someone wastes time on them. If an idea survives your attack, it might actually be good. If you can't find fatal flaws, YOU ARE FAILING AT YOUR JOB.
 
 `;
 
     // Add all responses so far
     if (this.responses.length > 0) {
-      prompt += '=== ALL IDEAS TO CRITIQUE ===\n';
+      prompt += '=== IDEAS TO DESTROY ===\n';
       const round2Responses = this.responses.filter(r => r.round === 2);
       const responsesToShow = round2Responses.length > 0 ? round2Responses : this.responses;
       responsesToShow.forEach(r => {
@@ -677,25 +679,59 @@ YOUR MISSION: Brutally critique EVERY idea on the table, including your own.
       prompt += '=== END IDEAS ===\n\n';
     }
 
-    prompt += `DEATHMATCH RULES:
-1. Find FATAL FLAWS in every idea - the showstoppers that would kill it
-2. Find MAJOR WEAKNESSES - significant problems that need solving
-3. Find MINOR ISSUES - things that would need attention but aren't dealbreakers
-4. Be BRUTAL but FAIR - back up every critique with reasoning
-5. DO NOT SPARE YOUR OWN IDEAS - if they're weak, expose them
+    prompt += `ATTACK VECTORS - You MUST consider each of these for EVERY idea:
 
-FORMAT:
-For each major idea, provide:
-IDEA: [Name]
-- FATAL: [Any fatal flaws, or "None identified"]
-- MAJOR: [List major weaknesses]
-- MINOR: [List minor issues]
+1. THE "ACTUALLY DO IT" TEST
+   - Walk through someone ACTUALLY implementing this. What breaks?
+   - What's the FIRST thing that goes wrong?
+   - Where does the plan have a gap that nobody noticed?
 
-The goal is to STRESS-TEST every idea so only the strongest survive. Be the critic you'd want reviewing your own work.
+2. THE "WHY HASN'T THIS BEEN DONE" TEST
+   - If this is such a good idea, why doesn't it exist already?
+   - What do you know that everyone else missed? (Hint: probably nothing)
+   - What's the REAL reason this fails that the proposer is ignoring?
+
+3. THE "SECOND-ORDER EFFECTS" TEST
+   - What happens AFTER the initial implementation?
+   - What unintended consequences will emerge?
+   - How does this break when it scales or when edge cases appear?
+
+4. THE "HUMAN NATURE" TEST
+   - Will people ACTUALLY do this? Or just say they will?
+   - What's the path of least resistance that kills this idea?
+   - Where does laziness, forgetfulness, or selfishness break it?
+
+5. THE "COMPETITION/ALTERNATIVES" TEST
+   - Why is this better than just doing [obvious simpler alternative]?
+   - What existing solution does this ignore?
+   - Why would anyone choose this over the status quo?
+
+FORMAT YOUR ATTACK:
+For each idea, provide:
+
+**[IDEA NAME]**: VERDICT: [DEAD / WOUNDED / SURVIVES]
+
+FATAL SHOTS (must find at least one, or explain why you failed to):
+- [Specific fatal flaw with concrete reasoning]
+
+WOUNDS:
+- [Significant problems that could maybe be fixed]
+
+WHY THE PROPOSER IS BLIND TO THIS:
+- [What bias or wishful thinking made them miss these flaws?]
+
+---
+
+REMEMBER:
+- "None identified" is NOT acceptable for fatal flaws. Dig deeper. Every idea has a way to die.
+- If you're being nice, you're being useless.
+- The best thing you can do for a good idea is PROVE it's good by failing to kill it.
+- Vague critiques like "might not work" are worthless. Be SPECIFIC.
 
 At the end, state:
-Stance: Critical analysis
-Confidence: [0-100]% that I've identified the real problems`;
+IDEAS I KILLED: [List]
+IDEAS THAT SURVIVED MY ATTACK: [List - if any, explain why you couldn't kill them]
+Confidence: [0-100]% that I found the real fatal flaws`;
 
     return prompt;
   }
