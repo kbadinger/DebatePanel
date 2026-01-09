@@ -907,17 +907,17 @@ Industry & Society:
                   type="radio"
                   name="debate-style"
                   checked={config.style === 'ideation'}
-                  onChange={() => setConfig({ ...config, style: 'ideation', rounds: 7, challenger: { enabled: false } })}
+                  onChange={() => setConfig({ ...config, style: 'ideation', rounds: 8, challenger: { enabled: false } })}
                   className="mr-3 h-4 w-4 text-purple-600 focus:ring-purple-500 mt-1"
                 />
                 <div>
-                  <span className="text-slate-700 font-medium">💡 Ideation (7 rounds)</span>
+                  <span className="text-slate-700 font-medium">💡 Ideation (8 rounds)</span>
                   <p className="text-xs text-slate-500 mt-1">
-                    Structured brainstorming: Generate ideas → Cross-pollinate → Brutal critique → Vote → Refine → Pick winner.
+                    Structured brainstorming: Generate ideas → Cross-pollinate → Stress Test → Rework → Vote → Refine → Pick winner.
                   </p>
                   {config.style === 'ideation' && (
                     <div className="mt-2 text-xs text-purple-700 bg-purple-100 p-2 rounded">
-                      <strong>Round Flow:</strong> 1. Diverge • 2. Cross-pollinate • 3. Deathmatch • 4. Vote • 5-6. Refine • 7. Final Showdown
+                      <strong>Round Flow:</strong> 1. Generate • 2. Cross-pollinate • 3. Stress Test • 4. Rework • 5. Vote • 6-7. Refine • 8. Final Showdown
                     </div>
                   )}
                 </div>
