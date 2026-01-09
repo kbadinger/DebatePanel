@@ -1257,6 +1257,13 @@ Note: AI synthesis failed. See full debate transcript above for complete details
         };
       }
 
+      // Check for ideation mode - use specialized ideation judge analysis
+      if (debate.style === 'ideation') {
+        const result = await this.generateIdeationJudgeAnalysis(debate, judgeModel);
+        await prisma.$disconnect();
+        return result;
+      }
+
       // Get the latest round with valid responses
       const isValidResponse = (r) => {
         return r &&
@@ -1500,6 +1507,148 @@ Judge the arguments, not the conclusions.`;
       console.error('Error generating judge analysis:', error);
       return {
         analysis: `Error generating judge analysis: ${error.message}`
+      };
+    }
+  }
+
+  /**
+   * Generate ideation-specific judge analysis that summarizes the journey
+   * from initial ideas → critiques → votes → refinement → winner
+   */
+  async generateIdeationJudgeAnalysis(debate, judgeModel) {
+    console.log('[IdeationJudge] Generating ideation-aware analysis');
+
+    // Extract key moments from each round
+    const roundData = {};
+    debate.debateRounds.forEach(round => {
+      roundData[round.roundNumber] = round.responses.map(r => ({
+        modelId: r.modelId,
+        content: r.content
+      }));
+    });
+
+    // Build context for the ideation journey
+    let journeyContext = '';
+
+    // Round 1: Initial ideas
+    if (roundData[1]) {
+      journeyContext += '=== ROUND 1: INITIAL IDEAS ===\n';
+      roundData[1].forEach(r => {
+        journeyContext += `${r.modelId}:\n${r.content.substring(0, 800)}\n\n`;
+      });
+    }
+
+    // Round 3: Key critiques (summarized)
+    if (roundData[3]) {
+      journeyContext += '\n=== ROUND 3: KEY CRITIQUES ===\n';
+      roundData[3].forEach(r => {
+        journeyContext += `${r.modelId}:\n${r.content.substring(0, 500)}\n\n`;
+      });
+    }
+
+    // Round 4: Votes
+    if (roundData[4]) {
+      journeyContext += '\n=== ROUND 4: VOTES ===\n';
+      roundData[4].forEach(r => {
+        journeyContext += `${r.modelId}:\n${r.content.substring(0, 600)}\n\n`;
+      });
+    }
+
+    // Round 7: Final decisions
+    if (roundData[7]) {
+      journeyContext += '\n=== ROUND 7: FINAL DECISIONS ===\n';
+      roundData[7].forEach(r => {
+        journeyContext += `${r.modelId}:\n${r.content.substring(0, 600)}\n\n`;
+      });
+    }
+
+    const prompt = `You are summarizing an IDEATION session where multiple AI models generated, critiqued, voted on, and refined ideas.
+
+Topic: "${debate.topic}"
+${debate.description ? `Context: ${debate.description}\n` : ''}
+
+${journeyContext}
+
+YOUR TASK: Create a clear summary of the ideation outcome.
+
+Provide your analysis in this EXACT format:
+
+## THE WINNING IDEA
+[Name the winning idea and describe it in 2-3 sentences]
+
+## VOTE TALLY
+[List how many models voted for each top idea in Round 4 and Round 7]
+[Format: "Idea Name: X votes"]
+
+## THE JOURNEY
+[2-3 sentences summarizing how we got from initial brainstorming to this winner]
+[What critiques did it survive? What made it stand out?]
+
+## RUNNER-UP VALUE
+[What was the second-place idea? Is there anything worth preserving from it?]
+
+## BOTTOM LINE
+[One clear sentence recommendation: "For [topic], the winning idea is [X] because [Y]"]
+
+IMPORTANT:
+- Extract the ACTUAL winning idea name, don't just say "the consensus choice"
+- Count actual votes from Round 4 and Round 7
+- Be specific about what the winning idea IS, not just that it won`;
+
+    try {
+      let judgeResponse;
+
+      // Normalize judge model
+      let normalizedModel = judgeModel;
+      if (judgeModel === 'claude-3-5-sonnet') {
+        normalizedModel = 'claude-sonnet-4-5-20250929';
+      }
+
+      if (normalizedModel.includes('claude') && this.anthropic) {
+        const response = await this.anthropic.messages.create({
+          model: normalizedModel,
+          messages: [{ role: 'user', content: prompt }],
+          max_tokens: 1200,
+          temperature: 0.3
+        });
+        judgeResponse = response.content[0].text;
+      } else if (this.openai) {
+        const response = await this.openai.chat.completions.create({
+          model: 'gpt-4o',
+          messages: [{ role: 'user', content: prompt }],
+          max_tokens: 1200,
+          temperature: 0.3
+        });
+        judgeResponse = response.choices[0].message.content;
+      } else {
+        throw new Error('No AI API configured for ideation judge analysis');
+      }
+
+      // Extract winner from ideation analysis
+      const winnerMatch = judgeResponse.match(/## THE WINNING IDEA\s*\n([^\n]+)/i);
+      let winner = null;
+      if (winnerMatch) {
+        const winnerText = winnerMatch[1].trim();
+        winner = {
+          id: winnerText.substring(0, 50),
+          name: winnerText.substring(0, 50),
+          type: 'idea',
+          reason: 'Won the ideation process through voting and refinement'
+        };
+      }
+
+      return {
+        analysis: judgeResponse,
+        winner,
+        scores: {} // Ideation doesn't use per-model scores
+      };
+
+    } catch (error) {
+      console.error('[IdeationJudge] Error:', error);
+      return {
+        analysis: `Error generating ideation analysis: ${error.message}`,
+        winner: null,
+        scores: {}
       };
     }
   }
