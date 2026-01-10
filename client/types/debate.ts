@@ -60,6 +60,7 @@ export interface DebateConfig {
   };
   isInteractive?: boolean;
   profileContext?: string; // Preprocessed user profile context to inject into prompts
+  successCriteria?: string; // User's goal for ideation mode - gets converted to evaluation rubric
 }
 
 export interface ModelResponse {
@@ -96,6 +97,7 @@ export interface Debate {
   completedAt?: Date;
   finalSynthesis?: string;
   judgeAnalysis?: string;
+  rubric?: string; // Generated evaluation rubric for ideation mode
   participants?: Participant[];
   winner?: {
     id: string;

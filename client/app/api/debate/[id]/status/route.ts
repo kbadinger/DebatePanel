@@ -47,6 +47,7 @@ export async function GET(
       description: debate.description,
       style: debate.style,
       analysisDepth: debate.analysisDepth,
+      rubric: debate.rubric,
       profileContext: debate.profileContext,
       errorMessage: debate.errorMessage,
       createdAt: debate.createdAt,

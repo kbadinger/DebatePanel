@@ -315,6 +315,7 @@ export function DebateInterface({ config, onComplete }: DebateInterfaceProps) {
               currentRound: status.currentRound || 0,
               status: (status.status || 'running') as DebateStatus,
               createdAt: new Date(),
+              rubric: status.rubric,
             });
 
             // Mark models as completed for completed rounds
@@ -339,6 +340,7 @@ export function DebateInterface({ config, onComplete }: DebateInterfaceProps) {
                 ...prevDebate,
                 ...status,
                 rounds: roundsData,
+                rubric: status.rubric || prevDebate?.rubric,
                 debateRounds: undefined,
                 status: status.status
               };
@@ -699,8 +701,18 @@ export function DebateInterface({ config, onComplete }: DebateInterfaceProps) {
           <RatingsKey />
         </div>
       )}
-      
-      
+
+      {/* Evaluation Rubric - Show for ideation mode when rubric exists */}
+      {config.style === 'ideation' && debate?.rubric && (
+        <div className="mb-6 p-5 bg-gradient-to-r from-amber-50 to-orange-50 border-2 border-amber-200 rounded-xl shadow-sm">
+          <h3 className="font-semibold text-amber-900 mb-3 flex items-center gap-2">
+            📋 Evaluation Rubric
+            <span className="text-sm font-normal text-amber-700">(generated from your success criteria)</span>
+          </h3>
+          <pre className="text-sm text-amber-900 whitespace-pre-wrap font-sans leading-relaxed">{debate.rubric}</pre>
+        </div>
+      )}
+
       <div className="space-y-6">
         {/* Display rounds chronologically with proper order: Responses → Synthesis → Challenger */}
         {debate?.rounds?.map((round) => {

@@ -916,9 +916,27 @@ Industry & Society:
                     Structured brainstorming: Generate ideas → Cross-pollinate → Stress Test → Rework → Vote → Refine → Pick winner.
                   </p>
                   {config.style === 'ideation' && (
-                    <div className="mt-2 text-xs text-purple-700 bg-purple-100 p-2 rounded">
-                      <strong>Round Flow:</strong> 1. Generate • 2. Cross-pollinate • 3. Stress Test • 4. Rework • 5. Vote • 6-7. Refine • 8. Final Showdown
-                    </div>
+                    <>
+                      <div className="mt-2 text-xs text-purple-700 bg-purple-100 p-2 rounded">
+                        <strong>Round Flow:</strong> 1. Generate • 2. Cross-pollinate • 3. Stress Test • 4. Rework • 5. Vote • 6-7. Refine • 8. Final Showdown
+                      </div>
+                      <div className="mt-3">
+                        <label className="block text-xs font-medium text-slate-600 mb-1">
+                          Success Criteria (optional)
+                        </label>
+                        <textarea
+                          placeholder="What makes a winning idea? e.g., '20-40 year olds share with friends and return daily'"
+                          value={config.successCriteria || ''}
+                          onChange={(e) => setConfig({ ...config, successCriteria: e.target.value })}
+                          onClick={(e) => e.stopPropagation()}
+                          className="w-full p-2 text-xs border border-slate-300 rounded focus:ring-purple-500 focus:border-purple-500"
+                          rows={2}
+                        />
+                        <p className="text-xs text-slate-500 mt-1">
+                          We&apos;ll generate a rubric from this to grade ideas against.
+                        </p>
+                      </div>
+                    </>
                   )}
                 </div>
               </label>
