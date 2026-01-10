@@ -9,6 +9,7 @@ class Orchestrator {
     this.models = models;
     this.config = config;
     this.responses = [];
+    this.rubric = null; // Generated evaluation rubric for ideation mode
 
     // State for iron-forged debates
     this.roundSyntheses = {};      // { roundNumber: "synthesis text" }
@@ -53,6 +54,54 @@ class Orchestrator {
           baseURL: 'https://api.moonshot.ai/v1'
         })
       : null;
+  }
+
+  /**
+   * Generate an evaluation rubric from user's success criteria
+   * @param {string} successCriteria - User's goal for what makes a winning idea
+   * @param {string} topic - The ideation topic
+   * @returns {Promise<string>} - Generated rubric text
+   */
+  async generateRubric(successCriteria, topic) {
+    if (!successCriteria || !this.anthropic) {
+      return null;
+    }
+
+    const prompt = `Convert this success criteria into a structured evaluation rubric.
+
+SUCCESS CRITERIA: "${successCriteria}"
+TOPIC: "${topic}"
+
+Generate exactly 5 evaluation criteria. Each criterion should:
+- Be specific and measurable (0-10 scale)
+- Directly map to the success criteria
+- Be applicable to any idea in this domain
+
+FORMAT:
+1. [CRITERION NAME] (0-10)
+   [One sentence explaining what scores high vs low]
+
+2. [CRITERION NAME] (0-10)
+   [One sentence explaining what scores high vs low]
+
+(continue for all 5)
+
+Keep it concise. This rubric will be used to grade ideas.`;
+
+    try {
+      const response = await this.anthropic.messages.create({
+        model: 'claude-sonnet-4-20250514',
+        messages: [{ role: 'user', content: prompt }],
+        max_tokens: 600,
+        temperature: 0.3
+      });
+
+      this.rubric = response.content[0].text;
+      return this.rubric;
+    } catch (error) {
+      console.error('Error generating rubric:', error);
+      return null;
+    }
   }
 
   async runRound(roundNumber, topic, description, isConsensusMode = false, onModelComplete = null, debateStyle = null) {
@@ -597,6 +646,16 @@ Confidence: [0-100]% that remaining risks have been identified`;
   buildIdeationRound1Generate(topic, description, model) {
     const ideaCount = this.config.ideaCount || 4;
 
+    // Build rubric section if available
+    const rubricSection = this.rubric ? `
+═══════════════════════════════════════════════════════════════
+EVALUATION RUBRIC - Your ideas will be graded against this:
+═══════════════════════════════════════════════════════════════
+${this.rubric}
+═══════════════════════════════════════════════════════════════
+Generate ideas that score HIGH on ALL criteria above.
+` : '';
+
     let prompt = `IDEATION ROUND 1: GENERATE IDEAS
 
 ═══════════════════════════════════════════════════════════════
@@ -604,7 +663,7 @@ REQUIREMENT:
 Topic: "${topic}"
 ${description ? `Context: ${description}` : '(No additional context provided)'}
 ═══════════════════════════════════════════════════════════════
-
+${rubricSection}
 YOUR MISSION: Generate exactly ${ideaCount} DISTINCT ideas that solve this requirement.
 
 ⚠️ WARNING: A STRESS TEST IS COMING
@@ -703,6 +762,16 @@ Confidence: [0-100]% in the refined idea set`;
       ? ideasToShow.map(r => `=== ${r.modelId} ===\n${r.content}`).join('\n\n---\n\n')
       : 'No ideas to stress test yet.';
 
+    // Build rubric grading section if available
+    const rubricSection = this.rubric ? `
+═══════════════════════════════════════════════════════════════
+GRADE EACH IDEA AGAINST THIS RUBRIC:
+═══════════════════════════════════════════════════════════════
+${this.rubric}
+═══════════════════════════════════════════════════════════════
+For each idea, provide scores (0-10) for each criterion above.
+` : '';
+
     let prompt = `IDEATION ROUND 3: STRESS TEST
 
 ═══════════════════════════════════════════════════════════════
@@ -710,7 +779,7 @@ REQUIREMENT:
 Topic: "${topic}"
 ${description ? `Context: ${description}` : '(No additional context provided)'}
 ═══════════════════════════════════════════════════════════════
-
+${rubricSection}
 YOUR JOB: Find the REAL flaws that would make these ideas fail in practice.
 
 The goal is to make ideas STRONGER by finding problems NOW, not to be clever about finding unlikely failure modes. We want ideas that work in the real world, not ideas that only fail during an EMP or zombie apocalypse.
@@ -866,6 +935,16 @@ Confidence: [0-100]% this idea can survive another stress test`;
       ? round4Responses.map(r => `=== ${r.modelId} ===\n${r.content}`).join('\n\n---\n\n')
       : 'No reworked ideas yet.';
 
+    // Build rubric voting guidance if available
+    const rubricVotingGuidance = this.rubric ? `
+═══════════════════════════════════════════════════════════════
+VOTE BASED ON THIS RUBRIC:
+═══════════════════════════════════════════════════════════════
+${this.rubric}
+═══════════════════════════════════════════════════════════════
+Vote for ideas that score HIGHEST on these criteria.
+` : '';
+
     let prompt = `IDEATION ROUND 5: VOTE
 
 ═══════════════════════════════════════════════════════════════
@@ -873,7 +952,7 @@ REQUIREMENT:
 Topic: "${topic}"
 ${description ? `Context: ${description}` : '(No additional context provided)'}
 ═══════════════════════════════════════════════════════════════
-
+${rubricVotingGuidance}
 Ideas have been stress-tested AND reworked. Now we vote on the survivors.
 
 ═══════════════════════════════════════════════════════════════

@@ -313,6 +313,24 @@ router.post('/', async (req, res) => {
     // Challenger runs separately via runChallengerStep after each round
     const orchestrator = new Orchestrator(config.models, config);
 
+    // Generate rubric for ideation mode if successCriteria provided
+    if (config.successCriteria && config.style === 'ideation') {
+      try {
+        console.log('[Ideation] Generating evaluation rubric from success criteria...');
+        const rubric = await orchestrator.generateRubric(config.successCriteria, config.topic);
+        if (rubric) {
+          await prisma.debate.update({
+            where: { id: debate.id },
+            data: { rubric }
+          });
+          console.log('[Ideation] Rubric generated and saved:', rubric.substring(0, 100) + '...');
+        }
+      } catch (error) {
+        console.error('[Ideation] Failed to generate rubric:', error);
+        // Continue without rubric - ideation will work with generic criteria
+      }
+    }
+
     // Run debate rounds
     for (let i = 1; i <= config.rounds; i++) {
       console.log(`Starting round ${i}`);

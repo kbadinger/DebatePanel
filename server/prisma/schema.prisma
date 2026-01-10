@@ -157,6 +157,8 @@ model Debate {
   id                   String           @id @default(cuid())
   topic                String
   description          String?
+  rubric               String?          @db.Text // Generated evaluation rubric for ideation mode
+  style                String?          // 'adversarial', 'consensus-seeking', 'ideation'
   format               String           @default("structured")
   rounds               Int
   convergenceThreshold Float?
