@@ -127,7 +127,7 @@ export default function DebateViewPage() {
           })),
           rounds: data.rounds,
           format: data.format || 'structured',
-          style: 'consensus-seeking', // Default for existing debates
+          style: data.style || 'consensus-seeking',
           profileContext: data.profileContext || undefined,
           judge: {
             enabled: !!data.judgeAnalysis
@@ -153,6 +153,7 @@ export default function DebateViewPage() {
         completedAt: data.completedAt ? new Date(data.completedAt) : undefined,
         finalSynthesis: data.finalSynthesis,
         judgeAnalysis: data.judgeAnalysis,
+        rubric: data.rubric,
         winner: data.winnerId ? {
           id: data.winnerId,
           name: data.winnerName,
@@ -186,10 +187,14 @@ export default function DebateViewPage() {
 
   const handleDownload = () => {
     if (!debate) return;
-    
+
     const debateData = {
       topic: debate.config.topic,
       description: debate.config.description,
+      style: debate.config.style,
+      createdAt: debate.createdAt.toISOString(),
+      completedAt: debate.completedAt?.toISOString(),
+      rubric: debate.rubric,
       models: debate.config.models.map(m => m.displayName),
       rounds: debate.rounds.map(round => ({
         round: round.roundNumber,
@@ -410,6 +415,17 @@ export default function DebateViewPage() {
             </span>
           </div>
         </div>
+
+        {/* Evaluation Rubric - Show for ideation mode */}
+        {debate.config.style === 'ideation' && debate.rubric && (
+          <div className="mb-6 p-5 bg-gradient-to-r from-amber-50 to-orange-50 border-2 border-amber-200 rounded-xl shadow-sm">
+            <h3 className="font-semibold text-amber-900 mb-3 flex items-center gap-2">
+              Evaluation Rubric
+              <span className="text-sm font-normal text-amber-700">(generated from success criteria)</span>
+            </h3>
+            <pre className="text-sm text-amber-900 whitespace-pre-wrap font-sans leading-relaxed">{debate.rubric}</pre>
+          </div>
+        )}
 
         {/* Resume Interactive Debate Banner */}
         {isWaitingForHuman && !isSubmittingHuman && (
