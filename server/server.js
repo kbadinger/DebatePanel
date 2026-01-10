@@ -45,10 +45,20 @@ app.use(express.json({ limit: '50mb' }));
 
 // Health check
 app.get('/health', (req, res) => {
-  res.json({ 
-    status: 'healthy', 
+  res.json({
+    status: 'healthy',
     service: 'debate-processor',
     timestamp: new Date().toISOString()
+  });
+});
+
+// Version endpoint - for verifying deployments
+app.get('/version', (req, res) => {
+  res.json({
+    version: '2.1.0',
+    commit: process.env.RAILWAY_GIT_COMMIT_SHA?.slice(0, 7) || 'local',
+    features: ['rubric-generation', 'ideation-mode', 'challenger'],
+    deployed: new Date().toISOString()
   });
 });
 

@@ -314,6 +314,7 @@ router.post('/', async (req, res) => {
     const orchestrator = new Orchestrator(config.models, config);
 
     // Generate rubric for ideation mode if successCriteria provided
+    console.log('[Rubric Check] style:', config.style, '| successCriteria:', config.successCriteria ? 'YES (' + config.successCriteria.substring(0, 50) + '...)' : 'NO');
     if (config.successCriteria && config.style === 'ideation') {
       try {
         console.log('[Ideation] Generating evaluation rubric from success criteria...');
@@ -324,11 +325,15 @@ router.post('/', async (req, res) => {
             data: { rubric }
           });
           console.log('[Ideation] Rubric generated and saved:', rubric.substring(0, 100) + '...');
+        } else {
+          console.log('[Ideation] generateRubric returned null/empty');
         }
       } catch (error) {
         console.error('[Ideation] Failed to generate rubric:', error);
         // Continue without rubric - ideation will work with generic criteria
       }
+    } else {
+      console.log('[Rubric Check] Skipping rubric generation - conditions not met');
     }
 
     // Run debate rounds
