@@ -646,14 +646,22 @@ Confidence: [0-100]% that remaining risks have been identified`;
   buildIdeationRound1Generate(topic, description, model) {
     const ideaCount = this.config.ideaCount || 4;
 
-    // Build rubric section if available
+    // Build rubric section if available - require self-grading
     const rubricSection = this.rubric ? `
 ═══════════════════════════════════════════════════════════════
-EVALUATION RUBRIC - Your ideas will be graded against this:
+EVALUATION RUBRIC - You MUST self-grade each idea before submitting:
 ═══════════════════════════════════════════════════════════════
 ${this.rubric}
 ═══════════════════════════════════════════════════════════════
-Generate ideas that score HIGH on ALL criteria above.
+
+⚠️ SELF-GRADING REQUIREMENT:
+For each idea, score it 0-10 on EVERY criterion above BEFORE submitting.
+- If ANY criterion scores below 6, either FIX the idea or DON'T SUBMIT IT
+- Ideas with fatal flaws (toxicity risk, coordination friction, moderation burden) should be killed immediately
+- Only propose ideas you'd bet money on - no "maybe this could work" garbage
+
+Include your self-scores in this format after each idea:
+SELF-SCORES: [Criterion 1]: X/10 | [Criterion 2]: X/10 | ... (all criteria)
 ` : '';
 
     let prompt = `IDEATION ROUND 1: GENERATE IDEAS
@@ -683,13 +691,15 @@ IDEA 1:
 TITLE: [Short memorable name for the idea]
 DESCRIPTION: [2-3 sentences explaining what this idea is and how it works]
 WHY IT SURVIVES: [1-2 sentences on why this can't be easily killed]
+${this.rubric ? 'SELF-SCORES: [Score each rubric criterion 0-10, e.g., "Social: 8 | Appeal: 7 | Daily: 9 | Community: 8 | Universal: 7"]' : ''}
 
 IDEA 2:
 TITLE: [Short memorable name for the idea]
 DESCRIPTION: [2-3 sentences explaining what this idea is and how it works]
 WHY IT SURVIVES: [1-2 sentences on why this can't be easily killed]
+${this.rubric ? 'SELF-SCORES: [Score each rubric criterion 0-10]' : ''}
 
-... continue for all ${ideaCount} ideas ...
+... continue for all ${ideaCount} ideas (each with SELF-SCORES if rubric provided) ...
 ═══════════════════════════════════════════════════════════════
 
 RULES:
@@ -697,7 +707,8 @@ RULES:
 - Each idea MUST be meaningfully different from the others
 - Include at least ONE unconventional/contrarian idea
 - Be specific enough that someone could actually implement it
-- Use the EXACT format above (IDEA N: / TITLE: / DESCRIPTION: / WHY IT SURVIVES:)
+- Use the EXACT format above (IDEA N: / TITLE: / DESCRIPTION: / WHY IT SURVIVES:${this.rubric ? ' / SELF-SCORES:' : ''})
+${this.rubric ? '- MINIMUM SCORE: Every idea must score 6+ on ALL rubric criteria. If it doesn\'t, fix it or don\'t submit it.' : ''}
 
 At the end, state:
 Stance: Divergent thinking
