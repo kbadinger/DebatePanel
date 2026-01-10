@@ -61,6 +61,7 @@ export interface DebateConfig {
   isInteractive?: boolean;
   profileContext?: string; // Preprocessed user profile context to inject into prompts
   successCriteria?: string; // User's goal for ideation mode - gets converted to evaluation rubric
+  ideaCount?: number; // Number of ideas each model generates in ideation mode (default: 4)
 }
 
 export interface ModelResponse {
