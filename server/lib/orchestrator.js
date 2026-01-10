@@ -104,6 +104,57 @@ Keep it concise. This rubric will be used to grade ideas.`;
     }
   }
 
+  /**
+   * Extracts hard requirements from the topic/description as a structured checklist.
+   * This ensures models can't ignore buried requirements in prose.
+   * @param {string} topic - The debate topic
+   * @param {string} description - The full description with requirements
+   * @returns {Promise<string>} - Extracted requirements as checklist
+   */
+  async extractRequirements(topic, description) {
+    if (!description || !this.anthropic) {
+      return null;
+    }
+
+    const prompt = `Extract the HARD REQUIREMENTS from this project brief. These are non-negotiable constraints that any solution MUST satisfy.
+
+TOPIC: "${topic}"
+
+FULL BRIEF:
+${description}
+
+Extract ALL hard requirements as a numbered checklist. Look for:
+- Explicit constraints ("must", "needs to", "has to", "required")
+- Target audience specifications
+- Technical constraints (platform, timing, scale)
+- Success metrics or goals
+- Negative constraints ("must NOT", "avoid", "no")
+
+FORMAT (output ONLY this, no preamble):
+HARD REQUIREMENTS:
+1. [Requirement in clear, actionable language]
+2. [Requirement in clear, actionable language]
+...
+
+Be exhaustive. If a requirement is buried in the prose, extract it. If something is implied but critical, make it explicit.
+Keep each requirement to one line. Aim for 5-10 requirements.`;
+
+    try {
+      const response = await this.anthropic.messages.create({
+        model: 'claude-sonnet-4-20250514',
+        messages: [{ role: 'user', content: prompt }],
+        max_tokens: 500,
+        temperature: 0.2
+      });
+
+      this.requirements = response.content[0].text;
+      return this.requirements;
+    } catch (error) {
+      console.error('Error extracting requirements:', error);
+      return null;
+    }
+  }
+
   async runRound(roundNumber, topic, description, isConsensusMode = false, onModelComplete = null, debateStyle = null) {
     const responses = [];
 
@@ -646,6 +697,19 @@ Confidence: [0-100]% that remaining risks have been identified`;
   buildIdeationRound1Generate(topic, description, model) {
     const ideaCount = this.config.ideaCount || 4;
 
+    // Build requirements section if available - these are NON-NEGOTIABLE
+    const requirementsSection = this.requirements ? `
+╔═══════════════════════════════════════════════════════════════╗
+║  ⛔ NON-NEGOTIABLE REQUIREMENTS - READ CAREFULLY               ║
+╚═══════════════════════════════════════════════════════════════╝
+${this.requirements}
+
+🚨 EVERY idea you submit MUST satisfy ALL requirements above.
+If an idea violates ANY requirement, it is DEAD ON ARRIVAL - do not submit it.
+These are not suggestions. These are hard constraints extracted from the brief.
+═══════════════════════════════════════════════════════════════
+` : '';
+
     // Build rubric section if available - require self-grading
     const rubricSection = this.rubric ? `
 ═══════════════════════════════════════════════════════════════
@@ -667,11 +731,11 @@ SELF-SCORES: [Criterion 1]: X/10 | [Criterion 2]: X/10 | ... (all criteria)
     let prompt = `IDEATION ROUND 1: GENERATE IDEAS
 
 ═══════════════════════════════════════════════════════════════
-REQUIREMENT:
+THE BRIEF:
 Topic: "${topic}"
 ${description ? `Context: ${description}` : '(No additional context provided)'}
 ═══════════════════════════════════════════════════════════════
-${rubricSection}
+${requirementsSection}${rubricSection}
 YOUR MISSION: Generate exactly ${ideaCount} DISTINCT ideas that solve this requirement.
 
 ⚠️ WARNING: A STRESS TEST IS COMING
@@ -691,15 +755,17 @@ IDEA 1:
 TITLE: [Short memorable name for the idea]
 DESCRIPTION: [2-3 sentences explaining what this idea is and how it works]
 WHY IT SURVIVES: [1-2 sentences on why this can't be easily killed]
+${this.requirements ? 'REQUIREMENTS CHECK: [Confirm this idea satisfies ALL hard requirements - if it violates any, FIX IT or don\'t submit]' : ''}
 ${this.rubric ? 'SELF-SCORES: [Score each rubric criterion 0-10, e.g., "Social: 8 | Appeal: 7 | Daily: 9 | Community: 8 | Universal: 7"]' : ''}
 
 IDEA 2:
 TITLE: [Short memorable name for the idea]
 DESCRIPTION: [2-3 sentences explaining what this idea is and how it works]
 WHY IT SURVIVES: [1-2 sentences on why this can't be easily killed]
+${this.requirements ? 'REQUIREMENTS CHECK: [Confirm all requirements satisfied]' : ''}
 ${this.rubric ? 'SELF-SCORES: [Score each rubric criterion 0-10]' : ''}
 
-... continue for all ${ideaCount} ideas (each with SELF-SCORES if rubric provided) ...
+... continue for all ${ideaCount} ideas ...
 ═══════════════════════════════════════════════════════════════
 
 RULES:
@@ -707,8 +773,9 @@ RULES:
 - Each idea MUST be meaningfully different from the others
 - Include at least ONE unconventional/contrarian idea
 - Be specific enough that someone could actually implement it
-- Use the EXACT format above (IDEA N: / TITLE: / DESCRIPTION: / WHY IT SURVIVES:${this.rubric ? ' / SELF-SCORES:' : ''})
+${this.requirements ? '- REQUIREMENTS GATE: Every idea MUST satisfy ALL hard requirements. Violating ANY requirement = instant rejection.' : ''}
 ${this.rubric ? '- MINIMUM SCORE: Every idea must score 6+ on ALL rubric criteria. If it doesn\'t, fix it or don\'t submit it.' : ''}
+- Use the EXACT format above
 
 At the end, state:
 Stance: Divergent thinking

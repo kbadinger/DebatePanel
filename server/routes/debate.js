@@ -313,27 +313,42 @@ router.post('/', async (req, res) => {
     // Challenger runs separately via runChallengerStep after each round
     const orchestrator = new Orchestrator(config.models, config);
 
-    // Generate rubric for ideation mode if successCriteria provided
-    console.log('[Rubric Check] style:', config.style, '| successCriteria:', config.successCriteria ? 'YES (' + config.successCriteria.substring(0, 50) + '...)' : 'NO');
-    if (config.successCriteria && config.style === 'ideation') {
-      try {
-        console.log('[Ideation] Generating evaluation rubric from success criteria...');
-        const rubric = await orchestrator.generateRubric(config.successCriteria, config.topic);
-        if (rubric) {
-          await prisma.debate.update({
-            where: { id: debate.id },
-            data: { rubric }
-          });
-          console.log('[Ideation] Rubric generated and saved:', rubric.substring(0, 100) + '...');
-        } else {
-          console.log('[Ideation] generateRubric returned null/empty');
+    // For ideation mode: extract requirements + generate rubric before Round 1
+    if (config.style === 'ideation') {
+      // Extract hard requirements from description (always do this for ideation)
+      if (config.description) {
+        try {
+          console.log('[Ideation] Extracting hard requirements from description...');
+          const requirements = await orchestrator.extractRequirements(config.topic, config.description);
+          if (requirements) {
+            console.log('[Ideation] Requirements extracted:', requirements.substring(0, 150) + '...');
+          }
+        } catch (error) {
+          console.error('[Ideation] Failed to extract requirements:', error);
         }
-      } catch (error) {
-        console.error('[Ideation] Failed to generate rubric:', error);
-        // Continue without rubric - ideation will work with generic criteria
+      }
+
+      // Generate rubric from success criteria (if provided)
+      console.log('[Rubric Check] successCriteria:', config.successCriteria ? 'YES (' + config.successCriteria.substring(0, 50) + '...)' : 'NO');
+      if (config.successCriteria) {
+        try {
+          console.log('[Ideation] Generating evaluation rubric from success criteria...');
+          const rubric = await orchestrator.generateRubric(config.successCriteria, config.topic);
+          if (rubric) {
+            await prisma.debate.update({
+              where: { id: debate.id },
+              data: { rubric }
+            });
+            console.log('[Ideation] Rubric generated and saved:', rubric.substring(0, 100) + '...');
+          } else {
+            console.log('[Ideation] generateRubric returned null/empty');
+          }
+        } catch (error) {
+          console.error('[Ideation] Failed to generate rubric:', error);
+        }
       }
     } else {
-      console.log('[Rubric Check] Skipping rubric generation - conditions not met');
+      console.log('[Pre-Round] Skipping ideation preprocessing - not ideation mode');
     }
 
     // Run debate rounds
