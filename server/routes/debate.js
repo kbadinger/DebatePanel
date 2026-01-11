@@ -701,7 +701,7 @@ router.post('/:id/start', async (req, res) => {
     // Update status to running
     await prisma.debate.update({
       where: { id },
-      data: { status: 'running', startedAt: new Date() }
+      data: { status: 'running' }
     });
 
     console.log(`[Start] Debate ${id} status updated to running`);
@@ -810,7 +810,7 @@ router.post('/:id/start', async (req, res) => {
         // Generate judge analysis
         try {
           const judgeResult = await orchestrator.generateJudgeAnalysis(id, 'claude-3-5-sonnet', config.style === 'consensus-seeking');
-          const updateData = { judgeAnalysis: judgeResult.analysis, status: 'completed', completedAt: new Date() };
+          const updateData = { judgeAnalysis: judgeResult.analysis, status: 'completed' };
           if (judgeResult.winner) {
             updateData.winnerId = judgeResult.winner.id || judgeResult.winner;
             updateData.winnerName = judgeResult.winner.name || judgeResult.winner;
@@ -820,7 +820,7 @@ router.post('/:id/start', async (req, res) => {
           await prisma.debate.update({ where: { id }, data: updateData });
         } catch (e) {
           console.error('[Start] Judge analysis failed:', e);
-          await prisma.debate.update({ where: { id }, data: { status: 'completed', completedAt: new Date() } });
+          await prisma.debate.update({ where: { id }, data: { status: 'completed' } });
         }
 
         console.log(`[Start] Debate ${id} completed successfully`);
@@ -829,7 +829,7 @@ router.post('/:id/start', async (req, res) => {
         console.error(`[Start] Debate ${id} failed:`, error);
         await prisma.debate.update({
           where: { id },
-          data: { status: 'failed', errorMessage: error.message }
+          data: { status: 'failed' }
         });
       } finally {
         logger.endDebate();
@@ -878,17 +878,17 @@ router.post('/:id/restart', async (req, res) => {
       where: { debateId: id }
     });
 
-    // Reset the debate status
+    // Reset the debate status (only use fields that exist in production schema)
     const updatedDebate = await prisma.debate.update({
       where: { id },
       data: {
         status: 'pending',
-        currentRound: 0,
-        errorMessage: null,
-        startedAt: null,
-        completedAt: null,
         finalSynthesis: null,
-        judgeAnalysis: null
+        judgeAnalysis: null,
+        winnerId: null,
+        winnerName: null,
+        winnerType: null,
+        victoryReason: null
       },
       include: {
         modelSelections: true
