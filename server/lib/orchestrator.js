@@ -71,26 +71,34 @@ class Orchestrator {
       return null;
     }
 
-    const prompt = `Convert this success criteria into a structured evaluation rubric.
+    const prompt = `Convert this success criteria into an evaluation rubric that measures whether ideas are GENUINELY COMPELLING - not just whether they have the right features.
 
 SUCCESS CRITERIA: "${successCriteria}"
 TOPIC: "${topic}"
 
-Generate exactly 5 evaluation criteria. Each criterion should:
-- Be specific and measurable (0-10 scale)
-- Directly map to the success criteria
-- Be applicable to any idea in this domain
+IMPORTANT: Do NOT generate criteria about features, mechanics, or distribution.
+Generate criteria about the EXPERIENCE and COMPULSION.
+
+Think about what made Wordle, Among Us, or Flappy Bird impossible to put down.
+It wasn't "viral mechanics" - it was genuine satisfaction, tension, mastery, and delight.
+
+Generate exactly 5 criteria that measure:
+- Is this genuinely FUN? (not "does it have features that could be fun")
+- Would someone play this on day 30? (not "does it have retention mechanics")
+- Is there a moment that creates emotion? (satisfaction, tension, surprise, delight)
+- Would someone tell a story about this? (not "can they share a score")
+- Is there skill/mastery/progression? (not "are there streaks")
 
 FORMAT:
 1. [CRITERION NAME] (0-10)
-   [One sentence explaining what scores high vs low]
+   [What makes this a 9 vs a 5? Focus on the FEELING, not the feature.]
 
 2. [CRITERION NAME] (0-10)
-   [One sentence explaining what scores high vs low]
+   [What makes this a 9 vs a 5? Focus on the FEELING, not the feature.]
 
 (continue for all 5)
 
-Keep it concise. This rubric will be used to grade ideas.`;
+The rubric should help filter out ideas that "technically have viral mechanics" but are actually boring.`;
 
     try {
       const response = await this.anthropic.messages.create({
@@ -774,32 +782,35 @@ Confidence: [0-100]% that remaining risks have been identified`;
     // Build requirements section if available - these are NON-NEGOTIABLE
     const requirementsSection = this.requirements ? `
 ╔═══════════════════════════════════════════════════════════════╗
-║  ⛔ NON-NEGOTIABLE REQUIREMENTS - READ CAREFULLY               ║
+║  ⛔ NON-NEGOTIABLE REQUIREMENTS                                ║
 ╚═══════════════════════════════════════════════════════════════╝
 ${this.requirements}
 
-🚨 EVERY idea you submit MUST satisfy ALL requirements above.
-If an idea violates ANY requirement, it is DEAD ON ARRIVAL - do not submit it.
-These are not suggestions. These are hard constraints extracted from the brief.
+These are HARD CONSTRAINTS. Any idea that violates ANY requirement is garbage.
+Don't submit it. Don't try to justify it. Kill it and think of something better.
 ═══════════════════════════════════════════════════════════════
 ` : '';
 
-    // Build rubric section if available - require self-grading
+    // Build rubric section - this is a FILTER, not a justification tool
     const rubricSection = this.rubric ? `
-═══════════════════════════════════════════════════════════════
-EVALUATION RUBRIC - You MUST self-grade each idea before submitting:
-═══════════════════════════════════════════════════════════════
+╔═══════════════════════════════════════════════════════════════╗
+║  🎯 YOUR PRACTICE TEST - USE THIS TO FILTER YOUR IDEAS        ║
+╚═══════════════════════════════════════════════════════════════╝
 ${this.rubric}
 ═══════════════════════════════════════════════════════════════
 
-⚠️ SELF-GRADING REQUIREMENT:
-For each idea, score it 0-10 on EVERY criterion above BEFORE submitting.
-- If ANY criterion scores below 6, either FIX the idea or DON'T SUBMIT IT
-- Ideas with fatal flaws (toxicity risk, coordination friction, moderation burden) should be killed immediately
-- Only propose ideas you'd bet money on - no "maybe this could work" garbage
+THIS IS NOT A SELF-CONGRATULATION EXERCISE. This is your filter.
 
-Include your self-scores in this format after each idea:
-SELF-SCORES: [Criterion 1]: X/10 | [Criterion 2]: X/10 | ... (all criteria)
+Before you submit ANY idea, run it through this rubric yourself:
+- Does it GENUINELY score 8+ on EVERY criterion? Not "I can argue it's an 8" - actually an 8?
+- If ANY criterion is below 8, the idea isn't good enough. Kill it. Think of something better.
+- If you have to justify or explain why it scores well, it doesn't score well.
+
+The rubric exists so YOU can filter your ideas down to only the exceptional ones.
+Think of 20 ideas. Kill 16 of them yourself. Submit only the 4 that are undeniably strong.
+
+After each idea, show your honest scores:
+SELF-SCORES: [Criterion]: X/10 | ... (if anything is below 8, why are you submitting this?)
 ` : '';
 
     let prompt = `IDEATION ROUND 1: DIVERGE
@@ -810,49 +821,60 @@ Topic: "${topic}"
 ${description ? `Context: ${description}` : '(No additional context provided)'}
 ═══════════════════════════════════════════════════════════════
 ${requirementsSection}${rubricSection}
-YOUR MISSION: Generate exactly ${ideaCount} DISTINCT ideas that solve this requirement.
+╔═══════════════════════════════════════════════════════════════╗
+║  🏆 THE COMPETITION                                            ║
+╚═══════════════════════════════════════════════════════════════╝
 
-⚠️ WARNING: A STRESS TEST IS COMING IN ROUND 2
-Every idea will be brutally tested for REAL flaws. Only ideas that survive real-world scrutiny will advance. Before you submit an idea, attack it yourself:
+You are competing against 4 other WORLD-CLASS models. They will see your ideas.
+They will tear apart anything weak. If you submit garbage, you will be exposed.
 
-- What's the obvious way this fails?
-- Why hasn't someone done this already?
-- What will people ACTUALLY do vs what you hope they'll do?
-- What's the simpler alternative that makes this pointless?
+In Round 2, every idea faces a brutal stress test. Ideas with obvious flaws like
+"this is boring" or "no one would play twice" should NEVER make it to Round 2.
+That's YOUR job to catch. If the stress test finds obvious problems, you failed.
 
-If you can kill your own idea easily, DON'T SUBMIT IT.
+The stress test is for finding SUBTLE flaws in STRONG ideas.
+Not for catching basic problems you should have killed yourself.
 
 ═══════════════════════════════════════════════════════════════
-YOU MUST USE THIS EXACT FORMAT FOR EACH IDEA:
+YOUR MISSION: Submit up to ${ideaCount} ideas - ONLY YOUR ABSOLUTE BEST.
 
-IDEA 1:
-TITLE: [Short memorable name for the idea]
-DESCRIPTION: [2-3 sentences explaining what this idea is and how it works]
-WHY IT SURVIVES: [1-2 sentences on why this can't be easily killed]
-${this.requirements ? 'REQUIREMENTS CHECK: [Confirm this idea satisfies ALL hard requirements - if it violates any, FIX IT or don\'t submit]' : ''}
-${this.rubric ? 'SELF-SCORES: [Score each rubric criterion 0-10, e.g., "Social: 8 | Appeal: 7 | Daily: 9 | Community: 8 | Universal: 7"]' : ''}
+${ideaCount} is the MAXIMUM, not a quota. If you only have 2 genuinely great ideas,
+submit 2. Do NOT pad with mediocre ideas just to hit a number.
 
-IDEA 2:
-TITLE: [Short memorable name for the idea]
-DESCRIPTION: [2-3 sentences explaining what this idea is and how it works]
-WHY IT SURVIVES: [1-2 sentences on why this can't be easily killed]
-${this.requirements ? 'REQUIREMENTS CHECK: [Confirm all requirements satisfied]' : ''}
-${this.rubric ? 'SELF-SCORES: [Score each rubric criterion 0-10]' : ''}
+Like Top Chef: don't plate 4 dishes if only 2 are good. Plate the 2 winners.
 
-... continue for all ${ideaCount} ideas ...
+Before submitting ANY idea, ask yourself:
+- Would I bet my reputation on this idea?
+- If someone said "this is boring" would I be SHOCKED, or would I think "yeah, fair"?
+- Is there a moment in this game that would make me say "I have to play again"?
+- What story would I tell my friend about playing this?
+
+If you can't vividly answer those questions, the idea isn't ready. Kill it.
+
+═══════════════════════════════════════════════════════════════
+FORMAT FOR EACH IDEA:
+
+IDEA [N]:
+TITLE: [Short memorable name]
+DESCRIPTION: [2-3 sentences - what is it and how does it work]
+THE HOOK: [What's the specific moment that makes someone say "one more round" or "I have to show someone this"? Be vivid and specific.]
+WHY IT'S GREAT: [Why would someone play this on day 30, not just day 1?]
+${this.requirements ? 'REQUIREMENTS CHECK: [Confirm ALL requirements satisfied]' : ''}
+${this.rubric ? 'SELF-SCORES: [Honest scores - if any criterion is below 8, why are you submitting this?]' : ''}
+
 ═══════════════════════════════════════════════════════════════
 
 RULES:
-- Generate exactly ${ideaCount} ideas
-- Each idea MUST be meaningfully different from the others
-- Include at least ONE unconventional/contrarian idea
-- Be specific enough that someone could actually implement it
-${this.requirements ? '- REQUIREMENTS GATE: Every idea MUST satisfy ALL hard requirements. Violating ANY requirement = instant rejection.' : ''}
-${this.rubric ? '- MINIMUM SCORE: Every idea must score 6+ on ALL rubric criteria. If it doesn\'t, fix it or don\'t submit it.' : ''}
-- Use the EXACT format above
+- Submit UP TO ${ideaCount} ideas - only genuinely great ones
+- Each idea MUST be meaningfully different
+- Include at least ONE unconventional/contrarian idea that challenges assumptions
+- Be specific enough that someone could build it tomorrow
+${this.requirements ? '- REQUIREMENTS: Every idea MUST satisfy ALL requirements. No exceptions.' : ''}
+${this.rubric ? '- QUALITY BAR: If you can\'t honestly score 8+ on ALL criteria, don\'t submit it.' : ''}
+- If you submit an idea and the stress test finds an obvious flaw, you failed at filtering
 
 At the end, state:
-CONVICTION: [LOW/MEDIUM/HIGH] because [one sentence reason]`;
+CONVICTION: [LOW/MEDIUM/HIGH] because [why you believe these ideas will survive brutal scrutiny]`;
 
     return prompt;
   }
@@ -1030,9 +1052,24 @@ Topic: "${topic}"
 ${description ? `Context: ${description}` : '(No additional context provided)'}
 ═══════════════════════════════════════════════════════════════
 ${rubricSection}
-YOUR JOB: Find the REAL flaws that would make these ideas fail in practice.
+YOUR JOB: Find the REAL flaws. But start with the most important question:
 
-The goal is to make ideas STRONGER by finding problems NOW. We want ideas that work in the real world.
+╔═══════════════════════════════════════════════════════════════╗
+║  🎯 THE ONLY QUESTION THAT MATTERS FIRST                      ║
+╚═══════════════════════════════════════════════════════════════╝
+
+Before analyzing mechanics, features, or implementation - answer this:
+
+**IS THIS ACTUALLY FUN? Would YOU play this on day 30?**
+
+Imagine you're a 30-year-old who just got home from work. You open this game.
+- What do you feel?
+- Would you open it again tomorrow?
+- Would you tell a friend about it?
+- What's the story you'd tell?
+
+If the honest answer is "I'd play once and forget it" - that's a FATAL FLAW.
+No amount of viral mechanics saves a boring core experience.
 
 ═══════════════════════════════════════════════════════════════
 IDEAS TO STRESS TEST:
@@ -1040,20 +1077,25 @@ IDEAS TO STRESS TEST:
 ${ideasDisplay}
 ═══════════════════════════════════════════════════════════════
 
-FIND REAL PROBLEMS - Ask these questions for EVERY idea:
+FOR EVERY IDEA, ANSWER THESE IN ORDER:
 
-1. THE "ACTUALLY DO IT" TEST - Walk through implementation step by step. What's the FIRST obstacle?
-2. THE "HUMAN NATURE" TEST - Will people ACTUALLY do this consistently? What's the lazy path?
-3. THE "ALREADY EXISTS" TEST - Does something similar exist? Why is this better?
-4. THE "SIMPLER ALTERNATIVE" TEST - What's the 80/20 version?
-5. THE "WHAT BREAKS" TEST - What happens at month 6? Year 2?
+1. THE "GUT CHECK" TEST - Is this actually fun? Would you play this more than twice? Be brutally honest.
+2. THE "DAY 30" TEST - Why would someone open this on day 30? What's different/better than day 1?
+3. THE "TELL A FRIEND" TEST - What story does someone tell about this game? If it's just "you guess stuff" - boring.
+4. THE "ONE MORE ROUND" TEST - What's the specific moment that makes someone say "one more"? Describe it vividly.
+5. THE "ACTUALLY DO IT" TEST - What's the first implementation obstacle?
+6. THE "HUMAN NATURE" TEST - What's the lazy path people will actually take?
+7. THE "ALREADY EXISTS" TEST - Does something similar exist? Why is this genuinely better?
 
-⚠️ RULES FOR VALID CRITIQUES:
-- Critiques must be REALISTIC and LIKELY, not theoretical edge cases
-- Be SPECIFIC - "this won't work" is useless, "this won't work because X" is useful
+⚠️ CRITICAL:
+- If an idea fails the gut check (tests 1-4), it's a FATAL FLAW regardless of mechanics
+- "This has good viral mechanics but the core experience is boring" = FATAL FLAW
+- We need ideas people LOVE, not ideas that technically check boxes
 
 FORMAT for each idea:
 **[IDEA NAME]**: [FATAL FLAW / FIXABLE / SOLID]
+GUT CHECK: [Honest - would you play this on day 30? Why or why not?]
+THE HOOK: [What's the "one more round" moment? If you can't describe it vividly, that's a problem.]
 MAIN PROBLEMS: [List specific issues]
 IF FIXABLE: [What needs to change?]
 ${this.rubric ? 'SCORES: [Score 0-10 on each rubric criterion]' : ''}
@@ -1061,9 +1103,9 @@ ${this.rubric ? 'SCORES: [Score 0-10 on each rubric criterion]' : ''}
 ---
 
 At the end, summarize:
-FATAL FLAW (kill): [Ideas with unfixable problems]
-FIXABLE (improve): [Ideas with solvable problems]
-SOLID (survived): [Ideas without real problems]
+FATAL FLAW (kill): [Ideas that aren't actually fun or have unfixable problems]
+FIXABLE (improve): [Ideas with genuine hooks but solvable problems]
+SOLID (survived): [Ideas that are genuinely fun AND well-designed]
 
 CONVICTION: [LOW/MEDIUM/HIGH] because [one sentence reason]`;
 
