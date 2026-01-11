@@ -779,128 +779,102 @@ Confidence: [0-100]% that remaining risks have been identified`;
     // Get role prompt for this model
     const rolePrompt = this.getRolePrompt(model.id);
 
-    // Build requirements section if available - these are NON-NEGOTIABLE
+    // Build requirements section
     const requirementsSection = this.requirements ? `
-╔═══════════════════════════════════════════════════════════════╗
-║  ⛔ NON-NEGOTIABLE REQUIREMENTS                                ║
-╚═══════════════════════════════════════════════════════════════╝
+HARD REQUIREMENTS (from brief):
 ${this.requirements}
-
-These are HARD CONSTRAINTS. Any idea that violates ANY requirement is garbage.
-Don't submit it. Don't try to justify it. Kill it and think of something better.
-═══════════════════════════════════════════════════════════════
 ` : '';
 
-    // Build rubric section - this is a FILTER, not a justification tool
+    // Build rubric section
     const rubricSection = this.rubric ? `
-╔═══════════════════════════════════════════════════════════════╗
-║  🎯 YOUR PRACTICE TEST - USE THIS TO FILTER YOUR IDEAS        ║
-╚═══════════════════════════════════════════════════════════════╝
+EVALUATION CRITERIA (score each 1-10):
 ${this.rubric}
-═══════════════════════════════════════════════════════════════
-
-THIS IS NOT A SELF-CONGRATULATION EXERCISE. This is your filter.
-
-Before you submit ANY idea, run it through this rubric yourself:
-- Does it GENUINELY score 8+ on EVERY criterion? Not "I can argue it's an 8" - actually an 8?
-- If ANY criterion is below 8, the idea isn't good enough. Kill it. Think of something better.
-- If you have to justify or explain why it scores well, it doesn't score well.
-
-The rubric exists so YOU can filter your ideas down to only the exceptional ones.
-Think of 20 ideas. Kill 16 of them yourself. Submit only the 4 that are undeniably strong.
-
-After each idea, show your honest scores:
-SELF-SCORES: [Criterion]: X/10 | ... (if anything is below 8, why are you submitting this?)
 ` : '';
 
-    let prompt = `IDEATION ROUND 1: DIVERGE
+    let prompt = `IDEATION ROUND 1: GENERATE IDEAS
 ${rolePrompt}
-═══════════════════════════════════════════════════════════════
-THE BRIEF:
+════════════════════════════════════════════════════════════════
+BRIEF:
 Topic: "${topic}"
-${description ? `Context: ${description}` : '(No additional context provided)'}
-═══════════════════════════════════════════════════════════════
+${description ? `Context: ${description}` : ''}
+════════════════════════════════════════════════════════════════
 ${requirementsSection}${rubricSection}
-╔═══════════════════════════════════════════════════════════════╗
-║  🏆 THE COMPETITION                                            ║
-╚═══════════════════════════════════════════════════════════════╝
+════════════════════════════════════════════════════════════════
+STEP 1: ANALYZE THE BRIEF (do this first)
+════════════════════════════════════════════════════════════════
 
-You are competing against 4 other WORLD-CLASS models. They will see your ideas.
-They will tear apart anything weak. If you submit garbage, you will be exposed.
+Before generating ideas, answer these questions:
 
-In Round 2, every idea faces a brutal stress test. Ideas with obvious flaws like
-"this is boring" or "no one would play twice" should NEVER make it to Round 2.
-That's YOUR job to catch. If the stress test finds obvious problems, you failed.
+BRIEF ANALYSIS:
+1. CORE ASK: [One sentence - what does the brief actually want?]
+2. VIRAL REQUIRED: [YES/NO - does brief mention viral spread, network effects, "me + 1", or similar?]
+3. TARGET USER: [Who is this for? Be specific.]
+4. SUCCESS LOOKS LIKE: [What outcome makes this a win?]
 
-The stress test is for finding SUBTLE flaws in STRONG ideas.
-Not for catching basic problems you should have killed yourself.
+════════════════════════════════════════════════════════════════
+STEP 2: UNDERSTAND THE GATES (ideas must pass ALL relevant gates)
+════════════════════════════════════════════════════════════════
 
-╔═══════════════════════════════════════════════════════════════╗
-║  ⚠️  CRITICAL: MUST REQUIRE OTHER PEOPLE (if viral/network)    ║
-╚═══════════════════════════════════════════════════════════════╝
+For EACH idea, you must pass these gates IN ORDER. If any gate fails, KILL the idea.
 
-READ THIS CAREFULLY - most ideas fail here:
+GATE 1 - REQUIREMENTS CHECK (if requirements exist):
+- Does idea satisfy ALL hard requirements? [YES = PASS / NO = KILL]
 
-If the brief mentions viral spread, network effects, or "me + 1 friend" growth,
-the idea MUST fundamentally REQUIRE other people. Not optional social features.
+GATE 2 - OTHERS REQUIRED (if VIRAL REQUIRED = YES):
+- Can this be used alone? [YES = KILL / NO = PASS]
+- "Solo + share results" = KILL (that's not requiring others)
+- "Leaderboards" = KILL (passive comparison isn't involvement)
 
-✅ GOOD: The idea doesn't work unless someone else is involved
-✅ GOOD: "I do X with you, we both see results, you're compelled to do X with someone else"
-✅ GOOD: The value proposition IS the interaction between people
+GATE 3 - VIRAL CHAIN (if VIRAL REQUIRED = YES):
+- After A engages with B, is B compelled to bring in C? [YES = PASS / NO = KILL]
+- "Share a link" isn't compulsion. What FORCES B to recruit C?
 
-❌ BAD: "Use it alone, then share results" (SOLO experience with sharing bolted on)
-❌ BAD: "Leaderboards/comparisons" (not actual involvement, just passive comparison)
-❌ BAD: "Optional social features" (if it works alone, others aren't REQUIRED)
+GATE 4 - COMPELLING (always required):
+- Would someone engage with this on day 30? [YES = PASS / NO = KILL]
+- Is there a specific "one more" moment you can describe vividly? [YES = PASS / NO = KILL]
 
-THE VIRAL TEST: After person A engages WITH person B, is person B COMPELLED
-to bring in person C to engage WITH? Not "share a link" - actually PARTICIPATE WITH.
-This is how "me + 1" becomes thousands in days.
+GATE 5 - QUALITY SCORES (if rubric exists):
+- Score each criterion 1-10. If ANY score < 7, KILL the idea.
 
-Ask yourself: Does this REQUIRE another person to function? Can someone use it alone?
-If it works alone, the "involves others" part is just a feature, not the core. Kill it.
+════════════════════════════════════════════════════════════════
+STEP 3: GENERATE AND FILTER
+════════════════════════════════════════════════════════════════
 
-═══════════════════════════════════════════════════════════════
-YOUR MISSION: Submit up to ${ideaCount} ideas - ONLY YOUR ABSOLUTE BEST.
+Think of 15-20 ideas internally. Run each through the gates. Most will die.
+Submit ONLY the ${ideaCount} (maximum) that pass ALL gates.
 
-${ideaCount} is the MAXIMUM, not a quota. If you only have 2 genuinely great ideas,
-submit 2. Do NOT pad with mediocre ideas just to hit a number.
+${ideaCount} is the MAX, not a quota. If only 2 pass, submit 2.
 
-Like Top Chef: don't plate 4 dishes if only 2 are good. Plate the 2 winners.
-
-Before submitting ANY idea, ask yourself:
-- Would I bet my reputation on this idea?
-- If someone said "this is boring" would I be SHOCKED, or would I think "yeah, fair"?
-- Is there a moment in this game that would make me say "I have to play again"?
-- What story would I tell my friend about playing this?
-
-If you can't vividly answer those questions, the idea isn't ready. Kill it.
-
-═══════════════════════════════════════════════════════════════
-FORMAT FOR EACH IDEA:
+════════════════════════════════════════════════════════════════
+STEP 4: FORMAT FOR EACH SURVIVING IDEA
+════════════════════════════════════════════════════════════════
 
 IDEA [N]:
-TITLE: [Short memorable name]
-DESCRIPTION: [2-3 sentences - what is it and how does it work]
-HOW OTHERS ARE REQUIRED: [If viral spread is needed: explain exactly how 2+ people interact. Not "share results" - actual involvement. If not viral, explain the core value.]
-VIRAL CHAIN: [If viral spread is needed: After person A engages WITH person B, why is B COMPELLED to bring in person C? Be specific about the compulsion.]
-THE HOOK: [What's the specific moment that creates "I need to do this again" or "I have to show someone"? Be vivid and specific.]
-WHY IT'S GREAT: [Why would someone still use/engage with this on day 30, not just day 1?]
-${this.requirements ? 'REQUIREMENTS CHECK: [Confirm ALL requirements satisfied]' : ''}
-${this.rubric ? 'SELF-SCORES: [Honest scores - if any criterion is below 8, why are you submitting this?]' : ''}
 
-═══════════════════════════════════════════════════════════════
+TITLE: [Memorable name]
 
-RULES:
-- Submit UP TO ${ideaCount} ideas - only genuinely great ones
-- Each idea MUST be meaningfully different
-- Include at least ONE unconventional/contrarian idea that challenges assumptions
-- Be specific enough that someone could build it tomorrow
-${this.requirements ? '- REQUIREMENTS: Every idea MUST satisfy ALL requirements. No exceptions.' : ''}
-${this.rubric ? '- QUALITY BAR: If you can\'t honestly score 8+ on ALL criteria, don\'t submit it.' : ''}
-- If you submit an idea and the stress test finds an obvious flaw, you failed at filtering
+WHAT IT IS: [2-3 sentences - how does it work?]
 
-At the end, state:
-CONVICTION: [LOW/MEDIUM/HIGH] because [why you believe these ideas will survive brutal scrutiny]`;
+GATE RESULTS:
+- G1 Requirements: [PASS/N/A] - [brief reason]
+- G2 Others Required: [PASS/N/A] - [how exactly do 2+ people interact?]
+- G3 Viral Chain: [PASS/N/A] - [A does X with B → B brings C because ___]
+- G4 Compelling: [PASS] - [describe the "one more" moment vividly in 2 sentences]
+- G5 Scores: [PASS/N/A] - [list scores: criterion1: X, criterion2: Y, ...]
+
+THE HOOK: [The specific moment/feeling that makes this irresistible. Be vivid.]
+
+DAY 30: [Why someone still engages on day 30, not just day 1]
+
+════════════════════════════════════════════════════════════════
+
+OUTPUT FORMAT:
+
+1. First, show your BRIEF ANALYSIS
+2. Then, for each surviving idea, show the full format above
+3. End with: CONVICTION: [LOW/MEDIUM/HIGH] - [one sentence why these survive scrutiny]
+
+Only submit ideas that passed ALL relevant gates. No exceptions.`;
 
     return prompt;
   }
@@ -1060,92 +1034,99 @@ CONVICTION: [LOW/MEDIUM/HIGH] because [one sentence reason]`;
       ? round1Responses.map(r => `=== ${r.modelId} ===\n${r.content}`).join('\n\n---\n\n')
       : 'No ideas to stress test yet.';
 
-    // Build rubric grading section if available
     const rubricSection = this.rubric ? `
-═══════════════════════════════════════════════════════════════
-GRADE EACH IDEA AGAINST THIS RUBRIC:
-═══════════════════════════════════════════════════════════════
+EVALUATION CRITERIA (score each 1-10):
 ${this.rubric}
-═══════════════════════════════════════════════════════════════
-For each idea, provide scores (0-10) for each criterion above.
 ` : '';
 
     let prompt = `IDEATION ROUND 2: STRESS TEST
 ${rolePrompt}
-═══════════════════════════════════════════════════════════════
-REQUIREMENT:
+════════════════════════════════════════════════════════════════
+BRIEF:
 Topic: "${topic}"
-${description ? `Context: ${description}` : '(No additional context provided)'}
-═══════════════════════════════════════════════════════════════
+${description ? `Context: ${description}` : ''}
+════════════════════════════════════════════════════════════════
 ${rubricSection}
-YOUR JOB: Find the REAL flaws. But start with the most important question:
-
-╔═══════════════════════════════════════════════════════════════╗
-║  🎯 THE ONLY QUESTION THAT MATTERS FIRST                      ║
-╚═══════════════════════════════════════════════════════════════╝
-
-Before analyzing mechanics, features, or implementation - answer this:
-
-**IS THIS ACTUALLY FUN? Would YOU play this on day 30?**
-
-Imagine you're a 30-year-old who just got home from work. You open this game.
-- What do you feel?
-- Would you open it again tomorrow?
-- Would you tell a friend about it?
-- What's the story you'd tell?
-
-If the honest answer is "I'd play once and forget it" - that's a FATAL FLAW.
-No amount of viral mechanics saves a boring core experience.
-
-═══════════════════════════════════════════════════════════════
-IDEAS TO STRESS TEST:
-═══════════════════════════════════════════════════════════════
+════════════════════════════════════════════════════════════════
+IDEAS TO EVALUATE:
+════════════════════════════════════════════════════════════════
 ${ideasDisplay}
-═══════════════════════════════════════════════════════════════
+════════════════════════════════════════════════════════════════
+STEP 1: UNDERSTAND YOUR JOB
+════════════════════════════════════════════════════════════════
 
-FOR EVERY IDEA, ANSWER THESE IN ORDER:
+You are a harsh judge. Your job is to KILL bad ideas before they waste everyone's time.
+Run each idea through the gates below. If ANY gate fails → KILL the idea.
 
-0. THE "REQUIRES OTHERS" TEST (if brief mentions viral/network spread) - Can this be used ALONE?
-   - "Use alone then share results" = FATAL FLAW (others not actually required)
-   - "Leaderboards/comparisons" = FATAL FLAW (passive, not actual involvement)
-   - If viral spread is required, the idea must REQUIRE other people to function.
+Most ideas should die here. That's the point.
 
-1. THE "VIRAL CHAIN" TEST (if viral spread required) - After person A engages WITH person B, is B COMPELLED to bring in person C?
-   - Not "share a link" - actually bring someone in to PARTICIPATE WITH
-   - If there's no compulsion to involve YOUR OWN contacts, viral spread dies
+════════════════════════════════════════════════════════════════
+STEP 2: THE GATES (run for EACH idea, in order)
+════════════════════════════════════════════════════════════════
 
-2. THE "GUT CHECK" TEST - Is this actually compelling? Would you use this more than twice? Be brutally honest.
-3. THE "DAY 30" TEST - Why would someone still engage with this on day 30? What's different/better than day 1?
-4. THE "TELL A FRIEND" TEST - What story does someone tell about this? If it's just "I used this thing" - boring.
-5. THE "ONE MORE" TEST - What's the specific moment that creates "I need to do this again"? Describe it vividly.
-6. THE "ACTUALLY DO IT" TEST - What's the first implementation obstacle?
-7. THE "HUMAN NATURE" TEST - What's the lazy path people will actually take?
-8. THE "ALREADY EXISTS" TEST - Does something similar exist? Why is this genuinely better?
+GATE 1 - GUT CHECK (always required):
+- Imagine using this on day 30. Are you actually excited? [YES = PASS / NO = KILL]
+- Can you describe the specific "one more" moment vividly? [YES = PASS / NO = KILL]
+- If you're hedging ("it could be fun if...") → KILL
 
-⚠️ CRITICAL:
-- If viral spread is required and it can be used SOLO, it's a FATAL FLAW
-- If an idea fails the gut check (tests 2-5), it's a FATAL FLAW regardless of mechanics
-- "This has good viral mechanics but the core experience is boring" = FATAL FLAW
-- We need ideas people LOVE, not ideas that technically check boxes
+GATE 2 - OTHERS REQUIRED (check if brief mentions viral spread, network effects, or "me + 1"):
+- First: Does brief require viral/network spread? [YES = apply gate / NO = skip]
+- Can this be used ALONE? [YES = KILL / NO = PASS]
+- "Solo + share results" = KILL (that's not requiring others)
+- "Leaderboards" = KILL (passive comparison isn't involvement)
 
-FORMAT for each idea:
-**[IDEA NAME]**: [FATAL FLAW / FIXABLE / SOLID]
-REQUIRES OTHERS: [If viral needed: can this be used alone? If yes, FATAL FLAW. Explain how it REQUIRES others.]
-VIRAL CHAIN: [If viral needed: After A engages with B, why is B compelled to bring in C? Be specific.]
-GUT CHECK: [Honest - would you engage with this on day 30? Why or why not?]
-THE HOOK: [What's the "one more" moment? If you can't describe it vividly, that's a problem.]
-MAIN PROBLEMS: [List specific issues]
-IF FIXABLE: [What needs to change?]
-${this.rubric ? 'SCORES: [Score 0-10 on each rubric criterion]' : ''}
+GATE 3 - VIRAL CHAIN (only if GATE 2 applies):
+- After A engages with B, is B COMPELLED to bring in C? [YES = PASS / NO = KILL]
+- "Share a link" isn't compulsion. What FORCES B to recruit C?
+- If you can't explain the compulsion specifically → KILL
+
+GATE 4 - QUALITY SCORES (if rubric exists):
+- Score each criterion 1-10
+- If ANY score < 7 → KILL
+- No rounding up. No benefit of the doubt.
+
+GATE 5 - REALITY CHECK:
+- What's the lazy path users will actually take? Does idea survive it? [YES = PASS / NO = KILL]
+- Does something similar exist? Is this genuinely better? [YES = PASS / NO = KILL]
+
+════════════════════════════════════════════════════════════════
+STEP 3: FORMAT FOR EACH IDEA
+════════════════════════════════════════════════════════════════
+
+**[IDEA NAME]**: [KILL / FIXABLE / SOLID]
+
+GATE RESULTS:
+- G1 Gut Check: [PASS/KILL] - [2 sentences: the "one more" moment OR why it's boring]
+- G2 Others Required: [PASS/KILL/N/A] - [How exactly does it REQUIRE others? Or why it doesn't]
+- G3 Viral Chain: [PASS/KILL/N/A] - [A does X with B → B brings C because ___ OR why chain breaks]
+- G4 Scores: [PASS/KILL/N/A] - [criterion1: X, criterion2: Y, ... | lowest score determines pass/kill]
+- G5 Reality: [PASS/KILL] - [lazy path + competition check]
+
+VERDICT: [KILL / FIXABLE / SOLID]
+- KILL = failed any gate, not worth saving
+- FIXABLE = passed gates but has specific problems that can be fixed
+- SOLID = passed all gates, no major issues
+
+IF FIXABLE: [Specific changes needed - be concrete]
 
 ---
 
-At the end, summarize:
-FATAL FLAW (kill): [Ideas that aren't actually fun or have unfixable problems]
-FIXABLE (improve): [Ideas with genuine hooks but solvable problems]
-SOLID (survived): [Ideas that are genuinely fun AND well-designed]
+════════════════════════════════════════════════════════════════
+STEP 4: FINAL SUMMARY
+════════════════════════════════════════════════════════════════
 
-CONVICTION: [LOW/MEDIUM/HIGH] because [one sentence reason]`;
+After evaluating ALL ideas:
+
+KILL LIST: [Ideas that failed gates - list which gate killed each]
+FIXABLE LIST: [Ideas that passed but need specific fixes]
+SURVIVORS: [Ideas that passed all gates cleanly]
+
+CONVICTION: [LOW/MEDIUM/HIGH] - [one sentence: are any of these actually great, or just "okay"?]
+
+════════════════════════════════════════════════════════════════
+REMEMBER: You are not here to be nice. You are here to kill bad ideas.
+If everything passes, you're not being harsh enough.
+════════════════════════════════════════════════════════════════`;
 
     return prompt;
   }
