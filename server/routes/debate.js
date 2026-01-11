@@ -672,6 +672,243 @@ router.post('/', async (req, res) => {
   }
 });
 
+// Start a pending debate (triggers processing)
+router.post('/:id/start', async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    // Find the debate with all necessary relations
+    const debate = await prisma.debate.findUnique({
+      where: { id },
+      include: {
+        modelSelections: true,
+        user: {
+          include: { subscription: true }
+        }
+      }
+    });
+
+    if (!debate) {
+      return res.status(404).json({ error: 'Debate not found' });
+    }
+
+    if (debate.status !== 'pending') {
+      return res.status(400).json({
+        error: `Cannot start debate with status '${debate.status}'. Only pending debates can be started.`
+      });
+    }
+
+    // Update status to running
+    await prisma.debate.update({
+      where: { id },
+      data: { status: 'running', startedAt: new Date() }
+    });
+
+    console.log(`[Start] Debate ${id} status updated to running`);
+
+    // Reconstruct config from saved debate data
+    const config = {
+      topic: debate.topic,
+      description: debate.description,
+      rounds: debate.rounds,
+      format: debate.format || 'structured',
+      style: debate.style || 'consensus-seeking',
+      models: debate.modelSelections.map(ms => ({
+        id: ms.modelId,
+        provider: ms.provider,
+        name: ms.name,
+        displayName: ms.displayName
+      })),
+      judge: { enabled: true },
+      successCriteria: debate.successCriteria || null
+    };
+
+    // Process debate in background (non-blocking)
+    setImmediate(async () => {
+      const logger = new DebateLogger();
+      try {
+        logger.startDebate(id, config);
+        console.log(`[Start] Beginning background processing for debate ${id}`);
+
+        const orchestrator = new Orchestrator(config.models, config);
+
+        // Pre-round processing for ideation
+        if (config.style === 'ideation') {
+          if (config.description) {
+            try {
+              await orchestrator.extractRequirements(config.topic, config.description);
+            } catch (e) {
+              console.error('[Start] Requirements extraction failed:', e);
+            }
+          }
+          if (config.successCriteria) {
+            try {
+              const rubric = await orchestrator.generateRubric(config.successCriteria, config.topic);
+              if (rubric) {
+                await prisma.debate.update({ where: { id }, data: { rubric } });
+              }
+            } catch (e) {
+              console.error('[Start] Rubric generation failed:', e);
+            }
+          }
+          orchestrator.assignIdeationRoles();
+        }
+
+        // Run debate rounds
+        for (let i = 1; i <= config.rounds; i++) {
+          console.log(`[Start] Running round ${i} for debate ${id}`);
+
+          const savedRound = await prisma.debateRound.create({
+            data: { debateId: id, roundNumber: i }
+          });
+
+          const roundResponses = [];
+
+          await orchestrator.runRound(
+            i,
+            config.topic,
+            config.description,
+            config.style === 'consensus-seeking',
+            async (responseData) => {
+              const saved = await prisma.modelResponse.create({
+                data: {
+                  roundId: savedRound.id,
+                  modelId: responseData.modelId,
+                  modelProvider: responseData.provider || 'unknown',
+                  content: responseData.content,
+                  position: responseData.position,
+                  confidence: responseData.confidence,
+                  isHuman: false
+                }
+              });
+              roundResponses.push(saved);
+            },
+            config.style
+          );
+
+          // Generate round synthesis
+          try {
+            const synthesis = await orchestrator.generateRoundSynthesis(i, roundResponses, config.topic);
+            await prisma.debateRound.update({
+              where: { id: savedRound.id },
+              data: { consensus: synthesis }
+            });
+          } catch (e) {
+            console.error(`[Start] Round ${i} synthesis failed:`, e);
+          }
+        }
+
+        // Generate final synthesis
+        let synthesis = null;
+        try {
+          synthesis = await orchestrator.generateSynthesis(id);
+          await prisma.debate.update({ where: { id }, data: { finalSynthesis: synthesis } });
+        } catch (e) {
+          console.error('[Start] Final synthesis failed:', e);
+        }
+
+        // Generate judge analysis
+        try {
+          const judgeResult = await orchestrator.generateJudgeAnalysis(id, 'claude-3-5-sonnet', config.style === 'consensus-seeking');
+          const updateData = { judgeAnalysis: judgeResult.analysis, status: 'completed', completedAt: new Date() };
+          if (judgeResult.winner) {
+            updateData.winnerId = judgeResult.winner.id || judgeResult.winner;
+            updateData.winnerName = judgeResult.winner.name || judgeResult.winner;
+            updateData.winnerType = judgeResult.winner.type || 'model';
+            updateData.victoryReason = judgeResult.winner.reason || 'Highest quality contributions';
+          }
+          await prisma.debate.update({ where: { id }, data: updateData });
+        } catch (e) {
+          console.error('[Start] Judge analysis failed:', e);
+          await prisma.debate.update({ where: { id }, data: { status: 'completed', completedAt: new Date() } });
+        }
+
+        console.log(`[Start] Debate ${id} completed successfully`);
+
+      } catch (error) {
+        console.error(`[Start] Debate ${id} failed:`, error);
+        await prisma.debate.update({
+          where: { id },
+          data: { status: 'failed', errorMessage: error.message }
+        });
+      } finally {
+        logger.endDebate();
+      }
+    });
+
+    // Return immediately - processing continues in background
+    res.json({
+      success: true,
+      message: 'Debate started. Processing in background.',
+      debateId: id
+    });
+
+  } catch (error) {
+    console.error('[Start] Error starting debate:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Restart a failed debate
+router.post('/:id/restart', async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    // Find the debate
+    const debate = await prisma.debate.findUnique({
+      where: { id },
+      include: {
+        debateRounds: true,
+        modelSelections: true
+      }
+    });
+
+    if (!debate) {
+      return res.status(404).json({ error: 'Debate not found' });
+    }
+
+    if (debate.status !== 'failed') {
+      return res.status(400).json({
+        error: `Cannot restart debate with status '${debate.status}'. Only failed debates can be restarted.`
+      });
+    }
+
+    // Delete existing rounds (they may be partial/corrupted)
+    await prisma.debateRound.deleteMany({
+      where: { debateId: id }
+    });
+
+    // Reset the debate status
+    const updatedDebate = await prisma.debate.update({
+      where: { id },
+      data: {
+        status: 'pending',
+        currentRound: 0,
+        errorMessage: null,
+        startedAt: null,
+        completedAt: null,
+        finalSynthesis: null,
+        judgeAnalysis: null
+      },
+      include: {
+        modelSelections: true
+      }
+    });
+
+    console.log(`[Restart] Debate ${id} reset to pending status`);
+
+    res.json({
+      success: true,
+      message: 'Debate reset successfully. Ready to restart.',
+      debate: updatedDebate
+    });
+
+  } catch (error) {
+    console.error('[Restart] Error restarting debate:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 module.exports = router;
 
 
