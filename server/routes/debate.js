@@ -347,6 +347,9 @@ router.post('/', async (req, res) => {
           console.error('[Ideation] Failed to generate rubric:', error);
         }
       }
+
+      // Assign roles to models for the ideation debate
+      orchestrator.assignIdeationRoles();
     } else {
       console.log('[Pre-Round] Skipping ideation preprocessing - not ideation mode');
     }

@@ -14,6 +14,10 @@ class Orchestrator {
     // State for iron-forged debates
     this.roundSyntheses = {};      // { roundNumber: "synthesis text" }
     this.challengerResponses = {}; // { roundNumber: "challenger text" }
+
+    // State for ideation role assignment
+    this.modelRoles = {};          // { modelId: "Optimist" | "Devil's Advocate" | etc }
+    this.wildCardModels = [];      // Array of modelIds assigned wild card duty in round 3
     
     // Initialize API clients
     this.openai = process.env.OPENAI_API_KEY ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY }) : null;
@@ -153,6 +157,74 @@ Keep each requirement to one line. Aim for 5-10 requirements.`;
       console.error('Error extracting requirements:', error);
       return null;
     }
+  }
+
+  /**
+   * Assign randomized roles to models for ideation debates.
+   * Each model gets a perspective they must maintain throughout the debate.
+   * Also selects 1-2 models for "wild card" duty in round 3.
+   */
+  assignIdeationRoles() {
+    const roles = ['Optimist', "Devil's Advocate", 'User Advocate', 'Feasibility Skeptic', 'Wild Card'];
+    // Shuffle roles randomly
+    const shuffled = [...roles].sort(() => Math.random() - 0.5);
+
+    this.modelRoles = {};
+    this.models.forEach((model, i) => {
+      this.modelRoles[model.id] = shuffled[i % shuffled.length];
+    });
+
+    // Mark 1-2 models for wild card duty in round 3 (propose divergent ideas)
+    const wildCardCount = Math.min(2, Math.ceil(this.models.length / 3));
+    this.wildCardModels = this.models.slice(0, wildCardCount).map(m => m.id);
+
+    console.log('[Ideation] Role assignments:', this.modelRoles);
+    console.log('[Ideation] Wild card models:', this.wildCardModels);
+  }
+
+  /**
+   * Get the role prompt injection for a specific model in ideation mode.
+   * @param {string} modelId - The model's ID
+   * @returns {string} - Role-specific prompt text to inject
+   */
+  getRolePrompt(modelId) {
+    const role = this.modelRoles[modelId];
+    if (!role) return '';
+
+    const rolePrompts = {
+      'Optimist': `
+═══════════════════════════════════════════════════════════════
+YOUR ROLE: OPTIMIST
+Your job is to find the strongest version of each idea. What makes it work?
+Look for hidden potential others might miss. Champion ideas that could succeed.
+═══════════════════════════════════════════════════════════════`,
+      "Devil's Advocate": `
+═══════════════════════════════════════════════════════════════
+YOUR ROLE: DEVIL'S ADVOCATE
+Your job is to find the fatal flaw. Why will this fail in practice?
+Be ruthless but fair. If an idea survives your critique, it's probably solid.
+═══════════════════════════════════════════════════════════════`,
+      'User Advocate': `
+═══════════════════════════════════════════════════════════════
+YOUR ROLE: USER ADVOCATE
+Your job is to represent real users. Would they actually do this? What would they hate?
+Think about the lazy path, the confused user, the edge cases that kill adoption.
+═══════════════════════════════════════════════════════════════`,
+      'Feasibility Skeptic': `
+═══════════════════════════════════════════════════════════════
+YOUR ROLE: FEASIBILITY SKEPTIC
+Your job is to assess implementation complexity. What gets cut for v1?
+Consider technical debt, maintenance burden, scaling challenges, and timeline.
+═══════════════════════════════════════════════════════════════`,
+      'Wild Card': `
+═══════════════════════════════════════════════════════════════
+YOUR ROLE: WILD CARD
+Your job is to find the unconventional angle everyone is missing.
+Challenge assumptions. Propose alternatives nobody else would consider.
+═══════════════════════════════════════════════════════════════`
+    };
+
+    return rolePrompts[role] || '';
   }
 
   async runRound(roundNumber, topic, description, isConsensusMode = false, onModelComplete = null, debateStyle = null) {
@@ -669,33 +741,35 @@ Confidence: [0-100]% that remaining risks have been identified`;
   // ========== IDEATION MODE ==========
 
   buildIdeationPrompt(round, topic, description, model) {
-    // Route to round-specific ideation prompt (8 rounds total)
-    // R1: Generate → R2: Cross-pollinate → R3: Stress Test → R4: Rework
-    // R5: Vote → R6-7: Refine → R8: Final Showdown
+    // Route to round-specific ideation prompt (5 rounds total)
+    // R1: Diverge → R2: Stress Test → R3: Defend + Mutate → R4: Vote + Justify → R5: Final Verdict
     switch (round) {
       case 1:
-        return this.buildIdeationRound1Generate(topic, description, model);
+        return this.buildIdeationRound1Diverge(topic, description, model);
       case 2:
-        return this.buildIdeationRound2CrossPollinate(topic, description, model);
+        return this.buildIdeationRound2StressTest(topic, description, model);
       case 3:
-        return this.buildIdeationRound3StressTest(topic, description, model);
+        return this.buildIdeationRound3DefendMutate(topic, description, model);
       case 4:
-        return this.buildIdeationRound4Rework(topic, description, model);
+        return this.buildIdeationRound4VoteJustify(topic, description, model);
       case 5:
-        return this.buildIdeationRound5Vote(topic, description, model);
-      case 6:
-      case 7:
-        return this.buildIdeationRound6_7Refine(round, topic, description, model);
-      case 8:
-        return this.buildIdeationRound8FinalShowdown(topic, description, model);
+        return this.buildIdeationRound5FinalVerdict(topic, description, model);
       default:
-        // Fallback for rounds beyond 8
-        return this.buildIdeationRound6_7Refine(round, topic, description, model);
+        // Fallback for unexpected rounds
+        return this.buildIdeationRound5FinalVerdict(topic, description, model);
     }
   }
 
+  // Keep old method name as alias for backwards compatibility
   buildIdeationRound1Generate(topic, description, model) {
+    return this.buildIdeationRound1Diverge(topic, description, model);
+  }
+
+  buildIdeationRound1Diverge(topic, description, model) {
     const ideaCount = this.config.ideaCount || 4;
+
+    // Get role prompt for this model
+    const rolePrompt = this.getRolePrompt(model.id);
 
     // Build requirements section if available - these are NON-NEGOTIABLE
     const requirementsSection = this.requirements ? `
@@ -728,8 +802,8 @@ Include your self-scores in this format after each idea:
 SELF-SCORES: [Criterion 1]: X/10 | [Criterion 2]: X/10 | ... (all criteria)
 ` : '';
 
-    let prompt = `IDEATION ROUND 1: GENERATE IDEAS
-
+    let prompt = `IDEATION ROUND 1: DIVERGE
+${rolePrompt}
 ═══════════════════════════════════════════════════════════════
 THE BRIEF:
 Topic: "${topic}"
@@ -738,8 +812,8 @@ ${description ? `Context: ${description}` : '(No additional context provided)'}
 ${requirementsSection}${rubricSection}
 YOUR MISSION: Generate exactly ${ideaCount} DISTINCT ideas that solve this requirement.
 
-⚠️ WARNING: A STRESS TEST IS COMING
-In Round 3, every idea will be brutally tested for REAL flaws. Only ideas that survive real-world scrutiny will advance. Before you submit an idea, attack it yourself:
+⚠️ WARNING: A STRESS TEST IS COMING IN ROUND 2
+Every idea will be brutally tested for REAL flaws. Only ideas that survive real-world scrutiny will advance. Before you submit an idea, attack it yourself:
 
 - What's the obvious way this fails?
 - Why hasn't someone done this already?
@@ -778,8 +852,7 @@ ${this.rubric ? '- MINIMUM SCORE: Every idea must score 6+ on ALL rubric criteri
 - Use the EXACT format above
 
 At the end, state:
-Stance: Divergent thinking
-Confidence: [0-100]% these ideas can survive the stress test`;
+CONVICTION: [LOW/MEDIUM/HIGH] because [one sentence reason]`;
 
     return prompt;
   }
@@ -924,7 +997,152 @@ FATAL FLAW (kill these): [List ideas with unfixable real-world problems]
 FIXABLE (worth improving): [List ideas with problems that can be solved]
 SOLID (survived stress test): [List ideas you couldn't find real problems with]
 
-Confidence: [0-100]% that these are the real issues, not theoretical BS`;
+CONVICTION: [LOW/MEDIUM/HIGH] because [one sentence reason]`;
+
+    return prompt;
+  }
+
+  // New Round 2: Stress Test (now happens immediately after Diverge)
+  buildIdeationRound2StressTest(topic, description, model) {
+    const rolePrompt = this.getRolePrompt(model.id);
+
+    // Get Round 1 responses - we stress test immediately after diverge
+    const round1Responses = this.responses.filter(r => r.round === 1);
+    const ideasDisplay = round1Responses.length > 0
+      ? round1Responses.map(r => `=== ${r.modelId} ===\n${r.content}`).join('\n\n---\n\n')
+      : 'No ideas to stress test yet.';
+
+    // Build rubric grading section if available
+    const rubricSection = this.rubric ? `
+═══════════════════════════════════════════════════════════════
+GRADE EACH IDEA AGAINST THIS RUBRIC:
+═══════════════════════════════════════════════════════════════
+${this.rubric}
+═══════════════════════════════════════════════════════════════
+For each idea, provide scores (0-10) for each criterion above.
+` : '';
+
+    let prompt = `IDEATION ROUND 2: STRESS TEST
+${rolePrompt}
+═══════════════════════════════════════════════════════════════
+REQUIREMENT:
+Topic: "${topic}"
+${description ? `Context: ${description}` : '(No additional context provided)'}
+═══════════════════════════════════════════════════════════════
+${rubricSection}
+YOUR JOB: Find the REAL flaws that would make these ideas fail in practice.
+
+The goal is to make ideas STRONGER by finding problems NOW. We want ideas that work in the real world.
+
+═══════════════════════════════════════════════════════════════
+IDEAS TO STRESS TEST:
+═══════════════════════════════════════════════════════════════
+${ideasDisplay}
+═══════════════════════════════════════════════════════════════
+
+FIND REAL PROBLEMS - Ask these questions for EVERY idea:
+
+1. THE "ACTUALLY DO IT" TEST - Walk through implementation step by step. What's the FIRST obstacle?
+2. THE "HUMAN NATURE" TEST - Will people ACTUALLY do this consistently? What's the lazy path?
+3. THE "ALREADY EXISTS" TEST - Does something similar exist? Why is this better?
+4. THE "SIMPLER ALTERNATIVE" TEST - What's the 80/20 version?
+5. THE "WHAT BREAKS" TEST - What happens at month 6? Year 2?
+
+⚠️ RULES FOR VALID CRITIQUES:
+- Critiques must be REALISTIC and LIKELY, not theoretical edge cases
+- Be SPECIFIC - "this won't work" is useless, "this won't work because X" is useful
+
+FORMAT for each idea:
+**[IDEA NAME]**: [FATAL FLAW / FIXABLE / SOLID]
+MAIN PROBLEMS: [List specific issues]
+IF FIXABLE: [What needs to change?]
+${this.rubric ? 'SCORES: [Score 0-10 on each rubric criterion]' : ''}
+
+---
+
+At the end, summarize:
+FATAL FLAW (kill): [Ideas with unfixable problems]
+FIXABLE (improve): [Ideas with solvable problems]
+SOLID (survived): [Ideas without real problems]
+
+CONVICTION: [LOW/MEDIUM/HIGH] because [one sentence reason]`;
+
+    return prompt;
+  }
+
+  // New Round 3: Defend + Mutate (combines defense with wild card divergence)
+  buildIdeationRound3DefendMutate(topic, description, model) {
+    const rolePrompt = this.getRolePrompt(model.id);
+    const isWildCardModel = this.wildCardModels.includes(model.id);
+
+    // Get Round 2 stress test responses
+    const round2Responses = this.responses.filter(r => r.round === 2);
+    const stressTestDisplay = round2Responses.length > 0
+      ? round2Responses.map(r => `=== ${r.modelId} ===\n${r.content}`).join('\n\n---\n\n')
+      : 'No stress test results yet.';
+
+    // Wild card section - only for designated models
+    const wildCardSection = isWildCardModel ? `
+═══════════════════════════════════════════════════════════════
+⚡ WILD CARD REQUIREMENT (YOU ARE DESIGNATED) ⚡
+═══════════════════════════════════════════════════════════════
+In addition to defending/improving existing ideas, you MUST propose:
+ONE COMPLETELY DIFFERENT APPROACH that nobody has mentioned yet.
+
+This should NOT be a variation of existing ideas. It should be:
+- A fundamentally different angle on the problem
+- Something that challenges assumptions made so far
+- An unconventional solution that could work
+
+Format:
+WILD CARD IDEA:
+TITLE: [Something genuinely different]
+DESCRIPTION: [How this differs from all ideas discussed]
+WHY CONSIDER IT: [What makes this worth exploring]
+═══════════════════════════════════════════════════════════════
+` : '';
+
+    let prompt = `IDEATION ROUND 3: DEFEND + MUTATE
+${rolePrompt}
+═══════════════════════════════════════════════════════════════
+REQUIREMENT:
+Topic: "${topic}"
+${description ? `Context: ${description}` : '(No additional context provided)'}
+═══════════════════════════════════════════════════════════════
+${wildCardSection}
+THE STRESS TEST RESULTS:
+═══════════════════════════════════════════════════════════════
+${stressTestDisplay}
+═══════════════════════════════════════════════════════════════
+
+YOUR MISSION: Respond to the critiques. For ideas you believe in:
+
+1. ACKNOWLEDGE valid critiques (don't be defensive about real problems)
+2. DEFEND against unfair critiques with specific counterarguments
+3. MUTATE ideas to address fixable problems (propose specific changes)
+4. KILL ideas that truly have fatal flaws (be honest, not sentimental)
+
+FORMAT:
+
+**DEFENDING [IDEA NAME]:**
+- VALID CRITIQUES I ACCEPT: [List any real problems you agree with]
+- UNFAIR CRITIQUES I REJECT: [Explain why specific critiques are wrong]
+- MUTATIONS TO ADDRESS ISSUES: [Specific changes to make the idea stronger]
+- NEW SCORE: [If you've improved it, re-grade against rubric]
+
+**KILLING [IDEA NAME]:**
+- WHY IT'S UNFIXABLE: [Be specific about the fatal flaw]
+
+---
+
+Focus on the top 3-5 ideas that have the best chance of surviving.
+Drop ideas that are clearly inferior or redundant.
+
+At the end, list:
+SURVIVORS (still viable): [Ideas that survived stress test and improvements]
+KILLED (confirmed dead): [Ideas with unfixable problems]
+
+CONVICTION: [LOW/MEDIUM/HIGH] because [one sentence reason]`;
 
     return prompt;
   }
@@ -1006,12 +1224,15 @@ Confidence: [0-100]% this idea can survive another stress test`;
     return prompt;
   }
 
-  buildIdeationRound5Vote(topic, description, model) {
-    // Get Round 4 rework responses (the refined ideas)
-    const round4Responses = this.responses.filter(r => r.round === 4);
-    const reworkedIdeasDisplay = round4Responses.length > 0
-      ? round4Responses.map(r => `=== ${r.modelId} ===\n${r.content}`).join('\n\n---\n\n')
-      : 'No reworked ideas yet.';
+  // New Round 4: Vote + Justify
+  buildIdeationRound4VoteJustify(topic, description, model) {
+    const rolePrompt = this.getRolePrompt(model.id);
+
+    // Get Round 3 defend/mutate responses (the refined ideas)
+    const round3Responses = this.responses.filter(r => r.round === 3);
+    const defendedIdeasDisplay = round3Responses.length > 0
+      ? round3Responses.map(r => `=== ${r.modelId} ===\n${r.content}`).join('\n\n---\n\n')
+      : 'No defended ideas yet.';
 
     // Build rubric voting guidance if available
     const rubricVotingGuidance = this.rubric ? `
@@ -1023,23 +1244,23 @@ ${this.rubric}
 Vote for ideas that score HIGHEST on these criteria.
 ` : '';
 
-    let prompt = `IDEATION ROUND 5: VOTE
-
+    let prompt = `IDEATION ROUND 4: VOTE + JUSTIFY
+${rolePrompt}
 ═══════════════════════════════════════════════════════════════
 REQUIREMENT:
 Topic: "${topic}"
 ${description ? `Context: ${description}` : '(No additional context provided)'}
 ═══════════════════════════════════════════════════════════════
 ${rubricVotingGuidance}
-Ideas have been stress-tested AND reworked. Now we vote on the survivors.
+Ideas have been stress-tested, defended, and mutated. Now we vote on the survivors.
 
 ═══════════════════════════════════════════════════════════════
-REWORKED IDEAS FROM ROUND 4:
+DEFENDED IDEAS FROM ROUND 3:
 ═══════════════════════════════════════════════════════════════
-${reworkedIdeasDisplay}
+${defendedIdeasDisplay}
 ═══════════════════════════════════════════════════════════════
 
-YOUR MISSION: Vote for the TOP 2 ideas that best solve the requirement above.
+YOUR MISSION: Vote for the TOP 2 ideas that best solve the requirement.
 
 VOTING CRITERIA:
 1. Does it actually solve the stated requirement?
@@ -1068,11 +1289,14 @@ IMPORTANT:
 - You MUST vote for 2 different ideas
 - Base votes on how well they solve the REQUIREMENT, not how creative they are
 
-At the end, state:
-Stance: [Your #1 pick]
-Confidence: [0-100]% this is the right choice`;
+CONVICTION: [LOW/MEDIUM/HIGH] because [one sentence reason]`;
 
     return prompt;
+  }
+
+  // Keep old method for backwards compatibility
+  buildIdeationRound5Vote(topic, description, model) {
+    return this.buildIdeationRound4VoteJustify(topic, description, model);
   }
 
   buildIdeationRound6_7Refine(round, topic, description, model) {
@@ -1164,11 +1388,82 @@ ONE-PARAGRAPH PITCH:
 At the end, state:
 IDEA: [Name]
 STATUS: [Ready for final showdown / Needs more work because X]
-Confidence: [0-100]% this is the best solution to the requirement`;
+CONVICTION: [LOW/MEDIUM/HIGH] because [one sentence reason]`;
 
     return prompt;
   }
 
+  // New Round 5: Final Verdict
+  buildIdeationRound5FinalVerdict(topic, description, model) {
+    const rolePrompt = this.getRolePrompt(model.id);
+
+    // Get Round 4 voting responses
+    const round4Responses = this.responses.filter(r => r.round === 4);
+    const votesDisplay = round4Responses.length > 0
+      ? round4Responses.map(r => `=== ${r.modelId} ===\n${r.content}`).join('\n\n---\n\n')
+      : 'No voting results yet.';
+
+    let prompt = `IDEATION ROUND 5: FINAL VERDICT
+${rolePrompt}
+═══════════════════════════════════════════════════════════════
+REQUIREMENT REMINDER - What we're solving for:
+Topic: "${topic}"
+${description ? `Context: ${description}` : '(No additional context provided)'}
+═══════════════════════════════════════════════════════════════
+
+This is it. 5 rounds of ideation come down to this moment.
+Pick the WINNER.
+
+═══════════════════════════════════════════════════════════════
+VOTING RESULTS FROM ROUND 4:
+═══════════════════════════════════════════════════════════════
+${votesDisplay}
+═══════════════════════════════════════════════════════════════
+
+THE JOURNEY SO FAR:
+- Round 1 (Diverge): Ideas were generated with role-based perspectives
+- Round 2 (Stress Test): Ideas were brutally tested for real flaws
+- Round 3 (Defend + Mutate): Ideas were defended and improved; wild cards proposed
+- Round 4 (Vote): We voted on the survivors
+
+NOW: Pick the final winner.
+
+═══════════════════════════════════════════════════════════════
+EVALUATION CRITERIA:
+
+1. SOLVES THE REQUIREMENT - Does this actually address what was asked?
+2. SURVIVED THE GAUNTLET - Did it survive stress-testing and get stronger?
+3. IMPLEMENTABLE - Is there a clear, realistic path to making this happen?
+4. BETTER THAN ALTERNATIVES - Is this genuinely better than rejected options?
+
+═══════════════════════════════════════════════════════════════
+FORMAT YOUR RESPONSE:
+
+WINNER: [Exact idea name]
+
+SOLVES THE REQUIREMENT BECAUSE:
+[2-3 sentences connecting the idea back to the original topic]
+
+SURVIVED BECAUSE:
+[What critiques did it face? How did it overcome them?]
+
+IMPLEMENTATION PATH:
+[High-level steps to make this real]
+
+RUNNER-UP:
+[What was second place? What value does it still have?]
+
+FINAL VERDICT:
+[One paragraph: "For [topic], the answer is [idea] because [reasons].
+The key to success is [critical factor]. Avoid [main pitfall]."]
+
+WINNER: [Repeat the winner name]
+CONVICTION: [LOW/MEDIUM/HIGH] because [one sentence reason]`;
+
+    return prompt;
+  }
+
+  // Keep old method for backwards compatibility
   buildIdeationRound8FinalShowdown(topic, description, model) {
     // Get refined ideas from Rounds 6-7
     const round6Responses = this.responses.filter(r => r.round === 6);
@@ -1260,29 +1555,30 @@ Confidence: [0-100]% this is the right solution to the original requirement`;
     // Ensure content is a string
     const contentStr = typeof content === 'string' ? content : String(content || '');
     const lowerContent = contentStr.toLowerCase();
-    
-    // Simple position detection
+
+    // Extract explicit conviction statement (new ideation format)
+    const convictionMatch = contentStr.match(/CONVICTION:\s*(LOW|MEDIUM|HIGH)/i);
+    const conviction = convictionMatch ? convictionMatch[1].toUpperCase() : 'MEDIUM';
+
+    // Map conviction to numeric confidence for backwards compatibility
+    const confidenceMap = { 'LOW': 40, 'MEDIUM': 65, 'HIGH': 90 };
+    let confidence = confidenceMap[conviction] || 65;
+
+    // Simple position detection (kept for non-ideation debates)
     let position = 'neutral';
-    let confidence = 75;
-    
     if (lowerContent.includes('strongly agree') || lowerContent.includes('absolutely')) {
       position = 'strongly-agree';
-      confidence = 90;
     } else if (lowerContent.includes('agree') || lowerContent.includes('support')) {
       position = 'agree';
-      confidence = 75;
     } else if (lowerContent.includes('strongly disagree') || lowerContent.includes('completely oppose')) {
       position = 'strongly-disagree';
-      confidence = 90;
     } else if (lowerContent.includes('disagree') || lowerContent.includes('oppose')) {
       position = 'disagree';
-      confidence = 75;
     } else if (lowerContent.includes('balanced') || lowerContent.includes('both sides')) {
       position = 'neutral';
-      confidence = 60;
     }
-    
-    return { position, confidence };
+
+    return { position, confidence, conviction };
   }
 
   /**
