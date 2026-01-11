@@ -30,14 +30,16 @@ export interface Model {
 
 export type DebateStyle = 'adversarial' | 'consensus-seeking' | 'ideation';
 
+export type Conviction = 'LOW' | 'MEDIUM' | 'HIGH';
+
+export type IdeationRole = 'Optimist' | 'Devil\'s Advocate' | 'User Advocate' | 'Feasibility Skeptic' | 'Wild Card';
+
 export const IDEATION_ROUND_NAMES: Record<number, string> = {
   1: 'Diverge',
-  2: 'Cross-pollinate',
-  3: 'Deathmatch Critique',
-  4: 'Vote + Defend',
-  5: 'Refine',
-  6: 'Refine',
-  7: 'Final Showdown'
+  2: 'Stress Test',
+  3: 'Defend + Mutate',
+  4: 'Vote + Justify',
+  5: 'Final Verdict'
 };
 
 export interface DebateConfig {
@@ -70,10 +72,12 @@ export interface ModelResponse {
   content: string;
   position: 'strongly-agree' | 'agree' | 'neutral' | 'disagree' | 'strongly-disagree';
   confidence: number;
+  conviction?: Conviction; // Explicit conviction level (LOW/MEDIUM/HIGH) extracted from response
   timestamp: Date;
   // New fields for better tracking
   stance?: string; // The actual recommendation (e.g., "Keyless", "BYOK", "Hybrid")
   consensusAlignment?: 'strong-consensus' | 'partial-consensus' | 'independent' | 'divergent' | 'strong-dissent';
+  ideationRole?: IdeationRole; // Assigned role for this model in ideation debates
   isHuman?: boolean;
   userId?: string;
   userName?: string;
