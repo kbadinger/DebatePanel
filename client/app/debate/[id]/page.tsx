@@ -8,7 +8,7 @@ import { ModelResponseCard } from '@/components/debate/ModelResponseCard';
 import { WinnerDisplay } from '@/components/debate/WinnerDisplay';
 import { HumanInputPanel } from '@/components/debate/HumanInputPanel';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Share, Download, Loader2, Globe, Lock, Copy, Check } from 'lucide-react';
+import { ArrowLeft, Share, Download, Loader2, Globe, Lock, Copy, Check, Play, RotateCcw } from 'lucide-react';
 import Link from 'next/link';
 
 export default function DebateViewPage() {
@@ -25,6 +25,8 @@ export default function DebateViewPage() {
   const [publicSlug, setPublicSlug] = useState<string | null>(null);
   const [togglingPublic, setTogglingPublic] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
+  const [startingDebate, setStartingDebate] = useState(false);
+  const [restartingDebate, setRestartingDebate] = useState(false);
 
   const debateId = params.id as string;
   const isWaitingForHuman = debate?.status === 'waiting-for-human';
@@ -43,6 +45,17 @@ export default function DebateViewPage() {
       checkAdminAndPublicStatus();
     }
   }, [session, debateId]);
+
+  // Poll for updates when debate is running or pending
+  useEffect(() => {
+    if (debate?.status === 'running') {
+      const pollInterval = setInterval(() => {
+        fetchDebate();
+      }, 5000); // Poll every 5 seconds
+
+      return () => clearInterval(pollInterval);
+    }
+  }, [debate?.status]);
 
   const checkAdminAndPublicStatus = async () => {
     try {
@@ -95,6 +108,52 @@ export default function DebateViewPage() {
       await navigator.clipboard.writeText(url);
       setCopiedLink(true);
       setTimeout(() => setCopiedLink(false), 2000);
+    }
+  };
+
+  const handleStartDebate = async () => {
+    setStartingDebate(true);
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_PROCESSOR_URL}/debates/${debateId}/start`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+
+      if (res.ok) {
+        // Refresh debate to show running status
+        fetchDebate();
+      } else {
+        const error = await res.json();
+        alert(error.error || 'Failed to start debate');
+      }
+    } catch (error) {
+      console.error('Failed to start debate:', error);
+      alert('Failed to start debate');
+    } finally {
+      setStartingDebate(false);
+    }
+  };
+
+  const handleRestartDebate = async () => {
+    setRestartingDebate(true);
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_PROCESSOR_URL}/debates/${debateId}/restart`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+
+      if (res.ok) {
+        // Refresh debate to show pending status
+        fetchDebate();
+      } else {
+        const error = await res.json();
+        alert(error.error || 'Failed to restart debate');
+      }
+    } catch (error) {
+      console.error('Failed to restart debate:', error);
+      alert('Failed to restart debate');
+    } finally {
+      setRestartingDebate(false);
     }
   };
 
@@ -409,9 +468,13 @@ export default function DebateViewPage() {
               debate.status === 'completed' ? 'bg-green-100 text-green-800' :
               debate.status === 'converged' ? 'bg-blue-100 text-blue-800' :
               debate.status === 'waiting-for-human' ? 'bg-purple-100 text-purple-800' :
+              debate.status === 'failed' ? 'bg-red-100 text-red-800' :
+              debate.status === 'pending' ? 'bg-amber-100 text-amber-800' :
+              debate.status === 'running' ? 'bg-blue-100 text-blue-800' :
               'bg-gray-100 text-gray-800'
             }`}>
-              {debate.status === 'waiting-for-human' ? 'Awaiting Your Input' : debate.status}
+              {debate.status === 'waiting-for-human' ? 'Awaiting Your Input' :
+               debate.status === 'running' ? 'Running...' : debate.status}
             </span>
           </div>
         </div>
@@ -424,6 +487,77 @@ export default function DebateViewPage() {
               <span className="text-sm font-normal text-amber-700">(generated from success criteria)</span>
             </h3>
             <pre className="text-sm text-amber-900 whitespace-pre-wrap font-sans leading-relaxed">{debate.rubric}</pre>
+          </div>
+        )}
+
+        {/* Pending Debate Banner */}
+        {debate.status === 'pending' && (
+          <div className="mb-6 bg-gradient-to-r from-amber-100 to-yellow-100 rounded-xl p-4 border border-amber-300">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="font-semibold text-amber-900">Debate Ready to Start</h3>
+                <p className="text-sm text-amber-700">This debate is configured and ready to run.</p>
+              </div>
+              <Button
+                onClick={handleStartDebate}
+                disabled={startingDebate}
+                className="bg-amber-600 hover:bg-amber-700"
+              >
+                {startingDebate ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Starting...
+                  </>
+                ) : (
+                  <>
+                    <Play className="mr-2 h-4 w-4" />
+                    Run Debate
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* Failed Debate Banner */}
+        {debate.status === 'failed' && (
+          <div className="mb-6 bg-gradient-to-r from-red-100 to-rose-100 rounded-xl p-4 border border-red-300">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="font-semibold text-red-900">Debate Failed</h3>
+                <p className="text-sm text-red-700">This debate encountered an error. You can restart it to try again.</p>
+              </div>
+              <Button
+                onClick={handleRestartDebate}
+                disabled={restartingDebate}
+                variant="destructive"
+              >
+                {restartingDebate ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Restarting...
+                  </>
+                ) : (
+                  <>
+                    <RotateCcw className="mr-2 h-4 w-4" />
+                    Restart Debate
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* Running Debate Banner */}
+        {debate.status === 'running' && (
+          <div className="mb-6 bg-gradient-to-r from-blue-100 to-indigo-100 rounded-xl p-4 border border-blue-300">
+            <div className="flex items-center gap-3">
+              <Loader2 className="h-5 w-5 animate-spin text-blue-600" />
+              <div>
+                <h3 className="font-semibold text-blue-900">Debate in Progress</h3>
+                <p className="text-sm text-blue-700">AI models are currently debating. This page will update automatically.</p>
+              </div>
+            </div>
           </div>
         )}
 

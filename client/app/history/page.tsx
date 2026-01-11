@@ -5,7 +5,7 @@ import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Trash2, Loader2 } from 'lucide-react';
+import { Trash2, Loader2, RotateCcw } from 'lucide-react';
 
 interface DebateSummary {
   id: string;
@@ -31,6 +31,7 @@ export default function HistoryPage() {
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [restarting, setRestarting] = useState<string | null>(null);
   const [selectedDebates, setSelectedDebates] = useState<Set<string>>(new Set());
   const [hasMore, setHasMore] = useState(false);
   const [offset, setOffset] = useState(0);
@@ -149,6 +150,33 @@ export default function HistoryPage() {
     }
   };
 
+  const handleRestart = async (debateId: string) => {
+    setRestarting(debateId);
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_PROCESSOR_URL}/debates/${debateId}/restart`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+
+      if (res.ok) {
+        // Update the debate status in the list
+        setDebates(prev => prev.map(d =>
+          d.id === debateId ? { ...d, status: 'pending' } : d
+        ));
+        // Navigate to the debate page where they can re-run
+        router.push(`/debate/${debateId}`);
+      } else {
+        const error = await res.json();
+        alert(error.error || 'Failed to restart debate');
+      }
+    } catch (error) {
+      console.error('Failed to restart:', error);
+      alert('Failed to restart debate');
+    } finally {
+      setRestarting(null);
+    }
+  };
+
   if (loading || status === 'loading') {
     return (
       <div className="min-h-screen bg-gray-50 p-4">
@@ -246,11 +274,27 @@ export default function HistoryPage() {
                             ? 'bg-green-100 text-green-800'
                             : debate.status === 'converged'
                             ? 'bg-blue-100 text-blue-800'
+                            : debate.status === 'failed'
+                            ? 'bg-red-100 text-red-800'
                             : 'bg-gray-100 text-gray-800'
                         }`}
                       >
                         {debate.status}
                       </span>
+                      {debate.status === 'failed' && (
+                        <button
+                          onClick={() => handleRestart(debate.id)}
+                          className="text-amber-600 hover:text-amber-800 p-1"
+                          disabled={restarting === debate.id}
+                          title="Restart debate"
+                        >
+                          {restarting === debate.id ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <RotateCcw className="h-4 w-4" />
+                          )}
+                        </button>
+                      )}
                       <button
                         onClick={() => handleDeleteClick(debate.id)}
                         className="text-red-600 hover:text-red-800 p-1"
