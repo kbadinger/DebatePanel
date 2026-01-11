@@ -836,28 +836,28 @@ The stress test is for finding SUBTLE flaws in STRONG ideas.
 Not for catching basic problems you should have killed yourself.
 
 ╔═══════════════════════════════════════════════════════════════╗
-║  ⚠️  CRITICAL: TRUE MULTIPLAYER REQUIRED                       ║
+║  ⚠️  CRITICAL: MUST REQUIRE OTHER PEOPLE (if viral/network)    ║
 ╚═══════════════════════════════════════════════════════════════╝
 
 READ THIS CAREFULLY - most ideas fail here:
 
-The game MUST be played WITH another person. Not "solo game with leaderboard."
-Not "play alone then share score." Actually PLAYING TOGETHER.
+If the brief mentions viral spread, network effects, or "me + 1 friend" growth,
+the idea MUST fundamentally REQUIRE other people. Not optional social features.
 
-✅ GOOD: "I send you a challenge, you respond, we see results together"
-✅ GOOD: "We both answer the same question, then see if we matched"
-✅ GOOD: "I make a move, you make a move, something happens between us"
+✅ GOOD: The idea doesn't work unless someone else is involved
+✅ GOOD: "I do X with you, we both see results, you're compelled to do X with someone else"
+✅ GOOD: The value proposition IS the interaction between people
 
-❌ BAD: "Play alone, see your percentile, share to friends" (that's a SOLO game)
-❌ BAD: "Leaderboard comparing scores" (that's not PLAYING together)
-❌ BAD: "Optional multiplayer" (if it works solo, it's not truly multiplayer)
+❌ BAD: "Use it alone, then share results" (SOLO experience with sharing bolted on)
+❌ BAD: "Leaderboards/comparisons" (not actual involvement, just passive comparison)
+❌ BAD: "Optional social features" (if it works alone, others aren't REQUIRED)
 
-THE VIRAL TEST: After I play WITH my friend, my friend must be COMPELLED
-to invite THEIR friend to play WITH. Not "check out my score" - actually PLAY WITH.
+THE VIRAL TEST: After person A engages WITH person B, is person B COMPELLED
+to bring in person C to engage WITH? Not "share a link" - actually PARTICIPATE WITH.
 This is how "me + 1" becomes thousands in days.
 
-Ask yourself: Does the game REQUIRE another person? Can you play it alone?
-If you can play it alone, it's not what we're looking for. Kill it.
+Ask yourself: Does this REQUIRE another person to function? Can someone use it alone?
+If it works alone, the "involves others" part is just a feature, not the core. Kill it.
 
 ═══════════════════════════════════════════════════════════════
 YOUR MISSION: Submit up to ${ideaCount} ideas - ONLY YOUR ABSOLUTE BEST.
@@ -881,10 +881,10 @@ FORMAT FOR EACH IDEA:
 IDEA [N]:
 TITLE: [Short memorable name]
 DESCRIPTION: [2-3 sentences - what is it and how does it work]
-HOW YOU PLAY TOGETHER: [Explain exactly how 2 people play WITH each other. Not "share scores" - actual interaction.]
-VIRAL CHAIN: [After I play with friend A, why is A COMPELLED to invite friend B to play WITH them? Be specific about the compulsion.]
-THE HOOK: [What's the specific moment that makes someone say "one more round" or "I have to show someone this"? Be vivid and specific.]
-WHY IT'S GREAT: [Why would someone play this on day 30, not just day 1?]
+HOW OTHERS ARE REQUIRED: [If viral spread is needed: explain exactly how 2+ people interact. Not "share results" - actual involvement. If not viral, explain the core value.]
+VIRAL CHAIN: [If viral spread is needed: After person A engages WITH person B, why is B COMPELLED to bring in person C? Be specific about the compulsion.]
+THE HOOK: [What's the specific moment that creates "I need to do this again" or "I have to show someone"? Be vivid and specific.]
+WHY IT'S GREAT: [Why would someone still use/engage with this on day 30, not just day 1?]
 ${this.requirements ? 'REQUIREMENTS CHECK: [Confirm ALL requirements satisfied]' : ''}
 ${this.rubric ? 'SELF-SCORES: [Honest scores - if any criterion is below 8, why are you submitting this?]' : ''}
 
@@ -1105,35 +1105,35 @@ ${ideasDisplay}
 
 FOR EVERY IDEA, ANSWER THESE IN ORDER:
 
-0. THE "MULTIPLAYER" TEST (MOST IMPORTANT) - Can this be played ALONE? If yes, FATAL FLAW.
-   - "Solo game with leaderboard" = FATAL FLAW (that's not multiplayer)
-   - "Play alone then share score" = FATAL FLAW (that's not playing TOGETHER)
-   - The game must REQUIRE another person. Period.
+0. THE "REQUIRES OTHERS" TEST (if brief mentions viral/network spread) - Can this be used ALONE?
+   - "Use alone then share results" = FATAL FLAW (others not actually required)
+   - "Leaderboards/comparisons" = FATAL FLAW (passive, not actual involvement)
+   - If viral spread is required, the idea must REQUIRE other people to function.
 
-1. THE "VIRAL CHAIN" TEST - After playing WITH friend A, is friend A COMPELLED to invite friend B to play WITH them?
-   - Not "share my score" - actually invite someone to PLAY WITH
-   - If there's no compulsion to bring in YOUR OWN friend, viral spread dies
+1. THE "VIRAL CHAIN" TEST (if viral spread required) - After person A engages WITH person B, is B COMPELLED to bring in person C?
+   - Not "share a link" - actually bring someone in to PARTICIPATE WITH
+   - If there's no compulsion to involve YOUR OWN contacts, viral spread dies
 
-2. THE "GUT CHECK" TEST - Is this actually fun? Would you play this more than twice? Be brutally honest.
-3. THE "DAY 30" TEST - Why would someone open this on day 30? What's different/better than day 1?
-4. THE "TELL A FRIEND" TEST - What story does someone tell about this game? If it's just "you guess stuff" - boring.
-5. THE "ONE MORE ROUND" TEST - What's the specific moment that makes someone say "one more"? Describe it vividly.
+2. THE "GUT CHECK" TEST - Is this actually compelling? Would you use this more than twice? Be brutally honest.
+3. THE "DAY 30" TEST - Why would someone still engage with this on day 30? What's different/better than day 1?
+4. THE "TELL A FRIEND" TEST - What story does someone tell about this? If it's just "I used this thing" - boring.
+5. THE "ONE MORE" TEST - What's the specific moment that creates "I need to do this again"? Describe it vividly.
 6. THE "ACTUALLY DO IT" TEST - What's the first implementation obstacle?
 7. THE "HUMAN NATURE" TEST - What's the lazy path people will actually take?
 8. THE "ALREADY EXISTS" TEST - Does something similar exist? Why is this genuinely better?
 
 ⚠️ CRITICAL:
-- If an idea can be played SOLO, it's a FATAL FLAW - we need TRUE multiplayer
+- If viral spread is required and it can be used SOLO, it's a FATAL FLAW
 - If an idea fails the gut check (tests 2-5), it's a FATAL FLAW regardless of mechanics
 - "This has good viral mechanics but the core experience is boring" = FATAL FLAW
 - We need ideas people LOVE, not ideas that technically check boxes
 
 FORMAT for each idea:
 **[IDEA NAME]**: [FATAL FLAW / FIXABLE / SOLID]
-MULTIPLAYER CHECK: [Can this be played alone? If yes, FATAL FLAW. Explain how it REQUIRES another person.]
-VIRAL CHAIN: [After playing with friend A, why would A invite friend B to play WITH them? Be specific.]
-GUT CHECK: [Honest - would you play this on day 30? Why or why not?]
-THE HOOK: [What's the "one more round" moment? If you can't describe it vividly, that's a problem.]
+REQUIRES OTHERS: [If viral needed: can this be used alone? If yes, FATAL FLAW. Explain how it REQUIRES others.]
+VIRAL CHAIN: [If viral needed: After A engages with B, why is B compelled to bring in C? Be specific.]
+GUT CHECK: [Honest - would you engage with this on day 30? Why or why not?]
+THE HOOK: [What's the "one more" moment? If you can't describe it vividly, that's a problem.]
 MAIN PROBLEMS: [List specific issues]
 IF FIXABLE: [What needs to change?]
 ${this.rubric ? 'SCORES: [Score 0-10 on each rubric criterion]' : ''}
