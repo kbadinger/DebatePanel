@@ -238,6 +238,8 @@ router.post('/', async (req, res) => {
           userId: user.id,
           topic: config.topic,
           description: config.description,
+          style: config.style || 'consensus-seeking',
+          successCriteria: config.successCriteria || null,
           rounds: config.rounds || 3,
           format: config.format || 'structured',
           convergenceThreshold: config.convergenceThreshold || null,

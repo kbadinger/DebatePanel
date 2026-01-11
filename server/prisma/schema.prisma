@@ -158,6 +158,7 @@ model Debate {
   topic                String
   description          String?
   rubric               String?          @db.Text // Generated evaluation rubric for ideation mode
+  successCriteria      String?          @db.Text // User-provided success criteria for ideation mode
   style                String?          // 'adversarial', 'consensus-seeking', 'ideation'
   format               String           @default("structured")
   rounds               Int
