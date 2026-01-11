@@ -82,12 +82,13 @@ Generate criteria about the EXPERIENCE and COMPULSION.
 Think about what made Wordle, Among Us, or Flappy Bird impossible to put down.
 It wasn't "viral mechanics" - it was genuine satisfaction, tension, mastery, and delight.
 
-Generate exactly 5 criteria that measure:
-- Is this genuinely FUN? (not "does it have features that could be fun")
-- Would someone play this on day 30? (not "does it have retention mechanics")
+Generate exactly 6 criteria that measure:
+- Is this genuinely COMPELLING? (not "does it have features that could be compelling")
+- Would someone engage with this on day 30? (not "does it have retention mechanics")
 - Is there a moment that creates emotion? (satisfaction, tension, surprise, delight)
-- Would someone tell a story about this? (not "can they share a score")
+- Would someone tell a story about this? (not "can they share a result")
 - Is there skill/mastery/progression? (not "are there streaks")
+- Is this SIMPLE enough to spread? (can you explain it in 10 words?)
 
 FORMAT:
 1. [CRITERION NAME] (0-10)
@@ -96,15 +97,20 @@ FORMAT:
 2. [CRITERION NAME] (0-10)
    [What makes this a 9 vs a 5? Focus on the FEELING, not the feature.]
 
-(continue for all 5)
+(continue for all 6)
 
-The rubric should help filter out ideas that "technically have viral mechanics" but are actually boring.`;
+IMPORTANT: The last criterion MUST be about SIMPLICITY/INSTANT CLARITY:
+- A 9 means someone understands and wants to try within 10 seconds of hearing about it
+- A 5 means it requires explanation and convincing
+- Complex ideas don't spread virally no matter how good they are
+
+The rubric should help filter out ideas that are too complex to explain or that "technically have viral mechanics" but are actually boring.`;
 
     try {
       const response = await this.anthropic.messages.create({
         model: 'claude-sonnet-4-20250514',
         messages: [{ role: 'user', content: prompt }],
-        max_tokens: 600,
+        max_tokens: 800,
         temperature: 0.3
       });
 
@@ -810,12 +816,17 @@ BRIEF ANALYSIS:
 2. VIRAL REQUIRED: [YES/NO - does brief mention viral spread, network effects, "me + 1", or similar?]
 3. TARGET USER: [Who is this for? Be specific.]
 4. SUCCESS LOOKS LIKE: [What outcome makes this a win?]
+5. TARGET FEELING: [What PRIMAL emotion should this create? Not features - the raw human feeling. Examples: triumph, belonging, revenge, curiosity, fear of missing out, "I figured it out!", competitive pride, etc.]
 
 ════════════════════════════════════════════════════════════════
 STEP 2: UNDERSTAND THE GATES (ideas must pass ALL relevant gates)
 ════════════════════════════════════════════════════════════════
 
 For EACH idea, you must pass these gates IN ORDER. If any gate fails, KILL the idea.
+
+GATE 0 - SIMPLICITY (always required, check FIRST):
+- Can you explain this idea in 10 words or less? [Write the 10 words]
+- If you can't explain it simply, it won't spread - SIMPLIFY or KILL
 
 GATE 1 - REQUIREMENTS CHECK (if requirements exist):
 - Does idea satisfy ALL hard requirements? [YES = PASS / NO = KILL]
@@ -827,7 +838,8 @@ GATE 2 - OTHERS REQUIRED (if VIRAL REQUIRED = YES):
 
 GATE 3 - VIRAL CHAIN (if VIRAL REQUIRED = YES):
 - After A engages with B, is B compelled to bring in C? [YES = PASS / NO = KILL]
-- "Share a link" isn't compulsion. What FORCES B to recruit C?
+- TYPE: Is this EMOTIONAL (B is so excited they HAVE to show C) or FUNCTIONAL (B needs C to proceed)?
+- Emotional is stronger. Note which type it is.
 
 GATE 4 - COMPELLING (always required):
 - Would someone engage with this on day 30? [YES = PASS / NO = KILL]
@@ -853,16 +865,23 @@ IDEA [N]:
 
 TITLE: [Memorable name]
 
+10 WORDS: [Explain the idea in exactly 10 words or less - this is G0]
+
 WHAT IT IS: [2-3 sentences - how does it work?]
 
 GATE RESULTS:
+- G0 Simplicity: [PASS] - [your 10-word explanation above]
 - G1 Requirements: [PASS/N/A] - [brief reason]
 - G2 Others Required: [PASS/N/A] - [how exactly do 2+ people interact?]
-- G3 Viral Chain: [PASS/N/A] - [A does X with B → B brings C because ___]
-- G4 Compelling: [PASS] - [describe the "one more" moment vividly in 2 sentences]
+- G3 Viral Chain: [PASS/N/A] - [EMOTIONAL or FUNCTIONAL] - [A does X with B → B brings C because ___]
+- G4 Compelling: [PASS] - [describe the "one more" moment vividly]
 - G5 Scores: [PASS/N/A] - [list scores: criterion1: X, criterion2: Y, ...]
 
+FIRST 10 SECONDS: [What hooks someone IMMEDIATELY, before they even understand? Not setup - the actual hook.]
+
 THE HOOK: [The specific moment/feeling that makes this irresistible. Be vivid.]
+
+SHARE ARTIFACT: [What exactly does someone screenshot/record/show when sharing? Describe the visual.]
 
 DAY 30: [Why someone still engages on day 30, not just day 1]
 
@@ -1064,6 +1083,10 @@ Most ideas should die here. That's the point.
 STEP 2: THE GATES (run for EACH idea, in order)
 ════════════════════════════════════════════════════════════════
 
+GATE 0 - SIMPLICITY (always required, check FIRST):
+- Can this idea be explained in 10 words or less? [Write the 10 words or KILL]
+- If it takes paragraphs to explain, it won't spread casually
+
 GATE 1 - GUT CHECK (always required):
 - Imagine using this on day 30. Are you actually excited? [YES = PASS / NO = KILL]
 - Can you describe the specific "one more" moment vividly? [YES = PASS / NO = KILL]
@@ -1077,7 +1100,8 @@ GATE 2 - OTHERS REQUIRED (check if brief mentions viral spread, network effects,
 
 GATE 3 - VIRAL CHAIN (only if GATE 2 applies):
 - After A engages with B, is B COMPELLED to bring in C? [YES = PASS / NO = KILL]
-- "Share a link" isn't compulsion. What FORCES B to recruit C?
+- TYPE: EMOTIONAL (B can't contain excitement, HAS to show C) or FUNCTIONAL (B needs C to proceed)?
+- Emotional spreads faster. Flag which type.
 - If you can't explain the compulsion specifically → KILL
 
 GATE 4 - QUALITY SCORES (if rubric exists):
@@ -1089,6 +1113,11 @@ GATE 5 - REALITY CHECK:
 - What's the lazy path users will actually take? Does idea survive it? [YES = PASS / NO = KILL]
 - Does something similar exist? Is this genuinely better? [YES = PASS / NO = KILL]
 
+GATE 6 - CONTENT TEST (always required):
+- Would someone make a TikTok/tweet/post about this? [YES = PASS / WEAK = FLAG / NO = KILL]
+- Describe the content in one sentence. What does it show?
+- If you can't picture compelling content, social spread is limited
+
 ════════════════════════════════════════════════════════════════
 STEP 3: FORMAT FOR EACH IDEA
 ════════════════════════════════════════════════════════════════
@@ -1096,11 +1125,13 @@ STEP 3: FORMAT FOR EACH IDEA
 **[IDEA NAME]**: [KILL / FIXABLE / SOLID]
 
 GATE RESULTS:
-- G1 Gut Check: [PASS/KILL] - [2 sentences: the "one more" moment OR why it's boring]
-- G2 Others Required: [PASS/KILL/N/A] - [How exactly does it REQUIRE others? Or why it doesn't]
-- G3 Viral Chain: [PASS/KILL/N/A] - [A does X with B → B brings C because ___ OR why chain breaks]
-- G4 Scores: [PASS/KILL/N/A] - [criterion1: X, criterion2: Y, ... | lowest score determines pass/kill]
+- G0 Simplicity: [PASS/KILL] - [10-word explanation or why it's too complex]
+- G1 Gut Check: [PASS/KILL] - [the "one more" moment OR why it's boring]
+- G2 Others Required: [PASS/KILL/N/A] - [How exactly does it REQUIRE others?]
+- G3 Viral Chain: [PASS/KILL/N/A] - [EMOTIONAL/FUNCTIONAL] - [the compulsion OR why chain breaks]
+- G4 Scores: [PASS/KILL/N/A] - [criterion1: X, criterion2: Y, ... | lowest determines pass/kill]
 - G5 Reality: [PASS/KILL] - [lazy path + competition check]
+- G6 Content: [PASS/WEAK/KILL] - [describe the TikTok/post OR why no one would make content]
 
 VERDICT: [KILL / FIXABLE / SOLID]
 - KILL = failed any gate, not worth saving
