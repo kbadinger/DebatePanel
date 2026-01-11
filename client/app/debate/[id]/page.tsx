@@ -114,7 +114,7 @@ export default function DebateViewPage() {
   const handleStartDebate = async () => {
     setStartingDebate(true);
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_PROCESSOR_URL}/debates/${debateId}/start`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_RAILWAY_URL}/debates/${debateId}/start`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' }
       });
@@ -137,7 +137,7 @@ export default function DebateViewPage() {
   const handleRestartDebate = async () => {
     setRestartingDebate(true);
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_PROCESSOR_URL}/debates/${debateId}/restart`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_RAILWAY_URL}/debates/${debateId}/restart`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' }
       });
