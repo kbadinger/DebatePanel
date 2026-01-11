@@ -1495,6 +1495,22 @@ CONVICTION: [LOW/MEDIUM/HIGH] because [one sentence reason]`;
       ? round4Responses.map(r => `=== ${r.modelId} ===\n${r.content}`).join('\n\n---\n\n')
       : 'No voting results yet.';
 
+    // Build rubric section for final evaluation
+    const rubricSection = this.rubric ? `
+═══════════════════════════════════════════════════════════════
+SUCCESS CRITERIA (the winner must score high on ALL):
+═══════════════════════════════════════════════════════════════
+${this.rubric}
+═══════════════════════════════════════════════════════════════
+` : '';
+
+    // Build rubric scoring requirement for output format
+    const rubricOutputSection = this.rubric ? `
+RUBRIC SCORES FOR WINNER:
+[Score each criterion 1-10 with brief justification]
+
+` : '';
+
     let prompt = `IDEATION ROUND 5: FINAL VERDICT
 ${rolePrompt}
 ═══════════════════════════════════════════════════════════════
@@ -1502,7 +1518,7 @@ REQUIREMENT REMINDER - What we're solving for:
 Topic: "${topic}"
 ${description ? `Context: ${description}` : '(No additional context provided)'}
 ═══════════════════════════════════════════════════════════════
-
+${rubricSection}
 This is it. 5 rounds of ideation come down to this moment.
 Pick the WINNER.
 
@@ -1527,12 +1543,13 @@ EVALUATION CRITERIA:
 2. SURVIVED THE GAUNTLET - Did it survive stress-testing and get stronger?
 3. IMPLEMENTABLE - Is there a clear, realistic path to making this happen?
 4. BETTER THAN ALTERNATIVES - Is this genuinely better than rejected options?
+${this.rubric ? '5. RUBRIC ALIGNMENT - Does this score high on the success criteria above?' : ''}
 
 ═══════════════════════════════════════════════════════════════
 FORMAT YOUR RESPONSE:
 
 WINNER: [Exact idea name]
-
+${rubricOutputSection}
 SOLVES THE REQUIREMENT BECAUSE:
 [2-3 sentences connecting the idea back to the original topic]
 
