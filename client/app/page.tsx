@@ -954,6 +954,24 @@ Industry & Society:
                           <span>6 (exploratory)</span>
                         </div>
                       </div>
+                      <div className="mt-3">
+                        <label className="block text-xs font-medium text-slate-600 mb-1">
+                          Number of Winners: {config.winnerCount || 1}
+                        </label>
+                        <input
+                          type="range"
+                          min="1"
+                          max="10"
+                          value={config.winnerCount || 1}
+                          onChange={(e) => setConfig({ ...config, winnerCount: parseInt(e.target.value) })}
+                          onClick={(e) => e.stopPropagation()}
+                          className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-purple-600"
+                        />
+                        <div className="flex justify-between text-xs text-slate-400 mt-1">
+                          <span>1 (single winner)</span>
+                          <span>10 (ranked list)</span>
+                        </div>
+                      </div>
                     </>
                   )}
                 </div>
