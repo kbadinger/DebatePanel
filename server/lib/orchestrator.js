@@ -1319,6 +1319,9 @@ Confidence: [0-100]% this idea can survive another stress test`;
   // New Round 4: Vote + Justify
   buildIdeationRound4VoteJustify(topic, description, model) {
     const rolePrompt = this.getRolePrompt(model.id);
+    const winnerCount = this.config.winnerCount || 1;
+    // Vote for winnerCount + 1 ideas (for comparison), max 5
+    const voteCount = Math.min(winnerCount + 1, 5);
 
     // Get Round 3 defend/mutate responses (the refined ideas)
     const round3Responses = this.responses.filter(r => r.round === 3);
@@ -1336,6 +1339,15 @@ ${this.rubric}
 Vote for ideas that score HIGHEST on these criteria.
 ` : '';
 
+    // Build dynamic vote format based on voteCount
+    const voteFormat = Array.from({ length: voteCount }, (_, i) => {
+      const rank = i + 1;
+      const label = rank === 1 ? ' (BEST)' : rank === 2 ? ' (RUNNER-UP)' : '';
+      return `VOTE #${rank}${label}:
+Idea: [Exact name of the idea]
+Why: [2-3 sentences on why this ranks #${rank}]`;
+    }).join('\n\n');
+
     let prompt = `IDEATION ROUND 4: VOTE + JUSTIFY
 ${rolePrompt}
 ═══════════════════════════════════════════════════════════════
@@ -1352,7 +1364,7 @@ DEFENDED IDEAS FROM ROUND 3:
 ${defendedIdeasDisplay}
 ═══════════════════════════════════════════════════════════════
 
-YOUR MISSION: Vote for the TOP 2 ideas that best solve the requirement.
+YOUR MISSION: Vote for the TOP ${voteCount} ideas that best solve the requirement.
 
 VOTING CRITERIA:
 1. Does it actually solve the stated requirement?
@@ -1363,22 +1375,15 @@ VOTING CRITERIA:
 ═══════════════════════════════════════════════════════════════
 FORMAT YOUR RESPONSE:
 
-VOTE #1 (BEST):
-Idea: [Exact name of the idea]
-Why: [2-3 sentences on why this is the best solution to the requirement]
-
-VOTE #2 (RUNNER-UP):
-Idea: [Exact name of the idea]
-Why: [2-3 sentences on why this is second best]
+${voteFormat}
 
 IDEAS I REJECTED AND WHY:
-- [Idea name]: [One sentence on why it didn't make top 2]
-- [Idea name]: [One sentence on why it didn't make top 2]
+- [Idea name]: [One sentence on why it didn't make top ${voteCount}]
 ═══════════════════════════════════════════════════════════════
 
 IMPORTANT:
 - You CAN vote for your own idea if you genuinely think it's best
-- You MUST vote for 2 different ideas
+- You MUST vote for ${voteCount} different ideas
 - Base votes on how well they solve the REQUIREMENT, not how creative they are
 
 CONVICTION: [LOW/MEDIUM/HIGH] because [one sentence reason]`;
@@ -1488,6 +1493,7 @@ CONVICTION: [LOW/MEDIUM/HIGH] because [one sentence reason]`;
   // New Round 5: Final Verdict
   buildIdeationRound5FinalVerdict(topic, description, model) {
     const rolePrompt = this.getRolePrompt(model.id);
+    const winnerCount = this.config.winnerCount || 1;
 
     // Get Round 4 voting responses
     const round4Responses = this.responses.filter(r => r.round === 4);
@@ -1498,20 +1504,22 @@ CONVICTION: [LOW/MEDIUM/HIGH] because [one sentence reason]`;
     // Build rubric section for final evaluation
     const rubricSection = this.rubric ? `
 ═══════════════════════════════════════════════════════════════
-SUCCESS CRITERIA (the winner must score high on ALL):
+SUCCESS CRITERIA (${winnerCount === 1 ? 'the winner must' : 'all recommendations must'} score high on ALL):
 ═══════════════════════════════════════════════════════════════
 ${this.rubric}
 ═══════════════════════════════════════════════════════════════
 ` : '';
 
-    // Build rubric scoring requirement for output format
-    const rubricOutputSection = this.rubric ? `
+    // Single winner mode (backward compatible)
+    if (winnerCount === 1) {
+      // Build rubric scoring requirement for output format
+      const rubricOutputSection = this.rubric ? `
 RUBRIC SCORES FOR WINNER:
 [Score each criterion 1-10 with brief justification]
 
 ` : '';
 
-    let prompt = `IDEATION ROUND 5: FINAL VERDICT
+      let prompt = `IDEATION ROUND 5: FINAL VERDICT
 ${rolePrompt}
 ═══════════════════════════════════════════════════════════════
 REQUIREMENT REMINDER - What we're solving for:
@@ -1568,6 +1576,71 @@ The key to success is [critical factor]. Avoid [main pitfall]."]
 
 WINNER: [Repeat the winner name]
 CONVICTION: [LOW/MEDIUM/HIGH] because [one sentence reason]`;
+
+      return prompt;
+    }
+
+    // Ranked list mode (winnerCount > 1)
+    // Build dynamic ranked format based on winnerCount
+    const rankedFormat = Array.from({ length: winnerCount }, (_, i) => {
+      const rank = i + 1;
+      return `#${rank}: [IDEA NAME]
+RUBRIC SCORES: [criterion1: X/10, criterion2: Y/10, ...]
+WHY THIS RANK: [1-2 sentences explaining why this ranks #${rank}]
+KEY IMPLEMENTATION NOTE: [1 sentence on how to make this real]`;
+    }).join('\n\n---\n\n');
+
+    let prompt = `IDEATION ROUND 5: RANKED RECOMMENDATIONS
+${rolePrompt}
+═══════════════════════════════════════════════════════════════
+REQUIREMENT REMINDER - What we're solving for:
+Topic: "${topic}"
+${description ? `Context: ${description}` : '(No additional context provided)'}
+═══════════════════════════════════════════════════════════════
+${rubricSection}
+This is it. 5 rounds of ideation come down to this moment.
+Rank the TOP ${winnerCount} ideas.
+
+═══════════════════════════════════════════════════════════════
+VOTING RESULTS FROM ROUND 4:
+═══════════════════════════════════════════════════════════════
+${votesDisplay}
+═══════════════════════════════════════════════════════════════
+
+THE JOURNEY SO FAR:
+- Round 1 (Diverge): Ideas were generated with role-based perspectives
+- Round 2 (Stress Test): Ideas were brutally tested for real flaws
+- Round 3 (Defend + Mutate): Ideas were defended and improved; wild cards proposed
+- Round 4 (Vote): We voted on the survivors
+
+NOW: Rank the top ${winnerCount} ideas from best to good.
+
+═══════════════════════════════════════════════════════════════
+EVALUATION CRITERIA:
+
+1. SOLVES THE REQUIREMENT - Does this actually address what was asked?
+2. SURVIVED THE GAUNTLET - Did it survive stress-testing and get stronger?
+3. IMPLEMENTABLE - Is there a clear, realistic path to making this happen?
+4. BETTER THAN ALTERNATIVES - Is this genuinely better than rejected options?
+${this.rubric ? '5. RUBRIC ALIGNMENT - Does this score high on the success criteria above?' : ''}
+
+═══════════════════════════════════════════════════════════════
+FORMAT YOUR RESPONSE:
+
+## RANKED RECOMMENDATIONS
+
+${rankedFormat}
+
+---
+
+VOTE TALLY:
+[How did the votes distribute? Which ideas got the most support?]
+
+FINAL SUMMARY:
+[One paragraph: "For [topic], here are ${winnerCount} strong approaches ranked by [primary criteria].
+#1 is best because [reason]. The others offer value in [specific ways]."]
+
+CONVICTION: [LOW/MEDIUM/HIGH] because [one sentence about confidence in this ranking]`;
 
     return prompt;
   }
@@ -2331,6 +2404,8 @@ Judge the arguments, not the conclusions.`;
   async generateIdeationJudgeAnalysis(debate, judgeModel) {
     console.log('[IdeationJudge] Generating ideation-aware analysis');
 
+    const winnerCount = this.config.winnerCount || 1;
+
     // Extract key moments from each round
     const roundData = {};
     debate.debateRounds.forEach(round => {
@@ -2359,31 +2434,28 @@ Judge the arguments, not the conclusions.`;
       });
     }
 
-    // Round 4: Rework
+    // Round 4: Votes (was previously Round 5 in 8-round system)
     if (roundData[4]) {
-      journeyContext += '\n=== ROUND 4: REWORK RESPONSES ===\n';
+      journeyContext += '\n=== ROUND 4: VOTES ===\n';
       roundData[4].forEach(r => {
-        journeyContext += `${r.modelId}:\n${r.content.substring(0, 500)}\n\n`;
+        journeyContext += `${r.modelId}:\n${r.content.substring(0, 600)}\n\n`;
       });
     }
 
-    // Round 5: Votes
+    // Round 5: Final decisions (was previously Round 8 in 8-round system)
     if (roundData[5]) {
-      journeyContext += '\n=== ROUND 5: VOTES ===\n';
+      journeyContext += '\n=== ROUND 5: FINAL DECISIONS ===\n';
       roundData[5].forEach(r => {
         journeyContext += `${r.modelId}:\n${r.content.substring(0, 600)}\n\n`;
       });
     }
 
-    // Round 8: Final decisions
-    if (roundData[8]) {
-      journeyContext += '\n=== ROUND 8: FINAL DECISIONS ===\n';
-      roundData[8].forEach(r => {
-        journeyContext += `${r.modelId}:\n${r.content.substring(0, 600)}\n\n`;
-      });
-    }
+    // Build prompt based on winnerCount
+    let prompt;
 
-    const prompt = `You are summarizing an IDEATION session where multiple AI models generated, critiqued, voted on, and refined ideas.
+    if (winnerCount === 1) {
+      // Single winner mode (original format)
+      prompt = `You are summarizing an IDEATION session where multiple AI models generated, critiqued, voted on, and refined ideas.
 
 Topic: "${debate.topic}"
 ${debate.description ? `Context: ${debate.description}\n` : ''}
@@ -2398,7 +2470,7 @@ Provide your analysis in this EXACT format:
 [Name the winning idea and describe it in 2-3 sentences]
 
 ## VOTE TALLY
-[List how many models voted for each top idea in Round 5 and Round 8]
+[List how many models voted for each top idea]
 [Format: "Idea Name: X votes"]
 
 ## THE JOURNEY
@@ -2413,8 +2485,49 @@ Provide your analysis in this EXACT format:
 
 IMPORTANT:
 - Extract the ACTUAL winning idea name, don't just say "the consensus choice"
-- Count actual votes from Round 4 and Round 7
+- Count actual votes from Round 4 and Round 5
 - Be specific about what the winning idea IS, not just that it won`;
+    } else {
+      // Ranked list mode (new format)
+      const rankedFormat = Array.from({ length: winnerCount }, (_, i) => {
+        const rank = i + 1;
+        return `#${rank}: [IDEA NAME]
+[1-2 sentence description of the idea and why it ranks #${rank}]`;
+      }).join('\n\n');
+
+      prompt = `You are summarizing an IDEATION session where multiple AI models generated, critiqued, voted on, and refined ideas.
+The user requested the TOP ${winnerCount} recommendations (ranked list).
+
+Topic: "${debate.topic}"
+${debate.description ? `Context: ${debate.description}\n` : ''}
+
+${journeyContext}
+
+YOUR TASK: Create a clear summary with the TOP ${winnerCount} ranked recommendations.
+
+Provide your analysis in this EXACT format:
+
+## RANKED RECOMMENDATIONS
+
+${rankedFormat}
+
+## VOTE TALLY
+[List how many models voted for each top idea]
+[Format: "Idea Name: X votes"]
+
+## THE JOURNEY
+[2-3 sentences summarizing how we got from initial brainstorming to these recommendations]
+[What made the top ideas stand out?]
+
+## BOTTOM LINE
+[One paragraph: "For [topic], here are ${winnerCount} strong approaches. #1 is [X] because [Y]. The other recommendations offer [value]."]
+
+IMPORTANT:
+- Extract the ACTUAL idea names, don't just say "the consensus choice"
+- Count actual votes from Round 4 and Round 5
+- Be specific about what each idea IS, not just that it ranked well
+- #1 should be the clear best, others ranked by strength`;
+    }
 
     try {
       let judgeResponse;
@@ -2425,11 +2538,14 @@ IMPORTANT:
         normalizedModel = 'claude-sonnet-4-5-20250929';
       }
 
+      // Increase max_tokens for ranked list mode
+      const maxTokens = winnerCount === 1 ? 1200 : 1500 + (winnerCount * 100);
+
       if (normalizedModel.includes('claude') && this.anthropic) {
         const response = await this.anthropic.messages.create({
           model: normalizedModel,
           messages: [{ role: 'user', content: prompt }],
-          max_tokens: 1200,
+          max_tokens: maxTokens,
           temperature: 0.3
         });
         judgeResponse = response.content[0].text;
@@ -2437,7 +2553,7 @@ IMPORTANT:
         const response = await this.openai.chat.completions.create({
           model: 'gpt-4o',
           messages: [{ role: 'user', content: prompt }],
-          max_tokens: 1200,
+          max_tokens: maxTokens,
           temperature: 0.3
         });
         judgeResponse = response.choices[0].message.content;
@@ -2446,16 +2562,32 @@ IMPORTANT:
       }
 
       // Extract winner from ideation analysis
-      const winnerMatch = judgeResponse.match(/## THE WINNING IDEA\s*\n([^\n]+)/i);
       let winner = null;
-      if (winnerMatch) {
-        const winnerText = winnerMatch[1].trim();
-        winner = {
-          id: winnerText.substring(0, 50),
-          name: winnerText.substring(0, 50),
-          type: 'idea',
-          reason: 'Won the ideation process through voting and refinement'
-        };
+
+      if (winnerCount === 1) {
+        // Single winner extraction (original logic)
+        const winnerMatch = judgeResponse.match(/## THE WINNING IDEA\s*\n([^\n]+)/i);
+        if (winnerMatch) {
+          const winnerText = winnerMatch[1].trim();
+          winner = {
+            id: winnerText.substring(0, 50),
+            name: winnerText.substring(0, 50),
+            type: 'idea',
+            reason: 'Won the ideation process through voting and refinement'
+          };
+        }
+      } else {
+        // Ranked list: extract #1 as the primary winner (for backward compatibility in DB)
+        const rankedMatch = judgeResponse.match(/## RANKED RECOMMENDATIONS[\s\S]*?#1:\s*\*?\*?([^\n*]+)/i);
+        if (rankedMatch) {
+          const winnerText = rankedMatch[1].trim();
+          winner = {
+            id: winnerText.substring(0, 50),
+            name: winnerText.substring(0, 50),
+            type: 'idea',
+            reason: `#1 of ${winnerCount} ranked recommendations`
+          };
+        }
       }
 
       return {
