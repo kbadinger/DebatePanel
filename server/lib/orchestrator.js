@@ -2564,14 +2564,25 @@ IMPORTANT:
       // Extract winner from ideation analysis
       let winner = null;
 
+      // Helper to clean up winner name (remove markdown, stop at description)
+      const cleanWinnerName = (text) => {
+        return text
+          .replace(/\*+/g, '')           // Remove markdown bold/italic
+          .replace(/\s*[-–—]\s+.*$/, '') // Stop at dash + description
+          .replace(/\s+is\s+a\s+.*$/i, '') // Stop at "is a..."
+          .replace(/\s*\(.*$/, '')       // Stop at parenthetical
+          .trim()
+          .substring(0, 50);
+      };
+
       if (winnerCount === 1) {
         // Single winner extraction (original logic)
         const winnerMatch = judgeResponse.match(/## THE WINNING IDEA\s*\n([^\n]+)/i);
         if (winnerMatch) {
-          const winnerText = winnerMatch[1].trim();
+          const winnerName = cleanWinnerName(winnerMatch[1]);
           winner = {
-            id: winnerText.substring(0, 50),
-            name: winnerText.substring(0, 50),
+            id: winnerName,
+            name: winnerName,
             type: 'idea',
             reason: 'Won the ideation process through voting and refinement'
           };
@@ -2580,10 +2591,10 @@ IMPORTANT:
         // Ranked list: extract #1 as the primary winner (for backward compatibility in DB)
         const rankedMatch = judgeResponse.match(/## RANKED RECOMMENDATIONS[\s\S]*?#1:\s*\*?\*?([^\n*]+)/i);
         if (rankedMatch) {
-          const winnerText = rankedMatch[1].trim();
+          const winnerName = cleanWinnerName(rankedMatch[1]);
           winner = {
-            id: winnerText.substring(0, 50),
-            name: winnerText.substring(0, 50),
+            id: winnerName,
+            name: winnerName,
             type: 'idea',
             reason: `#1 of ${winnerCount} ranked recommendations`
           };
