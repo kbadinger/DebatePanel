@@ -34,6 +34,7 @@ export function DebateInterface({ config, onComplete }: DebateInterfaceProps) {
   const [modelStatuses, setModelStatuses] = useState<Record<string, 'pending' | 'thinking' | 'responding' | 'completed' | 'error'>>({});
   const [debateStartTime, setDebateStartTime] = useState<Date | null>(null);
   const [expectedModelsInRound, setExpectedModelsInRound] = useState<string[]>([]);
+  const [researchFindings, setResearchFindings] = useState<string | null>(null);
 
   const normalizeRound = (round: any): DebateRound => {
     const roundNumber = typeof round?.roundNumber === 'number'
@@ -495,7 +496,11 @@ export function DebateInterface({ config, onComplete }: DebateInterfaceProps) {
               continue;
             }
             
-            if (data.type === 'response') {
+            if (data.type === 'research-findings') {
+              // Research-assisted mode: Store research findings to display
+              console.log('Research findings received:', data.data.findings?.length, 'chars');
+              setResearchFindings(data.data.findings);
+            } else if (data.type === 'response') {
               setStreamingResponses(prev => [...prev, data.data]);
               // Update model status to completed
               setModelStatuses(prev => ({
@@ -581,7 +586,29 @@ export function DebateInterface({ config, onComplete }: DebateInterfaceProps) {
           )}
         </div>
       )}
-      
+
+      {/* Research Findings - Show for research-assisted mode */}
+      {researchFindings && (
+        <div className="mb-6 bg-gradient-to-r from-emerald-50 to-teal-50 rounded-xl p-6 border-2 border-emerald-200 shadow-lg">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="p-2 bg-emerald-100 rounded-lg">
+              <svg className="w-6 h-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+            </div>
+            <div>
+              <h3 className="font-bold text-emerald-900 text-lg">Live Research Data</h3>
+              <p className="text-sm text-emerald-700">Current facts gathered by Perplexity/Grok before the debate</p>
+            </div>
+          </div>
+          <div className="bg-white/60 rounded-lg p-4 max-h-96 overflow-y-auto">
+            <pre className="whitespace-pre-wrap text-sm text-gray-800 font-sans leading-relaxed">
+              {researchFindings}
+            </pre>
+          </div>
+        </div>
+      )}
+
       {/* Final Results - Show when we have synthesis (primary condition) */}
       {(debate?.finalSynthesis && (debate?.status === 'completed' || debate?.status === 'converged' || debate?.rounds?.length > 0)) && (
         <div className="space-y-8 mb-8">
