@@ -108,12 +108,21 @@ class Orchestrator {
    * @returns {string}
    */
   buildResearcherPrompt(topic, query) {
+    const today = new Date().toLocaleDateString('en-US', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+
     return `You are a RESEARCH ASSISTANT providing factual, current information.
+
+TODAY'S DATE: ${today}
 
 Your role:
 - Provide FACTS, DATA, and SOURCES only
 - NO opinions, recommendations, or analysis
-- Use your web search capability to find CURRENT information
+- Use your web search capability to find CURRENT information as of TODAY
 - Include sources/citations when possible
 - Be concise but comprehensive
 - Focus on verifiable facts, statistics, and recent developments
@@ -137,13 +146,21 @@ IMPORTANT: Stick to facts only. Do NOT provide opinions or recommendations. Othe
       return '';
     }
 
+    const today = new Date().toLocaleDateString('en-US', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+
     return `
-=== LIVE RESEARCH DATA ===
+=== LIVE RESEARCH DATA (as of ${today}) ===
 The following current facts have been gathered by research assistants (Perplexity/Grok) with live web access:
 
 ${researchFindings}
 
 === YOUR INSTRUCTIONS ===
+- TODAY'S DATE: ${today}
 - Use this research data to inform your analysis and arguments
 - You can reference specific facts and statistics from the research
 - If you need additional data, ask for it clearly (e.g., "I need current data on X" or "What are the latest stats for Y?")
