@@ -206,14 +206,15 @@ export function DebateInterface({ config, onComplete }: DebateInterfaceProps) {
     try {
       console.log('Starting debate with config:', config);
       
-      // Clean up models to remove costInfo before sending
+      // Clean up models to remove costInfo before sending, but keep contextInfo for research-assisted mode
       const cleanConfig = {
         ...config,
-        models: config.models.map(({ id, provider, name, displayName }) => ({
+        models: config.models.map(({ id, provider, name, displayName, contextInfo }) => ({
           id,
           provider,
           name,
-          displayName
+          displayName,
+          contextInfo: contextInfo ? { hasLiveSearch: contextInfo.hasLiveSearch } : undefined
         })),
         judge: config.judge?.enabled && config.judge.model ? {
           enabled: true,
