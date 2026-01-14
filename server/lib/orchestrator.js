@@ -18,7 +18,16 @@ class Orchestrator {
     // State for ideation role assignment
     this.modelRoles = {};          // { modelId: "Optimist" | "Devil's Advocate" | etc }
     this.wildCardModels = [];      // Array of modelIds assigned wild card duty in round 3
-    
+
+    // State for research-assisted mode
+    this.researchFindings = '';    // Accumulated research data from researcher models
+
+    // Models with live search capability (Perplexity and Grok)
+    this.LIVE_SEARCH_MODELS = new Set([
+      'sonar-pro', 'sonar-deep-research', 'sonar-reasoning-pro', 'sonar',
+      'grok-4-0709', 'grok-4', 'grok-4-fast-reasoning', 'grok-4-fast-non-reasoning'
+    ]);
+
     // Initialize API clients
     this.openai = process.env.OPENAI_API_KEY ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY }) : null;
     this.anthropic = process.env.ANTHROPIC_API_KEY ? new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY }) : null;
@@ -59,6 +68,181 @@ class Orchestrator {
         })
       : null;
   }
+
+  // ==================== RESEARCH-ASSISTED MODE ====================
+
+  /**
+   * Check if a model has live search capability (can fetch real-time data)
+   * @param {Object} model - The model object
+   * @returns {boolean}
+   */
+  isResearcherModel(model) {
+    // Check contextInfo.hasLiveSearch (set by frontend) OR fall back to model ID check
+    if (model.contextInfo?.hasLiveSearch === true) {
+      return true;
+    }
+    // Fallback: Check by model ID
+    return this.LIVE_SEARCH_MODELS.has(model.id) || this.LIVE_SEARCH_MODELS.has(model.name);
+  }
+
+  /**
+   * Get researcher models from the models list
+   * @returns {Array} - Array of researcher models
+   */
+  getResearcherModels() {
+    return this.models.filter(m => this.isResearcherModel(m));
+  }
+
+  /**
+   * Get debater models from the models list (non-researchers)
+   * @returns {Array} - Array of debater models
+   */
+  getDebaterModels() {
+    return this.models.filter(m => !this.isResearcherModel(m));
+  }
+
+  /**
+   * Build system prompt for researcher models
+   * @param {string} topic - The debate topic
+   * @param {string} query - The research query
+   * @returns {string}
+   */
+  buildResearcherPrompt(topic, query) {
+    return `You are a RESEARCH ASSISTANT providing factual, current information.
+
+Your role:
+- Provide FACTS, DATA, and SOURCES only
+- NO opinions, recommendations, or analysis
+- Use your web search capability to find CURRENT information
+- Include sources/citations when possible
+- Be concise but comprehensive
+- Focus on verifiable facts, statistics, and recent developments
+
+Topic: ${topic}
+
+Research Query: ${query}
+
+Provide 3-5 key facts relevant to this query. Format each fact clearly with any available sources.
+
+IMPORTANT: Stick to facts only. Do NOT provide opinions or recommendations. Other AI models will analyze your findings.`;
+  }
+
+  /**
+   * Build guidance for debaters that includes research findings
+   * @param {string} researchFindings - The accumulated research data
+   * @returns {string}
+   */
+  buildResearchAwareDebaterGuidance(researchFindings) {
+    if (!researchFindings) {
+      return '';
+    }
+
+    return `
+=== LIVE RESEARCH DATA ===
+The following current facts have been gathered by research assistants (Perplexity/Grok) with live web access:
+
+${researchFindings}
+
+=== YOUR INSTRUCTIONS ===
+- Use this research data to inform your analysis and arguments
+- You can reference specific facts and statistics from the research
+- If you need additional data, ask for it clearly (e.g., "I need current data on X" or "What are the latest stats for Y?")
+- Your questions will be answered by the researchers in the next round
+- Focus on ANALYSIS and ARGUMENTATION - the researchers handle fact-gathering
+
+`;
+  }
+
+  /**
+   * Run pre-debate research phase to gather initial facts
+   * @param {string} topic - The debate topic
+   * @param {string} description - The debate description
+   * @returns {Promise<string>} - Combined research findings
+   */
+  async runPreDebateResearch(topic, description) {
+    const researchers = this.getResearcherModels();
+
+    if (researchers.length === 0) {
+      console.log('[Research-Assisted] No researcher models found');
+      return '';
+    }
+
+    console.log(`[Research-Assisted] Running pre-debate research with ${researchers.length} researcher(s):`,
+      researchers.map(r => r.displayName || r.name).join(', '));
+
+    const researchQuery = `Gather current facts, statistics, and recent developments about: ${topic}${description ? `\n\nContext: ${description}` : ''}`;
+    const systemPrompt = this.buildResearcherPrompt(topic, researchQuery);
+
+    const results = [];
+
+    for (const model of researchers) {
+      try {
+        console.log(`[Research-Assisted] Getting research from ${model.displayName || model.name}`);
+
+        let content = '';
+
+        // Route to appropriate provider for research
+        if (model.provider === 'perplexity' && this.perplexity) {
+          const completion = await this.perplexity.chat.completions.create({
+            model: model.name,
+            messages: [
+              { role: 'system', content: systemPrompt },
+              { role: 'user', content: researchQuery }
+            ],
+            max_tokens: 1500,
+            temperature: 0.3 // Lower temperature for factual research
+          });
+          const choice = completion?.choices?.[0];
+          content = this.extractMessageContent(choice) || '';
+        } else if (model.provider === 'xai' && process.env.XAI_API_KEY) {
+          const grokClient = new OpenAI({
+            apiKey: process.env.XAI_API_KEY,
+            baseURL: process.env.XAI_BASE_URL || 'https://api.x.ai/v1'
+          });
+          const completion = await grokClient.chat.completions.create({
+            model: model.name,
+            messages: [
+              { role: 'system', content: systemPrompt },
+              { role: 'user', content: researchQuery }
+            ],
+            max_tokens: 1500,
+            temperature: 0.3
+          });
+          const choice = completion?.choices?.[0];
+          content = this.extractMessageContent(choice) || '';
+        }
+
+        if (content) {
+          results.push({
+            modelName: model.displayName || model.name,
+            findings: content,
+            success: true
+          });
+          console.log(`[Research-Assisted] Got ${content.length} chars from ${model.displayName || model.name}`);
+        }
+      } catch (error) {
+        console.error(`[Research-Assisted] Research failed for ${model.displayName || model.name}:`, error.message);
+      }
+    }
+
+    const successfulResults = results.filter(r => r.success && r.findings);
+
+    if (successfulResults.length === 0) {
+      console.error('[Research-Assisted] All researchers failed to gather initial data');
+      return '';
+    }
+
+    // Combine research findings
+    const combinedFindings = successfulResults
+      .map(r => `=== Research from ${r.modelName} ===\n${r.findings}`)
+      .join('\n\n');
+
+    console.log(`[Research-Assisted] Pre-debate research complete. Gathered findings from ${successfulResults.length} researcher(s)`);
+
+    return combinedFindings;
+  }
+
+  // ==================== END RESEARCH-ASSISTED MODE ====================
 
   /**
    * Generate an evaluation rubric from user's success criteria
@@ -244,7 +428,37 @@ Challenge assumptions. Propose alternatives nobody else would consider.
   async runRound(roundNumber, topic, description, isConsensusMode = false, onModelComplete = null, debateStyle = null) {
     const responses = [];
 
-    for (const model of this.models) {
+    // Research-assisted mode: Handle research phase and filter out researcher models
+    let participatingModels = this.models;
+
+    if (debateStyle === 'research-assisted') {
+      console.log('[Research-Assisted] Mode detected. Checking models:');
+      for (const model of this.models) {
+        const isResearcher = this.isResearcherModel(model);
+        console.log(`  - ${model.displayName || model.name}: isResearcher=${isResearcher}, contextInfo=${JSON.stringify(model.contextInfo || {})}`);
+      }
+
+      const researchers = this.getResearcherModels();
+      const debaters = this.getDebaterModels();
+      console.log(`[Research-Assisted] Found ${researchers.length} researcher(s) and ${debaters.length} debater(s)`);
+
+      // Run pre-debate research on round 1
+      if (roundNumber === 1) {
+        console.log('[Research-Assisted] Running pre-debate research phase...');
+        this.researchFindings = await this.runPreDebateResearch(topic, description);
+        if (this.researchFindings) {
+          console.log(`[Research-Assisted] Research findings collected (${this.researchFindings.length} chars)`);
+        } else {
+          console.log('[Research-Assisted] No research findings collected');
+        }
+      }
+
+      // Filter out researcher models from debating
+      participatingModels = debaters;
+      console.log(`[Research-Assisted] ${participatingModels.length} debaters will participate (researchers excluded)`);
+    }
+
+    for (const model of participatingModels) {
       try {
         const response = await this.getModelResponse(
           model,
@@ -310,12 +524,24 @@ Challenge assumptions. Propose alternatives nobody else would consider.
       }
     }
 
-    return { responses };
+    // Include research findings in response for research-assisted mode
+    const result = { responses };
+    if (debateStyle === 'research-assisted' && this.researchFindings) {
+      result.researchFindings = this.researchFindings;
+    }
+    return result;
   }
 
   async getModelResponse(model, round, topic, description, isConsensusMode, debateStyle = null) {
-    const prompt = this.buildPrompt(round, topic, description, isConsensusMode, model, debateStyle);
-    
+    let prompt = this.buildPrompt(round, topic, description, isConsensusMode, model, debateStyle);
+
+    // Inject research findings for research-assisted mode
+    if (debateStyle === 'research-assisted' && this.researchFindings) {
+      const guidance = this.buildResearchAwareDebaterGuidance(this.researchFindings);
+      prompt = guidance + prompt;
+      console.log(`[Research-Assisted] Injected ${guidance.length} chars of research guidance for ${model.displayName || model.name}`);
+    }
+
     try {
       let content = '';
       
