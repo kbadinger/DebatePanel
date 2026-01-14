@@ -205,7 +205,15 @@ export function DebateInterface({ config, onComplete }: DebateInterfaceProps) {
     
     try {
       console.log('Starting debate with config:', config);
-      
+
+      // Debug: Log hasLiveSearch for research-assisted mode
+      if (config.style === 'research-assisted') {
+        console.log('Research-assisted mode: Checking models for hasLiveSearch:');
+        config.models.forEach(m => {
+          console.log(`  - ${m.displayName}: hasLiveSearch=${m.contextInfo?.hasLiveSearch}`);
+        });
+      }
+
       // Clean up models to remove costInfo before sending, but keep contextInfo for research-assisted mode
       const cleanConfig = {
         ...config,
@@ -226,7 +234,15 @@ export function DebateInterface({ config, onComplete }: DebateInterfaceProps) {
           }
         } : undefined
       };
-      
+
+      // Debug: Log cleaned config for research-assisted mode
+      if (config.style === 'research-assisted') {
+        console.log('Research-assisted mode: Cleaned config models:');
+        cleanConfig.models.forEach(m => {
+          console.log(`  - ${m.displayName}: contextInfo=${JSON.stringify(m.contextInfo)}`);
+        });
+      }
+
       // Always use local Next.js API (returns JSON, handles Railway internally if needed)
       const response = await fetch('/api/debate', {
         method: 'POST',

@@ -380,6 +380,15 @@ Format your response as a clear argument with supporting points.`;
     // Research-assisted mode: Handle research phase and filter out researcher models from debating
     let researchFindings = '';
     if (config.style === 'research-assisted') {
+      // Debug: Log model contextInfo to trace hasLiveSearch
+      this.logger.log(`Research-assisted mode detected. Checking models for hasLiveSearch:`);
+      for (const model of config.models) {
+        this.logger.log(`  - ${model.displayName}: contextInfo=${JSON.stringify(model.contextInfo)}, hasLiveSearch=${model.contextInfo?.hasLiveSearch}`);
+      }
+      const researcherCount = config.models.filter(m => m.contextInfo?.hasLiveSearch === true).length;
+      const debaterCount = config.models.filter(m => !m.contextInfo?.hasLiveSearch).length;
+      this.logger.log(`Found ${researcherCount} researcher(s) and ${debaterCount} debater(s)`);
+
       // Get previous research findings from prior rounds
       const previousFindings = previousRounds
         .map(r => r.researchFindings || '')
