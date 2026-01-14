@@ -356,6 +356,31 @@ router.post('/', async (req, res) => {
       console.log('[Pre-Round] Skipping ideation preprocessing - not ideation mode');
     }
 
+    // === RESEARCH-ASSISTED MODE: Run pre-debate research ===
+    if (config.style === 'research-assisted') {
+      console.log('[Pre-Round] Research-assisted mode detected, running pre-debate research...');
+
+      const researchFindings = await orchestrator.runPreDebateResearch(config.topic, config.description);
+
+      if (researchFindings) {
+        console.log(`[Pre-Round] Research findings gathered (${researchFindings.length} chars)`);
+
+        // Stream research findings to frontend as first output
+        const researchUpdate = {
+          type: 'research-findings',
+          data: {
+            findings: researchFindings,
+            debateId: debate.id,
+            timestamp: new Date().toISOString()
+          }
+        };
+        safeWrite(researchUpdate, true);
+        console.log('[Pre-Round] Research findings streamed to client');
+      } else {
+        console.log('[Pre-Round] No research findings gathered');
+      }
+    }
+
     // Run debate rounds
     for (let i = 1; i <= config.rounds; i++) {
       console.log(`Starting round ${i}`);

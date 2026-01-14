@@ -459,8 +459,8 @@ Challenge assumptions. Propose alternatives nobody else would consider.
       const debaters = this.getDebaterModels();
       console.log(`[Research-Assisted] Found ${researchers.length} researcher(s) and ${debaters.length} debater(s)`);
 
-      // Run pre-debate research on round 1
-      if (roundNumber === 1) {
+      // Run pre-debate research on round 1 (only if not already gathered by route)
+      if (roundNumber === 1 && !this.researchFindings) {
         console.log('[Research-Assisted] Running pre-debate research phase...');
         this.researchFindings = await this.runPreDebateResearch(topic, description);
         if (this.researchFindings) {
@@ -468,6 +468,8 @@ Challenge assumptions. Propose alternatives nobody else would consider.
         } else {
           console.log('[Research-Assisted] No research findings collected');
         }
+      } else if (this.researchFindings) {
+        console.log(`[Research-Assisted] Using existing research findings (${this.researchFindings.length} chars)`);
       }
 
       // Filter out researcher models from debating
