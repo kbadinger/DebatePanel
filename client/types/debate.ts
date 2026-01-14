@@ -25,10 +25,11 @@ export interface Model {
     suggestedRole?: string; // Suggested role in debates
     isSlowThinking?: boolean; // Reasoning model (takes longer per response)
     avgTimePerRound?: number; // Estimated seconds per round
+    hasLiveSearch?: boolean; // Can fetch real-time data (Perplexity, Grok)
   };
 }
 
-export type DebateStyle = 'adversarial' | 'consensus-seeking' | 'ideation';
+export type DebateStyle = 'adversarial' | 'consensus-seeking' | 'ideation' | 'research-assisted';
 
 export type Conviction = 'LOW' | 'MEDIUM' | 'HIGH';
 
@@ -89,6 +90,7 @@ export interface DebateRound {
   responses: ModelResponse[];
   consensus?: string;
   keyDisagreements?: string[];
+  researchFindings?: string; // Live research data from researcher models (research-assisted mode)
 }
 
 export interface Debate {

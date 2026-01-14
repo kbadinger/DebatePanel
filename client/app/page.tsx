@@ -976,6 +976,38 @@ Industry & Society:
                   )}
                 </div>
               </label>
+              <label className={`flex items-start p-3 border rounded-lg hover:bg-slate-50 cursor-pointer transition-colors ${
+                config.style === 'research-assisted' ? 'border-cyan-500 bg-cyan-50' : 'border-slate-300'
+              }`}>
+                <input
+                  type="radio"
+                  name="debate-style"
+                  checked={config.style === 'research-assisted'}
+                  onChange={() => setConfig({ ...config, style: 'research-assisted' })}
+                  className="mr-3 h-4 w-4 text-cyan-600 focus:ring-cyan-500 mt-1"
+                />
+                <div>
+                  <span className="text-slate-700 font-medium">🔬 Research-Assisted</span>
+                  <p className="text-xs text-slate-500 mt-1">
+                    Perplexity/Grok fetch live data, other models analyze and debate using current facts.
+                  </p>
+                  {config.style === 'research-assisted' && (
+                    <div className="mt-2 text-xs text-cyan-700 bg-cyan-100 p-2 rounded">
+                      <strong>How it works:</strong> Research models gather current facts → Debaters analyze and argue using real data → Ask for more data anytime
+                    </div>
+                  )}
+                  {config.style === 'research-assisted' && !config.models.some(m => m.contextInfo?.hasLiveSearch) && (
+                    <div className="mt-2 text-xs text-amber-700 bg-amber-100 p-2 rounded">
+                      ⚠️ Select at least one researcher model (Perplexity or Grok) for live data
+                    </div>
+                  )}
+                  {config.style === 'research-assisted' && config.models.some(m => m.contextInfo?.hasLiveSearch) && !config.models.some(m => !m.contextInfo?.hasLiveSearch) && (
+                    <div className="mt-2 text-xs text-amber-700 bg-amber-100 p-2 rounded">
+                      ⚠️ Select at least one debater model (non-Perplexity/Grok) to analyze the research
+                    </div>
+                  )}
+                </div>
+              </label>
             </div>
           </div>
 

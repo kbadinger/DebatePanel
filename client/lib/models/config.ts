@@ -191,6 +191,20 @@ const MODEL_ROLES: Record<string, { strengths: ModelStrength[], role: string }> 
   'default': { strengths: ['general'], role: 'General analysis and balanced perspective' }
 };
 
+// Models with live web search capability (can fetch real-time data)
+const LIVE_SEARCH_MODELS: Set<string> = new Set([
+  // Perplexity - All models have built-in web search
+  'sonar-pro',
+  'sonar-deep-research',
+  'sonar-reasoning-pro',
+  'sonar',
+  // Grok 4 - Real-time search capability
+  'grok-4-0709',
+  'grok-4',
+  'grok-4-fast-reasoning',
+  'grok-4-fast-non-reasoning',
+]);
+
 // Model performance characteristics for slow thinking/reasoning models
 const MODEL_PERFORMANCE_CHARACTERISTICS: Record<string, { isSlowThinking: boolean, avgTimePerRound: number }> = {
   // OpenAI Reasoning Models - Very slow but high quality
@@ -232,7 +246,8 @@ function withModelInfo(model: Omit<Model, 'costInfo' | 'contextInfo'>): Model {
       strengths: MODEL_ROLES[model.id]?.strengths || ['general'],
       suggestedRole: MODEL_ROLES[model.id]?.role || 'General analysis and balanced perspective',
       isSlowThinking: performance?.isSlowThinking || false,
-      avgTimePerRound: performance?.avgTimePerRound || 30 // Default to 30 seconds for normal models
+      avgTimePerRound: performance?.avgTimePerRound || 30, // Default to 30 seconds for normal models
+      hasLiveSearch: LIVE_SEARCH_MODELS.has(model.id), // Can fetch real-time data
     }
   };
   

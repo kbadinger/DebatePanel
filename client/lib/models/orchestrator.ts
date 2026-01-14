@@ -377,6 +377,40 @@ Format your response as a clear argument with supporting points.`;
       }
     }
 
+    // Research-assisted mode: Handle research phase and filter out researcher models from debating
+    let researchFindings = '';
+    if (config.style === 'research-assisted') {
+      // Get previous research findings from prior rounds
+      const previousFindings = previousRounds
+        .map(r => r.researchFindings || '')
+        .filter(f => f)
+        .join('\n\n');
+
+      if (roundNumber === 1) {
+        // Pre-debate research: Gather initial facts
+        researchFindings = await this.runPreDebateResearch(config);
+      } else {
+        // Extract questions from previous round's debater responses
+        const lastRound = previousRounds[previousRounds.length - 1];
+        if (lastRound) {
+          const debaterResponses = lastRound.responses.filter(
+            r => !this.isResearcherModel(config.models.find(m => m.id === r.modelId)!)
+          );
+          const questions = this.extractQuestionsFromResponses(debaterResponses);
+
+          // Get researchers to answer questions
+          researchFindings = await this.runResearcherQueries(config, questions, previousFindings);
+        } else {
+          researchFindings = previousFindings;
+        }
+      }
+
+      // In research-assisted mode, only debater models participate in the debate
+      participatingModels = participatingModels.filter(m => !this.isResearcherModel(m));
+
+      this.logger.log(`Research-assisted mode: ${participatingModels.length} debaters will participate (researchers excluded)`);
+    }
+
     // Run all models in parallel with timeout, but handle failures gracefully
     const responsePromises = participatingModels.map(async (model) => {
       try {
@@ -393,9 +427,14 @@ Format your response as a clear argument with supporting points.`;
         });
         
         // Race between the actual response and the timeout
+        // Inject research findings into prompt for research-assisted mode
+        const modelPrompt = config.style === 'research-assisted' && researchFindings
+          ? this.buildResearchAwareDebaterGuidance(researchFindings) + prompt
+          : prompt;
+
         const responsePromise = this.getModelResponse(
-          model, 
-          prompt, 
+          model,
+          modelPrompt,
           previousRounds.flatMap(r => r.responses),
           config
         );
@@ -499,14 +538,16 @@ Format your response as a clear argument with supporting points.`;
         })),
         consensus: analysis.consensus,
         keyDisagreements: analysis.disagreements,
+        researchFindings: researchFindings || undefined,
       };
     }
-    
+
     return {
       roundNumber,
       responses,
       consensus: analysis.consensus,
       keyDisagreements: analysis.disagreements,
+      researchFindings: researchFindings || undefined,
     };
   }
   
@@ -2098,11 +2139,11 @@ ${privateOps}`;
     debate: DebateRound[],
     topic: string,
     judgeModel: Model,
-    debateStyleOrIsConsensus: 'consensus-seeking' | 'adversarial' | 'ideation' | boolean = false,
+    debateStyleOrIsConsensus: 'consensus-seeking' | 'adversarial' | 'ideation' | 'research-assisted' | boolean = false,
     analysisDepth: 'practical' | 'thorough' | 'excellence' = 'thorough'
   ): Promise<{ analysis: string; winner?: { id: string; name: string; type: 'model' | 'human'; reason: string }; scores?: Array<{ id: string; name: string; score: number }> }> {
     // Handle backward compatibility: boolean -> style string
-    const debateStyle: 'consensus-seeking' | 'adversarial' | 'ideation' =
+    const debateStyle: 'consensus-seeking' | 'adversarial' | 'ideation' | 'research-assisted' =
       typeof debateStyleOrIsConsensus === 'boolean'
         ? (debateStyleOrIsConsensus ? 'consensus-seeking' : 'adversarial')
         : debateStyleOrIsConsensus;
@@ -2869,5 +2910,221 @@ Confidence: [0-100]% that remaining risks have been identified`;
   isModelChallenger(model: Model, config: DebateConfig): boolean {
     return config.challenger?.enabled === true &&
            config.challenger?.model?.id === model.id;
+  }
+
+  // ==================== RESEARCH-ASSISTED MODE ====================
+
+  /**
+   * Check if a model has live search capability (can fetch real-time data)
+   */
+  isResearcherModel(model: Model): boolean {
+    return model.contextInfo?.hasLiveSearch === true;
+  }
+
+  /**
+   * Get researcher models from the config
+   */
+  getResearcherModels(config: DebateConfig): Model[] {
+    return config.models.filter(m => this.isResearcherModel(m));
+  }
+
+  /**
+   * Get debater models from the config (non-researchers)
+   */
+  getDebaterModels(config: DebateConfig): Model[] {
+    return config.models.filter(m => !this.isResearcherModel(m));
+  }
+
+  /**
+   * Build system prompt for researcher models
+   */
+  buildResearcherPrompt(topic: string, query: string): string {
+    return `You are a RESEARCH ASSISTANT providing factual, current information.
+
+Your role:
+- Provide FACTS, DATA, and SOURCES only
+- NO opinions, recommendations, or analysis
+- Use your web search capability to find CURRENT information
+- Include sources/citations when possible
+- Be concise but comprehensive
+- Focus on verifiable facts, statistics, and recent developments
+
+Topic: ${topic}
+
+Research Query: ${query}
+
+Provide 3-5 key facts relevant to this query. Format each fact clearly with any available sources.
+
+IMPORTANT: Stick to facts only. Do NOT provide opinions or recommendations. Other AI models will analyze your findings.`;
+  }
+
+  /**
+   * Run pre-debate research phase to gather initial facts
+   */
+  async runPreDebateResearch(config: DebateConfig): Promise<string> {
+    const researchers = this.getResearcherModels(config);
+
+    if (researchers.length === 0) {
+      return '';
+    }
+
+    this.logger.log(`Running pre-debate research with ${researchers.length} researcher(s)`);
+
+    const researchQuery = `Gather current facts, statistics, and recent developments about: ${config.topic}${config.description ? `\n\nContext: ${config.description}` : ''}`;
+
+    const researchPromises = researchers.map(async (model) => {
+      try {
+        const systemPrompt = this.buildResearcherPrompt(config.topic, researchQuery);
+        const result = await generateText({
+          model: model.provider === 'perplexity'
+            ? perplexity(model.name)
+            : xai(model.name),
+          system: systemPrompt,
+          prompt: researchQuery,
+          temperature: 0.3, // Lower temperature for factual research
+          maxTokens: 1500,
+        });
+
+        return {
+          modelName: model.displayName,
+          findings: result.text,
+          success: true,
+        };
+      } catch (error) {
+        this.logger.logError(`Research failed for ${model.displayName}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        return {
+          modelName: model.displayName,
+          findings: '',
+          success: false,
+        };
+      }
+    });
+
+    const results = await Promise.all(researchPromises);
+    const successfulResults = results.filter(r => r.success && r.findings);
+
+    if (successfulResults.length === 0) {
+      this.logger.logError('All researchers failed to gather initial data');
+      return '';
+    }
+
+    // Combine research findings
+    const combinedFindings = successfulResults
+      .map(r => `=== Research from ${r.modelName} ===\n${r.findings}`)
+      .join('\n\n');
+
+    this.logger.log(`Pre-debate research complete. Gathered findings from ${successfulResults.length} researcher(s)`);
+
+    return combinedFindings;
+  }
+
+  /**
+   * Extract questions from debater responses that need researcher answers
+   */
+  extractQuestionsFromResponses(responses: ModelResponse[]): string[] {
+    const questions: string[] = [];
+
+    // Patterns that indicate a question or data request
+    const questionPatterns = [
+      /I need (?:current |latest |recent )?data on ([^.?!]+)/gi,
+      /What (?:are|is) the (?:current |latest |recent )?([^.?!]+)\?/gi,
+      /Can (?:someone |the researchers? )?(?:verify|confirm|check) ([^.?!]+)/gi,
+      /What(?:'s| is) the (?:current |latest )?status of ([^.?!]+)/gi,
+      /Do we have (?:current |updated )?(?:data|information|stats|statistics) on ([^.?!]+)/gi,
+      /I'd like to know ([^.?!]+)\?/gi,
+      /Could (?:the researchers? |someone )(?:find|look up|search for) ([^.?!]+)/gi,
+    ];
+
+    for (const response of responses) {
+      // Skip error responses
+      if (response.content.includes('❌') || response.content.includes('⚠️')) {
+        continue;
+      }
+
+      for (const pattern of questionPatterns) {
+        const matches = response.content.matchAll(pattern);
+        for (const match of matches) {
+          const question = match[0].trim();
+          if (question && !questions.includes(question)) {
+            questions.push(question);
+          }
+        }
+      }
+    }
+
+    return questions;
+  }
+
+  /**
+   * Run researcher queries to answer questions from debaters
+   */
+  async runResearcherQueries(
+    config: DebateConfig,
+    questions: string[],
+    previousFindings: string
+  ): Promise<string> {
+    if (questions.length === 0) {
+      return previousFindings;
+    }
+
+    const researchers = this.getResearcherModels(config);
+
+    if (researchers.length === 0) {
+      return previousFindings;
+    }
+
+    this.logger.log(`Researchers answering ${questions.length} question(s) from debaters`);
+
+    // Use the first available researcher to answer questions
+    const researcher = researchers[0];
+    const combinedQuery = questions.join('\n- ');
+
+    try {
+      const systemPrompt = this.buildResearcherPrompt(
+        config.topic,
+        `Answer these specific questions with current facts:\n- ${combinedQuery}`
+      );
+
+      const result = await generateText({
+        model: researcher.provider === 'perplexity'
+          ? perplexity(researcher.name)
+          : xai(researcher.name),
+        system: systemPrompt,
+        prompt: `Please research and answer these questions:\n- ${combinedQuery}`,
+        temperature: 0.3,
+        maxTokens: 1500,
+      });
+
+      const newFindings = `\n\n=== Additional Research (answering debater questions) ===\n${result.text}`;
+
+      return previousFindings + newFindings;
+    } catch (error) {
+      this.logger.logError(`Researcher query failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      return previousFindings;
+    }
+  }
+
+  /**
+   * Build debater prompt with research context
+   */
+  buildResearchAwareDebaterGuidance(researchFindings: string): string {
+    if (!researchFindings) {
+      return '';
+    }
+
+    return `
+=== LIVE RESEARCH DATA ===
+The following current facts have been gathered by research assistants (Perplexity/Grok) with live web access:
+
+${researchFindings}
+
+=== YOUR INSTRUCTIONS ===
+- Use this research data to inform your analysis and arguments
+- You can reference specific facts and statistics from the research
+- If you need additional data, ask for it clearly (e.g., "I need current data on X" or "What are the latest stats for Y?")
+- Your questions will be answered by the researchers in the next round
+- Focus on ANALYSIS and ARGUMENTATION - the researchers handle fact-gathering
+
+`;
   }
 }
