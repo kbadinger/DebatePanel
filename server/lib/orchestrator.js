@@ -177,14 +177,36 @@ ${researchFindings}
    * @returns {Promise<string>} - Combined research findings
    */
   async runPreDebateResearch(topic, description) {
-    const researchers = this.getResearcherModels();
+    // Auto-create researcher models based on available API keys
+    // Researchers are "bonus" models - not taken from user's debate selection
+    const researchers = [];
+
+    // Add Perplexity Sonar Pro if API key available
+    if (this.perplexity) {
+      researchers.push({
+        id: 'sonar-pro',
+        name: 'sonar-pro',
+        displayName: 'Sonar Pro (Researcher)',
+        provider: 'perplexity'
+      });
+    }
+
+    // Add Grok 4 if API key available
+    if (process.env.XAI_API_KEY) {
+      researchers.push({
+        id: 'grok-4',
+        name: 'grok-4',
+        displayName: 'Grok 4 (Researcher)',
+        provider: 'xai'
+      });
+    }
 
     if (researchers.length === 0) {
-      console.log('[Research-Assisted] No researcher models found');
+      console.log('[Research-Assisted] No researcher API keys configured (need PERPLEXITY_API_KEY or XAI_API_KEY)');
       return '';
     }
 
-    console.log(`[Research-Assisted] Running pre-debate research with ${researchers.length} researcher(s):`,
+    console.log(`[Research-Assisted] Auto-adding ${researchers.length} researcher(s):`,
       researchers.map(r => r.displayName || r.name).join(', '));
 
     const researchQuery = `Gather current facts, statistics, and recent developments about: ${topic}${description ? `\n\nContext: ${description}` : ''}`;
@@ -455,23 +477,17 @@ Challenge assumptions. Propose alternatives nobody else would consider.
   async runRound(roundNumber, topic, description, isConsensusMode = false, onModelComplete = null, debateStyle = null) {
     const responses = [];
 
-    // Research-assisted mode: Handle research phase and filter out researcher models
+    // Research-assisted mode: Run research phase, but ALL user-selected models debate
+    // Researchers (Perplexity/Grok) are auto-added as "bonus" models for research only
     let participatingModels = this.models;
 
     if (debateStyle === 'research-assisted') {
-      console.log('[Research-Assisted] Mode detected. Checking models:');
-      for (const model of this.models) {
-        const isResearcher = this.isResearcherModel(model);
-        console.log(`  - ${model.displayName || model.name}: isResearcher=${isResearcher}, contextInfo=${JSON.stringify(model.contextInfo || {})}`);
-      }
-
-      const researchers = this.getResearcherModels();
-      const debaters = this.getDebaterModels();
-      console.log(`[Research-Assisted] Found ${researchers.length} researcher(s) and ${debaters.length} debater(s)`);
+      console.log(`[Research-Assisted] Mode detected. All ${this.models.length} user-selected models will debate.`);
 
       // Run pre-debate research on round 1 (only if not already gathered by route)
+      // Research uses auto-created Perplexity/Grok models, NOT user-selected models
       if (roundNumber === 1 && !this.researchFindings) {
-        console.log('[Research-Assisted] Running pre-debate research phase...');
+        console.log('[Research-Assisted] Running pre-debate research phase with auto-added researchers...');
         this.researchFindings = await this.runPreDebateResearch(topic, description);
         if (this.researchFindings) {
           console.log(`[Research-Assisted] Research findings collected (${this.researchFindings.length} chars)`);
@@ -482,9 +498,8 @@ Challenge assumptions. Propose alternatives nobody else would consider.
         console.log(`[Research-Assisted] Using existing research findings (${this.researchFindings.length} chars)`);
       }
 
-      // Filter out researcher models from debating
-      participatingModels = debaters;
-      console.log(`[Research-Assisted] ${participatingModels.length} debaters will participate (researchers excluded)`);
+      // All user-selected models participate in debating (no filtering)
+      console.log(`[Research-Assisted] ${participatingModels.length} debaters will participate`);
     }
 
     for (const model of participatingModels) {
