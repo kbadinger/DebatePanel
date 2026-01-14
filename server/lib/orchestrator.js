@@ -207,7 +207,11 @@ ${researchFindings}
               { role: 'user', content: researchQuery }
             ],
             max_tokens: 1500,
-            temperature: 0.3 // Lower temperature for factual research
+            temperature: 0.3, // Lower temperature for factual research
+            // Enable live web search with recency filter for current data
+            web_search_options: {
+              search_recency_filter: 'day' // Prioritize results from the last 24 hours
+            }
           });
           const choice = completion?.choices?.[0];
           content = this.extractMessageContent(choice) || '';
@@ -223,7 +227,13 @@ ${researchFindings}
               { role: 'user', content: researchQuery }
             ],
             max_tokens: 1500,
-            temperature: 0.3
+            temperature: 0.3,
+            // Enable live web search for current data
+            search_parameters: {
+              mode: 'on', // Always search for researcher role
+              return_citations: true,
+              max_search_results: 10
+            }
           });
           const choice = completion?.choices?.[0];
           content = this.extractMessageContent(choice) || '';
