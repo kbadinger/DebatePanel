@@ -73,6 +73,7 @@ export const MODEL_CONTEXT_LIMITS = {
   'mistral-small-latest': 128000,
   'mistral-medium-2505': 128000,
   'pixtral-large-2411': 128000,
+  'kimi-k2.5': 262144, // Kimi K2.5 - 262K context, multimodal + agent swarm
   'kimi-k2-preview': 200000, // New K2 variant
   'kimi-k2-instruct': 200000,
   'kimi-k1.5': 200000,
@@ -176,6 +177,7 @@ const MODEL_ROLES: Record<string, { strengths: ModelStrength[], role: string }> 
   'command-a-03-2025': { strengths: ['business', 'analytical'], role: 'Enterprise-focused business analysis' },
   
   // Moonshot Kimi
+  'kimi-k2.5': { strengths: ['technical', 'analytical', 'creative'], role: 'Latest Kimi K2.5 - SOTA visual coding, multimodal, agent swarm capabilities' },
   'kimi-k2-preview': { strengths: ['technical', 'analytical'], role: 'Latest Kimi K2 - advanced coding and technical problem-solving' },
   'kimi-k2-instruct': { strengths: ['technical', 'analytical'], role: 'Advanced coding and technical problem-solving' },
   'kimi-k1.5': { strengths: ['technical'], role: 'Technical analysis with long context' },
@@ -604,6 +606,12 @@ const EXPANDABLE_MODELS: Record<string, Model[]> = {
     })
   ],
   kimi: [
+    withModelInfo({
+      id: 'kimi-k2.5',
+      provider: 'kimi',
+      name: 'moonshotai/kimi-k2.5',
+      displayName: 'Kimi K2.5'
+    }),
     withModelInfo({
       id: 'kimi-k2-preview',
       provider: 'kimi',

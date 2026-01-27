@@ -789,6 +789,16 @@ export const MODEL_PRICING: Record<string, ModelPricing> = {
   },
   
   // Moonshot Kimi Models
+  'kimi-k2.5': {
+    modelId: 'kimi-k2.5',
+    costPer1kTokens: {
+      input: 0.0000006,  // $0.0006 per 1M = $0.0000006 per 1k
+      output: 0.000003   // $0.003 per 1M = $0.000003 per 1k
+    },
+    costCategory: 'budget',
+    providerBaseCost: 0.0000036,
+    platformMarkup: 0.5  // OpenRouter fringe provider
+  },
   'kimi-k2-preview': {
     modelId: 'kimi-k2-preview',
     costPer1kTokens: {
