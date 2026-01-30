@@ -413,6 +413,26 @@ export const MODEL_PRICING: Record<string, ModelPricing> = {
     providerBaseCost: 0.014,
     platformMarkup: 0.3
   },
+  'gemini-3-flash': {
+    modelId: 'gemini-3-flash',
+    costPer1kTokens: {
+      input: 0.0001,  // Fast and efficient (Jan 2026)
+      output: 0.0004
+    },
+    costCategory: 'budget',
+    providerBaseCost: 0.0005,
+    platformMarkup: 0.3
+  },
+  'gemini-3-deep-think': {
+    modelId: 'gemini-3-deep-think',
+    costPer1kTokens: {
+      input: 0.003,   // Deep reasoning model (Nov 2025)
+      output: 0.015
+    },
+    costCategory: 'premium',
+    providerBaseCost: 0.018,
+    platformMarkup: 0.3
+  },
   'gemini-2.5-pro': {
     modelId: 'gemini-2.5-pro',
     costPer1kTokens: {
@@ -545,6 +565,26 @@ export const MODEL_PRICING: Record<string, ModelPricing> = {
     providerBaseCost: 0.010,
     platformMarkup: 0.3
   },
+  'grok-4-1-fast-reasoning': {
+    modelId: 'grok-4-1-fast-reasoning',
+    costPer1kTokens: {
+      input: 0.010,  // Grok 4.1 fast reasoning (Nov 2025)
+      output: 0.040
+    },
+    costCategory: 'premium',
+    providerBaseCost: 0.050,
+    platformMarkup: 0.3
+  },
+  'grok-4-1-fast-non-reasoning': {
+    modelId: 'grok-4-1-fast-non-reasoning',
+    costPer1kTokens: {
+      input: 0.008,  // Grok 4.1 fast non-reasoning (Nov 2025)
+      output: 0.032
+    },
+    costCategory: 'premium',
+    providerBaseCost: 0.040,
+    platformMarkup: 0.3
+  },
   'grok-4-fast-reasoning': {
     modelId: 'grok-4-fast-reasoning',
     costPer1kTokens: {
@@ -619,6 +659,16 @@ export const MODEL_PRICING: Record<string, ModelPricing> = {
   },
   
   // DeepSeek Models (Very competitive pricing)
+  'deepseek-v3.2': {
+    modelId: 'deepseek-v3.2',
+    costPer1kTokens: {
+      input: 0.00027,  // DeepSeek V3.2 - outperforms GPT-5 on reasoning (Jan 2026)
+      output: 0.0011
+    },
+    costCategory: 'budget',
+    providerBaseCost: 0.00137,
+    platformMarkup: 0.3
+  },
   'deepseek-v3.1': {
     modelId: 'deepseek-v3.1',
     costPer1kTokens: {

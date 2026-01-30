@@ -44,6 +44,8 @@ export const MODEL_CONTEXT_LIMITS = {
 
   // Google - 2M context for Gemini 2.5 Pro
   'gemini-3-pro-preview': 1048576, // 1M tokens (preview)
+  'gemini-3-flash': 1048576, // 1M tokens (Jan 2026)
+  'gemini-3-deep-think': 1048576, // 1M tokens (Nov 2025, reasoning model)
   'gemini-2.5-pro': 2000000, // 2M tokens
   'gemini-2.5-flash': 1048576, // 1M tokens
   'gemini-2.5-flash-lite': 1048576,
@@ -56,6 +58,8 @@ export const MODEL_CONTEXT_LIMITS = {
   // xAI - Keep conservative for now
   'grok-4-0709': 256000, // Slightly higher for newest
   'grok-4': 200000,
+  'grok-4-1-fast-reasoning': 256000, // Grok 4.1 fast reasoning (Nov 2025)
+  'grok-4-1-fast-non-reasoning': 256000, // Grok 4.1 fast non-reasoning (Nov 2025)
   'grok-4-fast-reasoning': 256000, // Fast reasoning variant
   'grok-4-fast-non-reasoning': 256000, // Fast non-reasoning variant
   'grok-3': 128000,
@@ -64,6 +68,7 @@ export const MODEL_CONTEXT_LIMITS = {
 
   // DeepSeek - Unlimited for reasoning model
   'deepseek-r1-0528': Infinity, // Reasoning model - unlimited
+  'deepseek-v3.2': 128000, // Latest V3.2 (Jan 2026)
   'deepseek-v3.1': 128000,
   'deepseek-chat': 128000,
   'deepseek-reasoner': 200000,
@@ -126,6 +131,8 @@ const MODEL_ROLES: Record<string, { strengths: ModelStrength[], role: string }> 
   
   // Google Gemini
   'gemini-3-pro-preview': { strengths: ['research', 'analytical', 'technical', 'creative'], role: 'Most advanced Gemini model - state-of-the-art reasoning and multimodal analysis' },
+  'gemini-3-flash': { strengths: ['research', 'general', 'technical'], role: 'Gemini 3 Flash - fast and efficient with agentic vision (Jan 2026)' },
+  'gemini-3-deep-think': { strengths: ['analytical', 'research', 'technical'], role: 'Gemini 3 Deep Think - extended reasoning for complex problems (Nov 2025)' },
   'gemini-2.5-pro': { strengths: ['research', 'analytical', 'technical'], role: 'Comprehensive research and technical analysis' },
   'gemini-2.5-flash': { strengths: ['research', 'general'], role: 'Efficient research and broad analysis' },
   'gemini-2.5-flash-lite': { strengths: ['research'], role: 'Ultra-efficient research synthesis' },
@@ -139,6 +146,8 @@ const MODEL_ROLES: Record<string, { strengths: ModelStrength[], role: string }> 
   // X.AI Grok
   'grok-4-0709': { strengths: ['creative', 'business', 'research'], role: 'Latest Grok with unconventional thinking and real-time insights' },
   'grok-4': { strengths: ['creative', 'business', 'research'], role: 'Unconventional thinking with real-time search' },
+  'grok-4-1-fast-reasoning': { strengths: ['creative', 'analytical', 'research'], role: 'Grok 4.1 fast reasoning with real-time search (Nov 2025)' },
+  'grok-4-1-fast-non-reasoning': { strengths: ['creative', 'business', 'research'], role: 'Grok 4.1 fast analysis with real-time insights (Nov 2025)' },
   'grok-4-fast-reasoning': { strengths: ['creative', 'analytical'], role: 'Fast reasoning with unconventional thinking' },
   'grok-4-fast-non-reasoning': { strengths: ['creative', 'business'], role: 'Fast general analysis with creative perspectives' },
   'grok-3': { strengths: ['creative', 'business'], role: 'Creative solutions and alternative perspectives' },
@@ -154,6 +163,7 @@ const MODEL_ROLES: Record<string, { strengths: ModelStrength[], role: string }> 
   'sonar': { strengths: ['research'], role: 'Web-informed perspectives and current data' },
   
   // DeepSeek
+  'deepseek-v3.2': { strengths: ['analytical', 'technical', 'research'], role: 'DeepSeek V3.2 - outperforms GPT-5 on reasoning tasks (Jan 2026)' },
   'deepseek-v3.1': { strengths: ['analytical', 'technical'], role: 'Latest hybrid reasoning and technical analysis model' },
   'deepseek-chat-v3.1': { strengths: ['analytical', 'technical'], role: 'Latest hybrid reasoning and technical analysis model' },
   'deepseek-r1-0528': { strengths: ['analytical', 'technical'], role: 'Enhanced mathematical and logical reasoning' },
@@ -203,6 +213,8 @@ const LIVE_SEARCH_MODELS: Set<string> = new Set([
   // Grok 4 - Real-time search capability
   'grok-4-0709',
   'grok-4',
+  'grok-4-1-fast-reasoning',
+  'grok-4-1-fast-non-reasoning',
   'grok-4-fast-reasoning',
   'grok-4-fast-non-reasoning',
 ]);
@@ -225,6 +237,7 @@ const MODEL_PERFORMANCE_CHARACTERISTICS: Record<string, { isSlowThinking: boolea
   'deepseek-reasoner': { isSlowThinking: true, avgTimePerRound: 90 }, // ~1.5 minutes per round
 
   // Google Thinking Models
+  'gemini-3-deep-think': { isSlowThinking: true, avgTimePerRound: 180 }, // ~3 minutes per round
   'gemini-2.0-flash-thinking-exp': { isSlowThinking: true, avgTimePerRound: 120 }, // ~2 minutes per round
 
   // Perplexity Reasoning
@@ -342,6 +355,12 @@ const FEATURED_MODELS: Model[] = [
     provider: 'google',
     name: 'gemini-3-pro-preview',
     displayName: 'Gemini 3 Pro (Preview)'
+  }),
+  withModelInfo({
+    id: 'gemini-3-flash',
+    provider: 'google',
+    name: 'gemini-3-flash',
+    displayName: 'Gemini 3 Flash'
   }),
   withModelInfo({
     id: 'gemini-2.5-pro',
@@ -517,6 +536,12 @@ const EXPANDABLE_MODELS: Record<string, Model[]> = {
   ],
   google: [
     withModelInfo({
+      id: 'gemini-3-deep-think',
+      provider: 'google',
+      name: 'gemini-3-deep-think',
+      displayName: 'Gemini 3 Deep Think'
+    }),
+    withModelInfo({
       id: 'gemini-2.0-pro-exp',
       provider: 'google',
       name: 'gemini-2.0-pro-exp',
@@ -536,6 +561,18 @@ const EXPANDABLE_MODELS: Record<string, Model[]> = {
     })
   ],
   xai: [
+    withModelInfo({
+      id: 'grok-4-1-fast-reasoning',
+      provider: 'xai',
+      name: 'grok-4-1-fast-reasoning',
+      displayName: 'Grok 4.1 Fast (Reasoning)'
+    }),
+    withModelInfo({
+      id: 'grok-4-1-fast-non-reasoning',
+      provider: 'xai',
+      name: 'grok-4-1-fast-non-reasoning',
+      displayName: 'Grok 4.1 Fast (Non-Reasoning)'
+    }),
     withModelInfo({
       id: 'grok-4-fast-reasoning',
       provider: 'xai',
@@ -570,6 +607,12 @@ const EXPANDABLE_MODELS: Record<string, Model[]> = {
     })
   ],
   deepseek: [
+    withModelInfo({
+      id: 'deepseek-v3.2',
+      provider: 'deepseek',
+      name: 'deepseek-chat-v3.2',
+      displayName: 'DeepSeek V3.2'
+    }),
     withModelInfo({
       id: 'deepseek-r1-0528',
       provider: 'deepseek',
