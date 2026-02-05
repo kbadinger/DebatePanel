@@ -1,0 +1,1 @@
+Run ./test_local.sh to start everything and test
