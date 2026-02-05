@@ -77,7 +77,7 @@ export const MODEL_CONTEXT_LIMITS = {
   // Other providers
   'mistral-large-latest': 128000,
   'mistral-small-latest': 128000,
-  'mistral-medium-2505': 128000,
+  'mistral-medium-2508': 128000,
   'pixtral-large-2411': 128000,
   'kimi-k2.5': 262144, // Kimi K2.5 - 262K context, multimodal + agent swarm
   'kimi-k2-preview': 200000, // New K2 variant
@@ -182,7 +182,7 @@ const MODEL_ROLES: Record<string, { strengths: ModelStrength[], role: string }> 
   'mistral-large-latest': { strengths: ['technical', 'business'], role: 'Latest European flagship - technical and business analysis' },
   'mistral-small-latest': { strengths: ['business', 'general'], role: 'Latest efficient Mistral - cost-effective European perspective' },
   'mistral-large-24-11': { strengths: ['technical', 'business'], role: 'European perspective and technical analysis' },
-  'mistral-medium-2505': { strengths: ['business', 'general'], role: 'Balanced European perspective' },
+  'mistral-medium-2508': { strengths: ['business', 'general'], role: 'Balanced European perspective' },
   'pixtral-large-2411': { strengths: ['technical'], role: 'Multimodal analysis and technical insights' },
   
   // Cohere
@@ -418,10 +418,10 @@ const FEATURED_MODELS: Model[] = [
 
   // DeepSeek - Flagship Models
   withModelInfo({
-    id: 'deepseek-v3.1',
+    id: 'deepseek-v3.2',
     provider: 'deepseek',
-    name: 'deepseek-chat-v3.1',
-    displayName: 'DeepSeek V3.1'
+    name: 'deepseek-chat',
+    displayName: 'DeepSeek V3.2'
   })
 ];
 
@@ -627,16 +627,10 @@ const EXPANDABLE_MODELS: Record<string, Model[]> = {
   ],
   deepseek: [
     withModelInfo({
-      id: 'deepseek-v3.2',
-      provider: 'deepseek',
-      name: 'deepseek-chat-v3.2',
-      displayName: 'DeepSeek V3.2'
-    }),
-    withModelInfo({
       id: 'deepseek-r1-0528',
       provider: 'deepseek',
-      name: 'deepseek-r1-0528',
-      displayName: 'DeepSeek R1 Enhanced'
+      name: 'deepseek-reasoner',
+      displayName: 'DeepSeek R1 (Reasoner)'
     })
   ],
   meta: [
@@ -661,10 +655,10 @@ const EXPANDABLE_MODELS: Record<string, Model[]> = {
       displayName: 'Mistral Small (Latest)'
     }),
     withModelInfo({
-      id: 'mistral-medium-2505',
+      id: 'mistral-medium-2508',
       provider: 'mistral',
-      name: 'mistral-medium-2505',
-      displayName: 'Mistral Medium 3'
+      name: 'mistral-medium-2508',
+      displayName: 'Mistral Medium 3.1'
     })
   ],
   kimi: [

@@ -815,8 +815,8 @@ export const MODEL_PRICING: Record<string, ModelPricing> = {
     providerBaseCost: 0.004,
     platformMarkup: 0.3
   },
-  'mistral-medium-2505': {
-    modelId: 'mistral-medium-2505',
+  'mistral-medium-2508': {
+    modelId: 'mistral-medium-2508',
     costPer1kTokens: {
       input: 0.00125,
       output: 0.00375

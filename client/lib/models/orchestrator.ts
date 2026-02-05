@@ -2801,8 +2801,8 @@ BE DECISIVE but intellectually honest. A strong recommendation acknowledges its 
       'gemini-2.5-flash': ['gemini-2.0-flash'],
       
       // DeepSeek fallbacks
-      'deepseek-v3.1': ['deepseek-chat', 'deepseek-reasoner'],
-      'deepseek-r1-0528': ['deepseek-chat', 'deepseek-v3.1']
+      'deepseek-chat': ['deepseek-reasoner'],
+      'deepseek-reasoner': ['deepseek-chat']
     };
     
     const chain = fallbackChains[model.name];
