@@ -6,6 +6,8 @@ export type ResponseLength = 'concise' | 'standard' | 'detailed' | 'comprehensiv
 
 export type AnalysisDepth = 'practical' | 'thorough' | 'excellence' | 'standard' | 'deep';
 
+export type ReasoningEffort = 'low' | 'medium' | 'high';
+
 export type DebateStatus = 'pending' | 'running' | 'completed' | 'failed' | 'converged' | 'waiting-for-human';
 
 export interface Model {
@@ -53,6 +55,7 @@ export interface DebateConfig {
   analysisDepth?: AnalysisDepth; // NEW: Controls how deeply models analyze the topic
   convergenceThreshold?: number;
   responseLength?: ResponseLength; // NEW: Control response length and cost
+  reasoningEffort?: ReasoningEffort; // Controls reasoning depth for reasoning-capable models
   judge?: {
     enabled: boolean;
     model?: Model;

@@ -1,6 +1,7 @@
 import { generateText } from 'ai';
 import { Model, ModelResponse, DebateConfig, DebateRound } from '@/types/debate';
 import { openai, anthropic, google, mistral, xai, perplexity, deepseek, meta, kimi } from './providers';
+import { REASONING_EFFORT_MODELS } from './config';
 import { RESPONSE_LENGTH_OPTIONS } from '@/lib/tokenization';
 import { PrismaClient } from '@prisma/client';
 import { DebateLogger } from '@/lib/logger';
@@ -128,8 +129,11 @@ Format your response as a clear argument with supporting points.`;
         const usesResponsesAPI = model.name === 'gpt-5-pro';
 
         // GPT-5 requires maxCompletionTokens instead of maxTokens
+        const openaiModelSettings = REASONING_EFFORT_MODELS.has(model.id) && config?.reasoningEffort
+          ? { reasoningEffort: config.reasoningEffort }
+          : {};
         const openaiParams: any = {
-          model: usesResponsesAPI ? openai.responses(model.name) : openai(model.name),
+          model: usesResponsesAPI ? openai.responses(model.name) : openai(model.name, openaiModelSettings),
           system: systemPrompt,
           prompt,
         };
@@ -206,8 +210,11 @@ Format your response as a clear argument with supporting points.`;
         case 'xai':
           this.logger.log(`Calling X.AI model: ${model.name}`);
           const xaiStartTime = Date.now();
+          const xaiModelSettings = REASONING_EFFORT_MODELS.has(model.id) && config?.reasoningEffort
+            ? { reasoningEffort: config.reasoningEffort }
+            : {};
           result = await generateText({
-            model: xai(model.name),
+            model: xai(model.name, xaiModelSettings),
             system: systemPrompt,
             prompt,
             temperature: 0.7,
@@ -225,8 +232,11 @@ Format your response as a clear argument with supporting points.`;
           });
           break;
         case 'deepseek':
+          const deepseekModelSettings = REASONING_EFFORT_MODELS.has(model.id) && config?.reasoningEffort
+            ? { reasoningEffort: config.reasoningEffort }
+            : {};
           result = await generateText({
-            model: deepseek(model.name),
+            model: deepseek(model.name, deepseekModelSettings),
             system: systemPrompt,
             prompt,
             temperature: 0.7,
@@ -2772,6 +2782,8 @@ BE DECISIVE but intellectually honest. A strong recommendation acknowledges its 
     // Define fallback chains for different models
     const fallbackChains: Record<string, string[]> = {
       // Anthropic fallbacks
+      'claude-opus-4-6': ['claude-opus-4-5-20251101', 'claude-sonnet-4-5-20250929'],
+      'claude-opus-4-5-20251101': ['claude-sonnet-4-5-20250929', 'claude-3-5-sonnet-20241022'],
       'claude-3-opus-20240229': ['claude-3-5-sonnet-20241022', 'claude-3-5-sonnet-20240620'],
       'claude-3-5-sonnet-20241022': ['claude-3-5-sonnet-20240620'],
       

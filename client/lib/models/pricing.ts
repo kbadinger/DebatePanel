@@ -280,7 +280,17 @@ export const MODEL_PRICING: Record<string, ModelPricing> = {
     platformMarkup: 0.3
   },
   
-  // Anthropic Models - Claude 4.5, 4.1 and 3.5 Series (Real Models)
+  // Anthropic Models - Claude 4.6, 4.5, 4.1 and 3.5 Series (Real Models)
+  'claude-opus-4-6': {
+    modelId: 'claude-opus-4-6',
+    costPer1kTokens: {
+      input: 0.015,  // $15 per 1M input = $0.015 per 1k
+      output: 0.075  // $75 per 1M output = $0.075 per 1k
+    },
+    costCategory: 'flagship',
+    providerBaseCost: 0.090,
+    platformMarkup: 0.3
+  },
   'claude-opus-4-5-20251101': {
     modelId: 'claude-opus-4-5-20251101',
     costPer1kTokens: {

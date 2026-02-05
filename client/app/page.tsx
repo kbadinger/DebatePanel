@@ -2,10 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
-import { DebateConfig, Model, ModelProvider } from '@/types/debate';
+import { DebateConfig, Model, ModelProvider, ReasoningEffort } from '@/types/debate';
 import { DebateInterface } from '@/components/debate/DebateInterface';
 import { ExampleDebateResult } from '@/components/debate/ExampleDebateResult';
-import { AVAILABLE_MODELS, MODEL_TIERS, PROVIDER_MODELS } from '@/lib/models/config';
+import { AVAILABLE_MODELS, MODEL_TIERS, PROVIDER_MODELS, REASONING_EFFORT_MODELS } from '@/lib/models/config';
 import { calculateDebateCost, formatCost } from '@/lib/models/pricing';
 import { calculateContextRequirements, analyzePanelDiversity, getSmartRecommendations, calculateDebateDuration } from '@/lib/context-analysis';
 import { analyzeTopicSafety, getTopicSuggestions } from '@/lib/topic-filter';
@@ -860,6 +860,27 @@ Industry & Society:
               </label>
             </div>
           </div>
+
+          {/* Reasoning Effort - only show when reasoning models are selected */}
+          {config.models.some(m => REASONING_EFFORT_MODELS.has(m.id)) && (
+            <div className="mb-4">
+              <label className="block text-sm font-semibold text-slate-700 mb-2">
+                Reasoning Effort
+              </label>
+              <p className="text-xs text-slate-500 mb-2">
+                Controls how deeply reasoning models think. Applies to: {config.models.filter(m => REASONING_EFFORT_MODELS.has(m.id)).map(m => m.displayName).join(', ')}
+              </p>
+              <select
+                value={config.reasoningEffort || 'medium'}
+                onChange={(e) => setConfig({ ...config, reasoningEffort: e.target.value as ReasoningEffort })}
+                className="w-full p-2 border border-slate-300 rounded-lg text-sm focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option value="low">Low - Faster, less thorough reasoning</option>
+                <option value="medium">Medium - Balanced speed and depth (default)</option>
+                <option value="high">High - Maximum reasoning depth, slower responses</option>
+              </select>
+            </div>
+          )}
 
           <div className="mb-4">
             <label className="block text-sm font-semibold text-slate-700 mb-2">
