@@ -29,6 +29,7 @@ export const MODEL_CONTEXT_LIMITS = {
   'o4-mini-deep-research': 200000, // Deep research variant
 
   // Anthropic - Large context windows for Claude 4+ series
+  'claude-sonnet-4-6': 200000, // Claude Sonnet 4.6 - 200k context
   'claude-opus-4-6': 200000, // Claude Opus 4.6 - 200k context
   'claude-opus-4-5-20251101': 200000, // Claude Opus 4.5 - 200k context
   'claude-sonnet-4-5-20250929': 200000, // Claude 4.5 - 200k context
@@ -44,6 +45,7 @@ export const MODEL_CONTEXT_LIMITS = {
   'claude-3-opus-20240229': 200000,
 
   // Google - 2M context for Gemini 2.5 Pro
+  'gemini-3.1-pro-preview': 1048576, // 1M tokens (Feb 2026, improved SWE + agentic)
   'gemini-3-pro-preview': 1048576, // 1M tokens (preview)
   'gemini-3-flash': 1048576, // 1M tokens (Jan 2026)
   'gemini-3-deep-think': 1048576, // 1M tokens (Nov 2025, reasoning model)
@@ -57,6 +59,7 @@ export const MODEL_CONTEXT_LIMITS = {
   'gemini-1.5-flash': 1000000,
 
   // xAI - Keep conservative for now
+  'grok-4-2': 256000, // Grok 4.2 public beta (Feb 2026)
   'grok-4-0709': 256000, // Slightly higher for newest
   'grok-4': 200000,
   'grok-4-1-fast-reasoning': 256000, // Grok 4.1 fast reasoning (Nov 2025)
@@ -117,6 +120,7 @@ const MODEL_ROLES: Record<string, { strengths: ModelStrength[], role: string }> 
   'o3-deep-research': { strengths: ['analytical', 'research', 'technical'], role: 'Deep research with advanced reasoning' },
 
   // Anthropic - Claude 4.6, 4.5, 4.1 and 3.5 Series
+  'claude-sonnet-4-6': { strengths: ['technical', 'analytical', 'ethical', 'creative'], role: 'Latest Claude Sonnet - excellent coding, reasoning, and balanced analysis' },
   'claude-opus-4-6': { strengths: ['technical', 'analytical', 'ethical', 'creative'], role: 'Latest Claude flagship - superior reasoning, coding, and nuanced analysis' },
   'claude-opus-4-5-20251101': { strengths: ['technical', 'analytical', 'ethical', 'creative'], role: 'Previous Claude flagship - exceptional at complex reasoning, coding, and nuanced analysis' },
   'claude-sonnet-4-5-20250929': { strengths: ['technical', 'analytical', 'ethical'], role: 'Best coding model in the world - excels at complex agents and reasoning' },
@@ -132,6 +136,7 @@ const MODEL_ROLES: Record<string, { strengths: ModelStrength[], role: string }> 
   'claude-3-opus-20240229': { strengths: ['ethical', 'analytical', 'general'], role: 'Deep ethical implications and comprehensive analysis' },
   
   // Google Gemini
+  'gemini-3.1-pro-preview': { strengths: ['research', 'analytical', 'technical', 'creative'], role: 'Gemini 3.1 Pro - enhanced software engineering, agentic reliability, and token efficiency' },
   'gemini-3-pro-preview': { strengths: ['research', 'analytical', 'technical', 'creative'], role: 'Most advanced Gemini model - state-of-the-art reasoning and multimodal analysis' },
   'gemini-3-flash': { strengths: ['research', 'general', 'technical'], role: 'Gemini 3 Flash - fast and efficient with agentic vision (Jan 2026)' },
   'gemini-3-deep-think': { strengths: ['analytical', 'research', 'technical'], role: 'Gemini 3 Deep Think - extended reasoning for complex problems (Nov 2025)' },
@@ -146,6 +151,7 @@ const MODEL_ROLES: Record<string, { strengths: ModelStrength[], role: string }> 
   'gemini-1.5-flash-8b': { strengths: ['research'], role: 'Lightweight research assistance' },
 
   // X.AI Grok
+  'grok-4-2': { strengths: ['creative', 'business', 'research', 'analytical'], role: 'Grok 4.2 - rapid-learning model with real-time insights (Feb 2026 beta)' },
   'grok-4-0709': { strengths: ['creative', 'business', 'research'], role: 'Latest Grok with unconventional thinking and real-time insights' },
   'grok-4': { strengths: ['creative', 'business', 'research'], role: 'Unconventional thinking with real-time search' },
   'grok-4-1-fast-reasoning': { strengths: ['creative', 'analytical', 'research'], role: 'Grok 4.1 fast reasoning with real-time search (Nov 2025)' },
@@ -213,6 +219,7 @@ const LIVE_SEARCH_MODELS: Set<string> = new Set([
   'sonar-reasoning-pro',
   'sonar',
   // Grok 4 - Real-time search capability
+  'grok-4-2',
   'grok-4-0709',
   'grok-4',
   'grok-4-1-fast-reasoning',
@@ -332,6 +339,12 @@ const FEATURED_MODELS: Model[] = [
 
   // Anthropic - Flagship Models (Curated via Model Discovery System)
   withModelInfo({
+    id: 'claude-sonnet-4-6',
+    provider: 'anthropic',
+    name: 'claude-sonnet-4-6',
+    displayName: 'Claude Sonnet 4.6'
+  }),
+  withModelInfo({
     id: 'claude-opus-4-6',
     provider: 'anthropic',
     name: 'claude-opus-4-6',
@@ -364,6 +377,12 @@ const FEATURED_MODELS: Model[] = [
 
   // Google - Flagship Gemini 3 & 2.5 Series (Latest Generation)
   withModelInfo({
+    id: 'gemini-3.1-pro-preview',
+    provider: 'google',
+    name: 'gemini-3.1-pro-preview',
+    displayName: 'Gemini 3.1 Pro (Preview)'
+  }),
+  withModelInfo({
     id: 'gemini-3-pro-preview',
     provider: 'google',
     name: 'gemini-3-pro-preview',
@@ -395,6 +414,12 @@ const FEATURED_MODELS: Model[] = [
   }),
 
   // xAI - Flagship Grok Models (Discovered via API)
+  withModelInfo({
+    id: 'grok-4-2',
+    provider: 'xai',
+    name: 'grok-4-2',
+    displayName: 'Grok 4.2 (Beta)'
+  }),
   withModelInfo({
     id: 'grok-4-0709',
     provider: 'xai',

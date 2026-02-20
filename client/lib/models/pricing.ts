@@ -281,6 +281,16 @@ export const MODEL_PRICING: Record<string, ModelPricing> = {
   },
   
   // Anthropic Models - Claude 4.6, 4.5, 4.1 and 3.5 Series (Real Models)
+  'claude-sonnet-4-6': {
+    modelId: 'claude-sonnet-4-6',
+    costPer1kTokens: {
+      input: 0.003,  // $3 per 1M input = $0.003 per 1k
+      output: 0.015  // $15 per 1M output = $0.015 per 1k
+    },
+    costCategory: 'flagship',
+    providerBaseCost: 0.018,
+    platformMarkup: 0.3
+  },
   'claude-opus-4-6': {
     modelId: 'claude-opus-4-6',
     costPer1kTokens: {
@@ -731,6 +741,16 @@ export const MODEL_PRICING: Record<string, ModelPricing> = {
   },
   
   // X.AI Grok Models
+  'grok-4-2': {
+    modelId: 'grok-4-2',
+    costPer1kTokens: {
+      input: 0.015,  // Grok 4.2 beta - flagship pricing
+      output: 0.060
+    },
+    costCategory: 'flagship',
+    providerBaseCost: 0.075,
+    platformMarkup: 0.3
+  },
   'grok-4-0709': {
     modelId: 'grok-4-0709',
     costPer1kTokens: {
