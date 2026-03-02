@@ -96,7 +96,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       startConf: String(startConfidence),
       endConf: String(endConfidence)
     }),
-    ...(debate.winnerName && { winner: debate.winnerName })
+    ...(debate.winnerName && { winner: debate.winnerName }),
+    v: '2',
   });
   const ogImageUrl = `${baseUrl}/api/og?${ogParams.toString()}`;
 
