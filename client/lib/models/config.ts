@@ -59,7 +59,6 @@ export const MODEL_CONTEXT_LIMITS = {
   'gemini-1.5-flash': 1000000,
 
   // xAI - Keep conservative for now
-  'grok-4-2': 256000, // Grok 4.2 public beta (Feb 2026)
   'grok-4-0709': 256000, // Slightly higher for newest
   'grok-4': 200000,
   'grok-4-1-fast-reasoning': 256000, // Grok 4.1 fast reasoning (Nov 2025)
@@ -151,7 +150,6 @@ const MODEL_ROLES: Record<string, { strengths: ModelStrength[], role: string }> 
   'gemini-1.5-flash-8b': { strengths: ['research'], role: 'Lightweight research assistance' },
 
   // X.AI Grok
-  'grok-4-2': { strengths: ['creative', 'business', 'research', 'analytical'], role: 'Grok 4.2 - rapid-learning model with real-time insights (Feb 2026 beta)' },
   'grok-4-0709': { strengths: ['creative', 'business', 'research'], role: 'Latest Grok with unconventional thinking and real-time insights' },
   'grok-4': { strengths: ['creative', 'business', 'research'], role: 'Unconventional thinking with real-time search' },
   'grok-4-1-fast-reasoning': { strengths: ['creative', 'analytical', 'research'], role: 'Grok 4.1 fast reasoning with real-time search (Nov 2025)' },
@@ -219,7 +217,6 @@ const LIVE_SEARCH_MODELS: Set<string> = new Set([
   'sonar-reasoning-pro',
   'sonar',
   // Grok 4 - Real-time search capability
-  'grok-4-2',
   'grok-4-0709',
   'grok-4',
   'grok-4-1-fast-reasoning',
@@ -414,12 +411,6 @@ const FEATURED_MODELS: Model[] = [
   }),
 
   // xAI - Flagship Grok Models (Discovered via API)
-  withModelInfo({
-    id: 'grok-4-2',
-    provider: 'xai',
-    name: 'grok-4-2',
-    displayName: 'Grok 4.2 (Beta)'
-  }),
   withModelInfo({
     id: 'grok-4-0709',
     provider: 'xai',
