@@ -135,6 +135,27 @@ export const MODEL_PRICING: Record<string, ModelPricing> = {
     providerBaseCost: 0.01125,
     platformMarkup: 0.3
   },
+  // GPT-5.4 Series (March 2026 Release)
+  'gpt-5.4': {
+    modelId: 'gpt-5.4',
+    costPer1kTokens: {
+      input: 0.0025,   // $2.50 per 1M input = $0.0025 per 1k
+      output: 0.015    // $15 per 1M output = $0.015 per 1k
+    },
+    costCategory: 'flagship',
+    providerBaseCost: 0.0175,
+    platformMarkup: 0.3
+  },
+  'gpt-5.4-pro': {
+    modelId: 'gpt-5.4-pro',
+    costPer1kTokens: {
+      input: 0.030,    // $30 per 1M input = $0.030 per 1k
+      output: 0.180    // $180 per 1M output = $0.180 per 1k
+    },
+    costCategory: 'flagship',
+    providerBaseCost: 0.210,
+    platformMarkup: 0.3
+  },
   // GPT-5.2 Series (December 2025 Release)
   'gpt-5.2': {
     modelId: 'gpt-5.2',

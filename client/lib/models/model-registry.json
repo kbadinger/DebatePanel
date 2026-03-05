@@ -8,6 +8,26 @@
       "requiresAuth": true,
       "models": [
         {
+          "id": "gpt-5.4",
+          "apiName": "gpt-5.4",
+          "displayName": "GPT-5.4",
+          "category": "flagship",
+          "deprecated": false,
+          "releaseDate": "2026-03",
+          "verified": true,
+          "notes": "Most capable frontier model with 1M context opt-in and native computer control"
+        },
+        {
+          "id": "gpt-5.4-pro",
+          "apiName": "gpt-5.4-pro",
+          "displayName": "GPT-5.4 Pro",
+          "category": "flagship",
+          "deprecated": false,
+          "releaseDate": "2026-03",
+          "verified": true,
+          "notes": "Extended reasoning Pro variant - highest accuracy for complex professional tasks"
+        },
+        {
           "id": "gpt-4o",
           "apiName": "gpt-4o",
           "displayName": "GPT-4o",
