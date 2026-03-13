@@ -14,16 +14,9 @@ I wanted the smartest minds in the world to challenge each other and produce ans
 
 ## Screenshots
 
-> **To add screenshots:** Take 3 captures and save to `screenshots/` in this repo:
-> 1. `panel-setup.png` — Model selection screen with 3–4 models chosen
-> 2. `debate-in-progress.png` — Active debate with streaming responses
-> 3. `judge-scorecard.png` — Final judge analysis with 0–100 scores
-
-<!-- Once screenshots are added, uncomment these:
-![Panel Setup](screenshots/panel-setup.png)
-![Debate in Progress](screenshots/debate-in-progress.png)
-![Judge Scorecard](screenshots/judge-scorecard.png)
--->
+![Judge Scorecard](screenshots/2026-03-13_13-36-17.png)
+![Debate in Progress](screenshots/2026-03-13_13-00-37.png)
+![Panel Setup](screenshots/2026-03-13_12-50-07.png)
 
 ---
 
