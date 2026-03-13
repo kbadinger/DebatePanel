@@ -1,0 +1,16 @@
+
+> debate-panel@0.1.0 dev
+> next dev
+
+ ⚠ Warning: Found multiple lockfiles. Selecting /Users/kevinbadinger/package-lock.json.
+   Consider removing the lockfiles at:
+   * /Users/kevinbadinger/Projects/DebatePanel/debate-panel/package-lock.json
+
+   ▲ Next.js 15.4.1
+   - Local:        http://localhost:3000
+   - Network:      http://10.0.0.159:3000
+   - Environments: .env.local, .env
+
+ ✓ Starting...
+ ✓ Ready in 1461ms
+[?25h

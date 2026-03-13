@@ -1,0 +1,114 @@
+{
+  "feeds": [
+    {
+      "provider": "openai",
+      "name": "OpenAI Help Center - Release Notes",
+      "url": "https://help.openai.com/en/articles/6825453-chatgpt-release-notes",
+      "type": "web",
+      "keywords": ["model", "gpt", "release", "api", "available"]
+    },
+    {
+      "provider": "openai",
+      "name": "OpenAI Developer Forum - Announcements",
+      "url": "https://community.openai.com/c/announcements/7",
+      "type": "forum",
+      "keywords": ["model", "gpt", "release", "api"]
+    },
+    {
+      "provider": "anthropic",
+      "name": "Anthropic Blog",
+      "url": "https://www.anthropic.com/news",
+      "type": "blog",
+      "keywords": ["claude", "model", "release", "api"]
+    },
+    {
+      "provider": "anthropic",
+      "name": "Anthropic Twitter",
+      "url": "https://twitter.com/AnthropicAI",
+      "type": "twitter",
+      "keywords": ["claude", "model", "release"]
+    },
+    {
+      "provider": "google",
+      "name": "Google AI Blog",
+      "url": "https://blog.google/technology/ai/",
+      "type": "blog",
+      "keywords": ["gemini", "model", "release", "api"]
+    },
+    {
+      "provider": "google",
+      "name": "Google Developers Blog - AI",
+      "url": "https://developers.googleblog.com/",
+      "type": "blog",
+      "keywords": ["gemini", "model", "api"]
+    },
+    {
+      "provider": "xai",
+      "name": "X.AI Blog",
+      "url": "https://x.ai/blog",
+      "type": "blog",
+      "keywords": ["grok", "model", "release", "api"]
+    },
+    {
+      "provider": "xai",
+      "name": "X.AI Twitter",
+      "url": "https://twitter.com/xai",
+      "type": "twitter",
+      "keywords": ["grok", "model", "release"]
+    },
+    {
+      "provider": "deepseek",
+      "name": "DeepSeek Blog",
+      "url": "https://www.deepseek.com/blog",
+      "type": "blog",
+      "keywords": ["deepseek", "model", "release", "api"]
+    },
+    {
+      "provider": "mistral",
+      "name": "Mistral AI Blog",
+      "url": "https://mistral.ai/news/",
+      "type": "blog",
+      "keywords": ["mistral", "model", "release", "api"]
+    },
+    {
+      "provider": "meta",
+      "name": "Meta AI Blog",
+      "url": "https://ai.meta.com/blog/",
+      "type": "blog",
+      "keywords": ["llama", "model", "release"]
+    },
+    {
+      "provider": "perplexity",
+      "name": "Perplexity Blog",
+      "url": "https://blog.perplexity.ai/",
+      "type": "blog",
+      "keywords": ["sonar", "model", "release", "api"]
+    },
+    {
+      "provider": "general",
+      "name": "HuggingFace Model Hub",
+      "url": "https://huggingface.co/models",
+      "type": "hub",
+      "keywords": ["model", "release", "new"]
+    },
+    {
+      "provider": "general",
+      "name": "Hacker News - AI",
+      "url": "https://news.ycombinator.com/",
+      "type": "news",
+      "keywords": ["gpt", "claude", "gemini", "model", "release"]
+    }
+  ],
+  "alertPriority": {
+    "high": ["release", "available", "api", "launched"],
+    "medium": ["announced", "preview", "beta"],
+    "low": ["research", "paper", "study"]
+  },
+  "checkInterval": "6 hours",
+  "notificationChannels": {
+    "github_issue": true,
+    "slack": false,
+    "discord": false,
+    "email": false
+  }
+}

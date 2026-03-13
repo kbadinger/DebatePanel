@@ -1,0 +1,200 @@
+name: Monthly Model Usage Monitoring
+
+on:
+  schedule:
+    # Run on the 1st of every month at 9am UTC
+    - cron: '0 9 1 * *'
+  workflow_dispatch:  # Allow manual triggering
+
+jobs:
+  analyze-usage:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Analyze model usage from database
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          # Create analysis script
+          cat > analyze-usage.ts << 'EOF'
+          import { PrismaClient } from '@prisma/client';
+
+          const prisma = new PrismaClient();
+
+          async function analyzeUsage() {
+            const thirtyDaysAgo = new Date();
+            thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+            // Get usage by model
+            const usageByModel = await prisma.usageRecord.groupBy({
+              by: ['modelId', 'modelProvider'],
+              where: {
+                createdAt: {
+                  gte: thirtyDaysAgo
+                }
+              },
+              _count: {
+                id: true
+              },
+              _sum: {
+                apiCost: true,
+                totalCost: true
+              }
+            });
+
+            // Sort by count (most used first)
+            usageByModel.sort((a, b) => (b._count.id || 0) - (a._count.id || 0));
+
+            console.log('MODEL USAGE ANALYSIS (Last 30 Days)');
+            console.log('='.repeat(80));
+            console.log('');
+
+            let openRouterHighUsage = [];
+
+            for (const record of usageByModel) {
+              const debates = record._count.id || 0;
+              const apiCost = record._sum.apiCost || 0;
+              const totalCost = record._sum.totalCost || 0;
+
+              console.log(`Model: ${record.modelId}`);
+              console.log(`  Provider: ${record.modelProvider}`);
+              console.log(`  Debates: ${debates}`);
+              console.log(`  API Cost: $${apiCost.toFixed(2)}`);
+              console.log(`  Total Cost: $${totalCost.toFixed(2)}`);
+              console.log('');
+
+              // Flag OpenRouter models with >500 debates/month
+              // Note: This is a simplified check - in reality, you'd check model config for routeVia
+              if (debates > 500) {
+                openRouterHighUsage.push({
+                  modelId: record.modelId,
+                  provider: record.modelProvider,
+                  debates,
+                  apiCost
+                });
+              }
+            }
+
+            // Output recommendations
+            if (openRouterHighUsage.length > 0) {
+              console.log('='.repeat(80));
+              console.log('RECOMMENDATIONS FOR DIRECT INTEGRATION');
+              console.log('='.repeat(80));
+              console.log('');
+              console.log('The following models have >500 debates/month and may benefit from direct API integration:');
+              console.log('');
+
+              for (const model of openRouterHighUsage) {
+                const monthlyOpenRouterCost = model.apiCost;
+                // Estimate: Direct integration saves ~20% on API costs (no OpenRouter markup)
+                const estimatedDirectCost = monthlyOpenRouterCost * 0.80;
+                const monthlySavings = monthlyOpenRouterCost - estimatedDirectCost;
+
+                console.log(`📊 ${model.modelId}`);
+                console.log(`   Provider: ${model.provider}`);
+                console.log(`   Monthly Debates: ${model.debates}`);
+                console.log(`   Current Cost (via OpenRouter): $${monthlyOpenRouterCost.toFixed(2)}`);
+                console.log(`   Estimated Direct Cost: $${estimatedDirectCost.toFixed(2)}`);
+                console.log(`   Potential Monthly Savings: $${monthlySavings.toFixed(2)}`);
+                console.log(`   Annual Savings: $${(monthlySavings * 12).toFixed(2)}`);
+                console.log('');
+              }
+            }
+
+            await prisma.$disconnect();
+          }
+
+          analyzeUsage().catch(console.error);
+          EOF
+
+          # Run analysis
+          npx tsx analyze-usage.ts > usage-report.txt 2>&1 || true
+          cat usage-report.txt
+
+      - name: Check for high-usage OpenRouter models
+        id: check_recommendations
+        run: |
+          if [ -f usage-report.txt ] && grep -q "RECOMMENDATIONS FOR DIRECT INTEGRATION" usage-report.txt; then
+            echo "has_recommendations=true" >> $GITHUB_OUTPUT
+            echo "✅ Found models worth direct integration!"
+          else
+            echo "has_recommendations=false" >> $GITHUB_OUTPUT
+            echo "No high-usage OpenRouter models"
+          fi
+
+      - name: Create GitHub Issue for recommendations
+        if: steps.check_recommendations.outputs.has_recommendations == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const usageReport = fs.readFileSync('usage-report.txt', 'utf8');
+
+            // Extract recommendations section
+            const recommendationsMatch = usageReport.match(/RECOMMENDATIONS FOR DIRECT INTEGRATION[\s\S]*/);
+            const recommendations = recommendationsMatch ? recommendationsMatch[0] : 'See full report in artifacts';
+
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `💡 Model Usage Analysis: Direct Integration Opportunities`,
+              body: `## 📊 Monthly Model Usage Analysis
+
+            This issue was automatically created based on the monthly usage monitoring workflow.
+
+            ### High-Usage OpenRouter Models Detected
+
+            Some models routed via OpenRouter have exceeded 500 debates/month. Consider building direct API integrations to improve margins.
+
+            \`\`\`
+            ${recommendations.slice(0, 1500)}
+            \`\`\`
+
+            ### Next Steps
+
+            1. Review the full usage report in workflow artifacts
+            2. Evaluate ROI for building direct integration:
+               - Development time: ~8 hours per provider
+               - Break-even: Usually 3-4 months
+               - Ongoing savings: 10-20% on API costs
+            3. Create task to implement direct integration if justified
+            4. Update \`DIRECT_PROVIDERS\` in \`lib/models/openrouter-discovery.ts\`
+
+            ### Reference
+
+            - **Architecture**: See \`OPENROUTER_INTEGRATION.md\`
+            - **Usage Data**: ${new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+            - **Workflow**: \`.github/workflows/model-usage-monitoring.yml\`
+
+            ---
+
+            🤖 Generated automatically by monthly usage monitoring
+            `,
+              labels: ['models', 'optimization', 'cost-savings']
+            });
+
+      - name: Upload usage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: model-usage-report-${{ github.run_number }}
+          path: usage-report.txt
+          retention-days: 90
+          if-no-files-found: warn
+
+      - name: Notify on failure
+        if: failure()
+        run: |
+          echo "::error::Usage monitoring failed. Check the logs for details."

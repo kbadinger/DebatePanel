@@ -1,0 +1,345 @@
+{
+  "lastUpdated": "2025-01-19T00:00:00Z",
+  "providers": {
+    "openai": {
+      "name": "OpenAI",
+      "apiUrl": "https://api.openai.com/v1",
+      "modelsEndpoint": "/models",
+      "requiresAuth": true,
+      "models": [
+        {
+          "id": "gpt-5.4",
+          "apiName": "gpt-5.4",
+          "displayName": "GPT-5.4",
+          "category": "flagship",
+          "deprecated": false,
+          "releaseDate": "2026-03",
+          "verified": true,
+          "notes": "Most capable frontier model with 1M context opt-in and native computer control"
+        },
+        {
+          "id": "gpt-5.4-pro",
+          "apiName": "gpt-5.4-pro",
+          "displayName": "GPT-5.4 Pro",
+          "category": "flagship",
+          "deprecated": false,
+          "releaseDate": "2026-03",
+          "verified": true,
+          "notes": "Extended reasoning Pro variant - highest accuracy for complex professional tasks"
+        },
+        {
+          "id": "gpt-4o",
+          "apiName": "gpt-4o",
+          "displayName": "GPT-4o",
+          "category": "standard",
+          "deprecated": false,
+          "releaseDate": "2024-05",
+          "verified": true
+        },
+        {
+          "id": "gpt-4o-mini",
+          "apiName": "gpt-4o-mini",
+          "displayName": "GPT-4o Mini",
+          "category": "budget",
+          "deprecated": false,
+          "releaseDate": "2024-07",
+          "verified": true
+        },
+        {
+          "id": "o1",
+          "apiName": "o1",
+          "displayName": "o1",
+          "category": "reasoning",
+          "deprecated": false,
+          "releaseDate": "2024-12",
+          "verified": true
+        },
+        {
+          "id": "o1-mini",
+          "apiName": "o1-mini",
+          "displayName": "o1 Mini",
+          "category": "reasoning",
+          "deprecated": false,
+          "releaseDate": "2024-09",
+          "verified": true
+        },
+        {
+          "id": "gpt-5-chat-latest",
+          "apiName": "gpt-5-chat-latest",
+          "displayName": "GPT-5",
+          "category": "flagship",
+          "deprecated": false,
+          "releaseDate": "2025-08",
+          "verified": true,
+          "notes": "The best model for coding and agentic tasks across domains (using chat-latest variant)"
+        },
+        {
+          "id": "gpt-5-mini",
+          "apiName": "gpt-5-mini",
+          "displayName": "GPT-5 Mini",
+          "category": "standard",
+          "deprecated": false,
+          "releaseDate": "2025-01",
+          "verified": true,
+          "notes": "A faster, cost-efficient version of GPT-5 for well-defined tasks"
+        },
+        {
+          "id": "gpt-5-nano",
+          "apiName": "gpt-5-nano",
+          "displayName": "GPT-5 Nano",
+          "category": "budget",
+          "deprecated": false,
+          "releaseDate": "2025-01",
+          "verified": true,
+          "notes": "Fastest, most cost-efficient version of GPT-5"
+        }
+      ]
+    },
+    "anthropic": {
+      "name": "Anthropic",
+      "apiUrl": "https://api.anthropic.com/v1",
+      "modelsEndpoint": null,
+      "requiresAuth": true,
+      "models": [
+        {
+          "id": "claude-3-5-sonnet-20241022",
+          "apiName": "claude-3-5-sonnet-20241022",
+          "displayName": "Claude 3.5 Sonnet",
+          "category": "standard",
+          "deprecated": false,
+          "releaseDate": "2024-10",
+          "verified": true
+        },
+        {
+          "id": "claude-3-5-haiku-20241022",
+          "apiName": "claude-3-5-haiku-20241022",
+          "displayName": "Claude 3.5 Haiku",
+          "category": "budget",
+          "deprecated": false,
+          "releaseDate": "2024-11",
+          "verified": true
+        },
+        {
+          "id": "claude-3-opus-20240229",
+          "apiName": "claude-3-opus-20240229",
+          "displayName": "Claude 3 Opus",
+          "category": "premium",
+          "deprecated": false,
+          "releaseDate": "2024-02",
+          "verified": true
+        },
+        {
+          "id": "claude-3-5-sonnet-20241022",
+          "apiName": "claude-3-5-sonnet-20241022",
+          "displayName": "Claude 3.5 Sonnet (Latest)",
+          "category": "standard",
+          "deprecated": false,
+          "releaseDate": "2024-10",
+          "verified": true,
+          "notes": "Latest Claude 3.5 Sonnet model with enhanced capabilities"
+        }
+      ]
+    },
+    "google": {
+      "name": "Google",
+      "apiUrl": "https://generativelanguage.googleapis.com/v1",
+      "modelsEndpoint": "/models",
+      "requiresAuth": true,
+      "models": [
+        {
+          "id": "gemini-2.0-flash-exp",
+          "apiName": "gemini-2.0-flash-exp",
+          "displayName": "Gemini 2.0 Flash",
+          "category": "standard",
+          "deprecated": false,
+          "releaseDate": "2024-12",
+          "verified": true
+        },
+        {
+          "id": "gemini-1.5-pro",
+          "apiName": "gemini-1.5-pro",
+          "displayName": "Gemini 1.5 Pro",
+          "category": "premium",
+          "deprecated": false,
+          "releaseDate": "2024-05",
+          "verified": true
+        },
+        {
+          "id": "gemini-1.5-flash",
+          "apiName": "gemini-1.5-flash",
+          "displayName": "Gemini 1.5 Flash",
+          "category": "budget",
+          "deprecated": false,
+          "releaseDate": "2024-05",
+          "verified": true
+        },
+        {
+          "id": "gemini-2.5-pro",
+          "apiName": "gemini-2.5-pro",
+          "displayName": "Gemini 2.5 Pro",
+          "category": "flagship",
+          "deprecated": false,
+          "releaseDate": "2025-01",
+          "verified": true,
+          "notes": "Latest flagship Gemini model"
+        },
+        {
+          "id": "gemini-2.5-flash",
+          "apiName": "gemini-2.5-flash",
+          "displayName": "Gemini 2.5 Flash",
+          "category": "standard",
+          "deprecated": false,
+          "releaseDate": "2025-01",
+          "verified": true,
+          "notes": "Fast and efficient Gemini 2.5 model"
+        }
+      ]
+    },
+    "xai": {
+      "name": "X.AI",
+      "apiUrl": "https://api.x.ai/v1",
+      "modelsEndpoint": null,
+      "requiresAuth": true,
+      "models": [
+        {
+          "id": "grok-beta",
+          "apiName": "grok-beta",
+          "displayName": "Grok Beta",
+          "category": "standard",
+          "deprecated": false,
+          "releaseDate": "2024-11",
+          "verified": false,
+          "notes": "Current API model - standard tier access"
+        },
+        {
+          "id": "grok-2-1212",
+          "apiName": "grok-2-1212",
+          "displayName": "Grok 2",
+          "category": "standard",
+          "deprecated": false,
+          "releaseDate": "2024-12",
+          "verified": false,
+          "notes": "December 2024 release"
+        },
+        {
+          "id": "grok-3",
+          "apiName": "grok-3",
+          "displayName": "Grok 3",
+          "category": "premium",
+          "deprecated": false,
+          "releaseDate": "2025-02",
+          "verified": false,
+          "notes": "Requires special subscription - not available via standard API"
+        },
+        {
+          "id": "grok-4",
+          "apiName": "grok-4",
+          "displayName": "Grok 4",
+          "category": "premium",
+          "deprecated": false,
+          "releaseDate": "2025-01",
+          "verified": true,
+          "notes": "Latest Grok model with enhanced capabilities"
+        },
+        {
+          "id": "grok-4-heavy",
+          "apiName": "grok-4-heavy",
+          "displayName": "Grok 4 Heavy",
+          "category": "flagship",
+          "deprecated": false,
+          "releaseDate": "2025-07",
+          "verified": false,
+          "notes": "Requires $300/month Heavy Plan subscription - not available via standard API"
+        }
+      ]
+    },
+    "perplexity": {
+      "name": "Perplexity",
+      "apiUrl": "https://api.perplexity.ai",
+      "modelsEndpoint": null,
+      "requiresAuth": true,
+      "models": [
+        {
+          "id": "llama-3.1-sonar-large-128k-online",
+          "apiName": "llama-3.1-sonar-large-128k-online",
+          "displayName": "Sonar Large Online",
+          "category": "premium",
+          "deprecated": false,
+          "releaseDate": "2024-07",
+          "verified": true
+        },
+        {
+          "id": "llama-3.1-sonar-small-128k-online",
+          "apiName": "llama-3.1-sonar-small-128k-online",
+          "displayName": "Sonar Small Online",
+          "category": "standard",
+          "deprecated": false,
+          "releaseDate": "2024-07",
+          "verified": true
+        },
+        {
+          "id": "sonar-pro",
+          "apiName": "sonar-pro",
+          "displayName": "Perplexity Sonar Pro",
+          "category": "flagship",
+          "deprecated": false,
+          "releaseDate": "2025-01",
+          "verified": true,
+          "notes": "Enhanced Sonar model with advanced search capabilities"
+        }
+      ]
+    },
+    "deepseek": {
+      "name": "DeepSeek",
+      "apiUrl": "https://api.deepseek.com/v1",
+      "modelsEndpoint": null,
+      "requiresAuth": true,
+      "models": [
+        {
+          "id": "deepseek-chat",
+          "apiName": "deepseek-chat",
+          "displayName": "DeepSeek V3",
+          "category": "budget",
+          "deprecated": false,
+          "releaseDate": "2024-12",
+          "verified": true
+        },
+        {
+          "id": "deepseek-reasoner",
+          "apiName": "deepseek-reasoner",
+          "displayName": "DeepSeek R1",
+          "category": "reasoning",
+          "deprecated": false,
+          "releaseDate": "2025-01",
+          "verified": true
+        }
+      ]
+    },
+    "mistral": {
+      "name": "Mistral",
+      "apiUrl": "https://api.mistral.ai/v1",
+      "modelsEndpoint": "/models",
+      "requiresAuth": true,
+      "models": [
+        {
+          "id": "mistral-large-latest",
+          "apiName": "mistral-large-latest",
+          "displayName": "Mistral Large",
+          "category": "premium",
+          "deprecated": false,
+          "releaseDate": "2024-11",
+          "verified": true
+        },
+        {
+          "id": "mistral-medium-latest",
+          "apiName": "mistral-medium-latest",
+          "displayName": "Mistral Medium",
+          "category": "standard",
+          "deprecated": false,
+          "releaseDate": "2024-12",
+          "verified": true
+        }
+      ]
+    }
+  }
+}
