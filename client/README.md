@@ -1,148 +1,129 @@
-# DebatePanel 2.0
+# DebatePanel
 
-Get multiple AI perspectives on your ideas through structured debate with winner determination and scoring.
+A multi-AI debate platform where 25+ AI models from 13 providers argue different sides of any topic, scored by an AI judge with detailed performance analysis.
 
-## 🏆 Key Features
+## Features
 
-- **Game Winner System** - AI judge declares debate winners with detailed scoring
-- **25+ AI Models** - GPT-5, Claude 4, Gemini 2.5, Grok 4, and more
-- **Real-time Streaming** - Watch debates unfold in real-time
-- **Interactive Mode** - Humans can participate in debates
-- **Multiple Formats** - Structured, free-form, and devils advocate
-- **Comprehensive Analytics** - Track performance, costs, and history
+- **Multi-Model Debates** — Pit GPT-5.4, Claude Opus 4.6, Gemini 3.1 Pro, Grok 4, and 20+ other models against each other
+- **AI Judge System** — Automatic winner declaration with 0-100 scoring across argument quality, persuasiveness, evidence, logic, and influence
+- **Two Debate Styles** — Consensus-seeking (business decisions) and Adversarial (classical debate)
+- **Three Analysis Depths** — Practical, Thorough, or Excellence-level rigor
+- **Interactive Mode** — Humans can join debates alongside AI models
+- **Real-time Streaming** — Watch debates unfold live via Server-Sent Events
+- **Smart Model Selection** — Context window analysis, panel diversity scoring, and role-based recommendations
+- **Topic Safety** — Three-tier filtering with educational intent detection and academic reframing suggestions
+- **Subscription System** — Free, Starter ($19/mo), Pro ($49/mo), Teams ($199/mo) with credit rollover
+- **Shareable Debates** — Public links with Open Graph previews
 
-## Setup
+## Tech Stack
 
-1. Clone the repository
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
+- **Framework**: Next.js 15 / React 19 / TypeScript
+- **Database**: PostgreSQL + Prisma ORM
+- **AI**: Vercel AI SDK with direct provider integrations + OpenRouter for 400+ models
+- **Auth**: NextAuth.js (email/password + OAuth)
+- **Payments**: Stripe
+- **Email**: Resend
+- **Monitoring**: Sentry
+- **Styling**: Tailwind CSS
 
-3. Copy `.env.local.example` to `.env.local` and add your API keys:
-   ```bash
-   cp .env.local.example .env.local
-   ```
-
-4. Run the development server:
-   ```bash
-   npm run dev
-   ```
-
-5. Open [http://localhost:3000](http://localhost:3000)
-
-## Usage
-
-First, run the development server:
+## Quick Start
 
 ```bash
+# Clone
+git clone https://github.com/kbadinger/debate-panel.git
+cd debate-panel
+
+# Install
+npm install
+
+# Configure
+cp .env.example .env.local
+# Edit .env.local with your API keys (see below)
+
+# Database
+npx prisma migrate dev
+
+# Run
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000).
 
-## Environment Setup
+## Environment Variables
 
-1. Create a `.env.local` file in the project root:
-```bash
-cp .env.example .env.local  # if example exists, or create manually
-```
+Create a `.env.local` file:
 
-2. Add your API keys to `.env.local`:
-```
-# Required for core functionality
+```env
+# Required
 DATABASE_URL="postgresql://user:password@localhost:5432/debate_panel"
-NEXTAUTH_SECRET="your-secret-here"
+NEXTAUTH_SECRET="generate-a-random-secret"
+NEXTAUTH_URL="http://localhost:3000"
 
-# Add API keys for the models you want to use
-OPENAI_API_KEY=""
-ANTHROPIC_API_KEY=""
-KIMI_API_KEY=""
-# ... etc
+# AI Providers (add whichever you want to use)
+OPENAI_API_KEY=sk-proj-...
+ANTHROPIC_API_KEY=sk-ant-...
+GOOGLE_AI_API_KEY=AIzaSy...
+XAI_API_KEY=xai-...
+DEEPSEEK_API_KEY=sk-...
+PERPLEXITY_API_KEY=pplx-...
+MISTRAL_API_KEY=...
+OPENROUTER_API_KEY=sk-or-v1-...    # For 400+ additional models
+
+# Payments (optional, for subscriptions)
+STRIPE_SECRET_KEY=sk_test_...
+STRIPE_WEBHOOK_SECRET=whsec_...
+NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_...
+
+# Email (optional, for password reset / welcome emails)
+RESEND_API_KEY=re_...
 ```
 
-## Admin Users
+See [API_KEYS_SETUP.md](API_KEYS_SETUP.md) for detailed provider setup instructions.
 
-Admin users have unlimited access to all features without credit limits.
+## Supported Providers
 
-To make a user an admin:
-```bash
-npm run make-admin user@example.com
-```
+| Provider | Models | Routing |
+|----------|--------|---------|
+| OpenAI | GPT-5.4, GPT-5.4 Pro, o4 Mini, GPT-5.2, GPT-5.1, GPT-5, GPT-4o | Direct |
+| Anthropic | Claude Opus 4.6, Sonnet 4.6, Sonnet 4.5, Haiku 4.5, Sonnet 4.0, Sonnet 3.7 | Direct |
+| Google | Gemini 3.1 Pro, 3 Pro, 3 Flash, 2.5 Pro, 2.5 Flash, 2.0 Flash | Direct |
+| xAI | Grok 4, Grok 3 | Direct |
+| DeepSeek | V3, R1 | Direct |
+| Perplexity | Sonar Pro, Sonar Deep Research | Direct |
+| Mistral | Large, Medium, Small | OpenRouter |
+| Meta | Llama 4 Scout, Llama 4 Maverick | OpenRouter |
+| + more | Cohere, AI21, Kimi, Qwen via OpenRouter | OpenRouter |
 
-This requires the user to already exist in the database (they must have signed up first).
-
-### Admin Panel Features
-
-Admin users have access to a comprehensive admin panel at `/admin` with:
-
-- **Dashboard**: Overview of platform statistics, user counts, revenue, and recent activity
-- **User Management**: 
-  - View all users with search and filtering
-  - View detailed user profiles and usage history
-  - Add credits to user accounts
-  - Grant/revoke admin privileges
-- **Usage Analytics**: (Coming soon) Detailed usage patterns and model performance
-- **Subscription Management**: (Coming soon) Manage user subscriptions and billing
-
-Admin users are identified by a purple shield badge in the header and have unlimited debate access.
-
-## Latest Updates (v2.0 - August 2025)
-
-### 🎮 New Game Features
-- **Winner Declaration** - Judge determines the best debater
-- **Performance Scoring** - 0-100 point system
-- **Victory Display** - Trophy announcements and leaderboards
-- **Clear Criteria** - Transparent judging standards
-
-### 🤖 Latest AI Models
-- **OpenAI**: GPT-5 (Regular/Mini/Nano), o3/o1 reasoning models
-- **Anthropic**: Claude 4 (Opus/Sonnet), Claude 3.5/3 series
-- **Google**: Gemini 2.5 Pro/Flash, 2.0 Flash, 1.5 Pro/Flash
-- **X.AI**: Grok 4 (Heavy), Grok 2 with real-time search
-- **Plus**: Mistral, DeepSeek, and 15+ more providers
-
-## Documentation
-
-- 📚 **[FEATURES.md](FEATURES.md)** - Complete feature documentation
-- 🚀 **[SETUP_GUIDE.md](SETUP_GUIDE.md)** - Detailed setup instructions
-- 📝 **[CHANGELOG.md](CHANGELOG.md)** - Version history and updates
-
-## Quick Commands
+## Commands
 
 ```bash
 # Development
-npm run dev                          # Start development server
-npm run build                        # Build for production
-
-# Model Management
-node scripts/fetch-all-models.js    # Check latest models from all providers
-node scripts/fetch-models.js        # Check OpenAI models
+npm run dev                    # Start dev server
+npm run build                  # Production build
+npm run lint                   # Lint
 
 # Database
-npx prisma migrate dev              # Run migrations
-npx prisma studio                   # Open database GUI
-
-# Database Utilities
-npx tsx scripts/clear-user-history.ts user@example.com --dry-run  # Preview user history cleanup
-npx tsx scripts/clear-user-history.ts user@example.com            # Clear user history (preserves billing)
+npx prisma migrate dev         # Run migrations
+npx prisma studio              # Database GUI
 
 # Admin
-npm run make-admin user@email.com  # Grant admin access
+npm run make-admin user@email  # Grant admin access
+
+# Models
+npm run discover-models        # Discover new models via OpenRouter
+npm run test-providers         # Test all provider connections
 ```
 
-## Architecture
+## Documentation
 
-- **Frontend**: Next.js 15 with TypeScript
-- **Database**: PostgreSQL with Prisma ORM
-- **UI**: Tailwind CSS with custom components
-- **AI Integration**: Vercel AI SDK with 13+ providers
-- **Streaming**: Server-Sent Events for real-time updates
-- **Auth**: NextAuth.js with multiple providers
-- **Payments**: Stripe integration for subscriptions
+- [SETUP_GUIDE.md](SETUP_GUIDE.md) — Detailed setup instructions
+- [API_KEYS_SETUP.md](API_KEYS_SETUP.md) — Provider API key configuration
+- [FEATURES.md](FEATURES.md) — Full feature documentation
+- [STRIPE_SETUP.md](STRIPE_SETUP.md) — Payment system setup
+- [PRICING_MODEL.md](PRICING_MODEL.md) — Pricing and markup details
+- [OPENROUTER_INTEGRATION.md](OPENROUTER_INTEGRATION.md) — Hybrid routing architecture
+- [CHANGELOG.md](CHANGELOG.md) — Version history
+
+## License
+
+[MIT](LICENSE)
