@@ -44,3 +44,6 @@ next-env.d.ts
 
 # logs
 /logs
+
+# credentials
+/credentials

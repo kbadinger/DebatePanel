@@ -326,15 +326,7 @@ export class CostReconciliation {
   async fetchAnthropicCosts(startDate: Date, endDate: Date, force = false): Promise<CostReconciliationResult> {
     try {
       console.log(`[COST FETCH] Fetching Anthropic costs from ${startDate.toISOString()} to ${endDate.toISOString()}`);
-      console.log(`[COST FETCH] Using Anthropic admin key: ${this.anthropicAdminKey?.substring(0, 20) || 'KEY_MISSING'}...`);
-      console.log(`[COST FETCH] Admin key full length: ${this.anthropicAdminKey?.length || 0}`);
-      console.log(`[COST FETCH] Admin key ends with: ...${this.anthropicAdminKey?.slice(-10) || 'MISSING'}`);
-      
-      // Will be defined later - just debug for now
-      console.log(`[COST FETCH] Request headers:`, {
-        'x-api-key': `${this.anthropicAdminKey?.substring(0, 10)}...${this.anthropicAdminKey?.slice(-10)}`,
-        'anthropic-version': '2023-06-01'
-      });
+      console.log(`[COST FETCH] Anthropic admin key configured: ${!!this.anthropicAdminKey}`);
 
       // Duplicate prevention temporarily disabled - requires new database columns
       // Will be re-enabled after production database migration
