@@ -13,6 +13,7 @@ import {
   Sparkles,
   ExternalLink
 } from 'lucide-react';
+import { sanitizeMarkdownHtml } from '@/lib/sanitize-html';
 
 interface DebateResponse {
   modelId: string;
@@ -244,10 +245,7 @@ export function PublicDebateView({ debate }: { debate: PublicDebate }) {
             <div
               className="prose prose-slate max-w-none text-slate-800"
               dangerouslySetInnerHTML={{
-                __html: debate.judgeAnalysis
-                  .replace(/\*\*(.*?)\*\*/g, '<strong class="font-bold text-slate-900">$1</strong>')
-                  .replace(/^- (.*?)$/gm, '<div class="ml-4 mb-2">• $1</div>')
-                  .replace(/\n/g, '<br/>')
+                __html: sanitizeMarkdownHtml(debate.judgeAnalysis)
               }}
             />
           </div>
@@ -260,11 +258,7 @@ export function PublicDebateView({ debate }: { debate: PublicDebate }) {
             <div
               className="prose prose-slate max-w-none text-slate-800"
               dangerouslySetInnerHTML={{
-                __html: debate.finalSynthesis
-                  .replace(/^## (.*?)$/gm, '<h3 class="text-xl font-bold mb-3 text-slate-900 mt-6">$1</h3>')
-                  .replace(/\*\*(.*?)\*\*/g, '<strong class="font-bold text-slate-900">$1</strong>')
-                  .replace(/^• (.*?)$/gm, '<div class="ml-4 mb-1">• $1</div>')
-                  .replace(/\n/g, '<br/>')
+                __html: sanitizeMarkdownHtml(debate.finalSynthesis)
               }}
             />
           </div>

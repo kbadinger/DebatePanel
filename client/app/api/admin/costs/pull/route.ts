@@ -7,15 +7,12 @@ export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     
-    const body = await req.json();
-    const { startDate, endDate, provider = 'all', force = false, testAuth } = body;
-    
-    // TEMPORARY: Add debug info  
-    if (testAuth === 'bypass-auth-for-testing') {
-      console.log('[DEBUG] Auth bypassed for testing');
-    } else if (!session?.user?.isAdmin) {
+    if (!session?.user?.isAdmin) {
       return NextResponse.json({ error: 'Unauthorized - no admin session' }, { status: 403 });
     }
+
+    const body = await req.json();
+    const { startDate, endDate, provider = 'all', force = false } = body;
 
     // Validate dates
     if (!startDate || !endDate) {
@@ -115,16 +112,12 @@ export async function GET(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     
-    // Check for auth bypass for testing (like in POST endpoint)
-    const url = new URL(req.url);
-    const testAuth = url.searchParams.get('testAuth');
-    const days = parseInt(url.searchParams.get('days') || '7');
-    
-    if (testAuth === 'bypass-auth-for-testing') {
-      console.log('[GET COSTS] Auth bypassed for testing');
-    } else if (!session?.user?.isAdmin) {
+    if (!session?.user?.isAdmin) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
     }
+
+    const url = new URL(req.url);
+    const days = parseInt(url.searchParams.get('days') || '7');
 
     // Get recent reconciliation statistics
     const { PrismaClient } = await import('@prisma/client');

@@ -9,6 +9,7 @@ import { WinnerDisplay } from './WinnerDisplay';
 import { DebateProgressIndicator } from '@/components/ui/DebateProgressIndicator';
 import { Button } from '@/components/ui/button';
 import { Loader2, Users, Copy, Check, Download } from 'lucide-react';
+import { sanitizeMarkdownHtml } from '@/lib/sanitize-html';
 import { useSession } from 'next-auth/react';
 import { useState as useStateCopy } from 'react';
 
@@ -645,12 +646,8 @@ export function DebateInterface({ config, onComplete }: DebateInterfaceProps) {
               <div className="prose prose-slate max-w-none">
                 <div 
                   className="text-slate-800 text-lg leading-relaxed"
-                  dangerouslySetInnerHTML={{ 
-                    __html: debate.judgeAnalysis
-                      .replace(/\*\*(.*?)\*\*/g, '<strong class="font-bold text-slate-900">$1</strong>')
-                      .replace(/^- (.*?)$/gm, '<div class="ml-4 mb-2">• $1</div>')
-                      .replace(/^\d+\. (.*?)$/gm, '<div class="ml-4 mb-2">$&</div>')
-                      .replace(/\n/g, '<br/>')
+                  dangerouslySetInnerHTML={{
+                    __html: sanitizeMarkdownHtml(debate.judgeAnalysis)
                   }} />
               </div>
             </div>
@@ -687,14 +684,8 @@ export function DebateInterface({ config, onComplete }: DebateInterfaceProps) {
               <div className="prose prose-slate max-w-none">
                 <div 
                   className="text-slate-800"
-                  dangerouslySetInnerHTML={{ 
-                    __html: debate.finalSynthesis
-                      .replace(/^## (.*?)$/gm, '<h3 class="text-xl font-bold mb-3 text-slate-900 mt-6">$1</h3>')
-                      .replace(/^### (.*?)$/gm, '<h4 class="text-lg font-semibold mb-2 text-slate-800 mt-4">$1</h4>')
-                      .replace(/\*\*(.*?)\*\*/g, '<strong class="font-bold text-slate-900">$1</strong>')
-                      .replace(/^• (.*?)$/gm, '<div class="ml-4 mb-1">• $1</div>')
-                      .replace(/^\d+\. (.*?)$/gm, '<div class="ml-4 mb-1">$&</div>')
-                      .replace(/\n/g, '<br/>')
+                  dangerouslySetInnerHTML={{
+                    __html: sanitizeMarkdownHtml(debate.finalSynthesis)
                   }} />
               </div>
             </div>

@@ -7,17 +7,7 @@ async function handleRequest(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     
-    // Check for auth bypass for testing (like in the pull endpoint)
-    let authBypass = false;
-    if (req.method === 'POST') {
-      const body = await req.json();
-      if (body.testAuth === 'bypass-auth-for-testing') {
-        console.log('[TEST DB] Auth bypassed for testing');
-        authBypass = true;
-      }
-    }
-    
-    if (!authBypass && !session?.user?.isAdmin) {
+    if (!session?.user?.isAdmin) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
     }
 
