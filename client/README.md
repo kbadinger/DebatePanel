@@ -30,8 +30,8 @@ A multi-AI debate platform where 25+ AI models from 13 providers argue different
 
 ```bash
 # Clone
-git clone https://github.com/kbadinger/debate-panel.git
-cd debate-panel
+git clone https://github.com/kbadinger/DebatePanel.git
+cd DebatePanel/client
 
 # Install
 npm install
