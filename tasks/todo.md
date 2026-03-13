@@ -1,42 +1,46 @@
-# Add GPT-5.4 Models — March 5, 2026
+# Public Release Security Review - DebatePanel
 
-## Problem
-GPT-5.4 launched today (March 5, 2026) with standard and Pro variants. Need to add to DebatePanel.
+## CRITICAL - Must fix before going public
 
-## Specs
-- `gpt-5.4`: $2.50/1M input, $15.00/1M output, 272K context (1M opt-in)
-- `gpt-5.4-pro`: $30/1M input, $180/1M output, extended reasoning
+### Submodule (`debate-panel/`) - tracked in git:
+- [ ] **Remove `credentials/gmail-obsidian-sync-6b582b757ce8.json`** — Google Cloud service account private key is committed and tracked. Must remove from repo AND scrub from git history.
+- [ ] **Remove `TEST_USERS.md`** — Contains test user emails, passwords, user IDs. Tracked in git.
 
-## Plan
+### Parent repo (`DebatePanel/`) - tracked in git:
+- [ ] **Remove `DEBUG_PRODUCTION_LOGIN.md`** — Contains production debug steps, Vercel project URLs, admin passwords, DB query patterns. Tracked in git.
+- [ ] **Remove `.mcp.json`** — Contains **real API keys** for Brave, Perplexity, xAI, OpenRouter, and TickTick OAuth credentials. **This is tracked in git.**
+- [ ] **Remove `.claude/settings.local.json`** — Contains permission config. Tracked in git. (Less critical but shouldn't be public)
 
-### 1. `lib/models/config.ts` — MODEL_CONTEXT_LIMITS
-- [x] Add `gpt-5.4` (272000) and `gpt-5.4-pro` (272000)
+### Files on disk but NOT tracked (safe from git, but verify):
+- `.env`, `.env.local`, `.env.production` — contain real production API keys (OpenAI, Anthropic, Stripe live keys, DB creds, etc.) — **.gitignore is correctly excluding these** ✅
 
-### 2. `lib/models/config.ts` — MODEL_ROLES
-- [x] Add strengths and role descriptions for both models
+### Git history scrub (BOTH repos):
+- [ ] **Scrub `credentials/` from submodule git history** — The private key was added in commit `14c776f` and lives in history even after file removal
+- [ ] **Scrub `.mcp.json` from parent repo git history** — API keys are in commit history
 
-### 3. `lib/models/config.ts` — MODEL_PERFORMANCE_CHARACTERISTICS
-- [x] Add `gpt-5.4-pro` as slow thinking model
+### After scrub:
+- [ ] **Revoke ALL exposed keys**: Google Cloud service account, Brave API key, Perplexity API key, xAI API key, OpenRouter API key, TickTick OAuth credentials
+- [ ] **Generate new replacement keys** for all revoked credentials
 
-### 4. `lib/models/config.ts` — FEATURED_MODELS
-- [x] Add `gpt-5.4` and `gpt-5.4-pro` as featured
-- [x] Move `gpt-5.2` series from FEATURED to EXPANDABLE
+---
 
-### 5. `lib/models/pricing.ts` — MODEL_PRICING
-- [x] Add pricing entries for both models
+## HIGH - Should fix before going public
 
-### 6. `lib/models/config.ts` — REASONING_EFFORT_MODELS
-- [x] Add `gpt-5.4-pro` (supports reasoning effort levels)
+- [ ] **Remove API key logging in `lib/cost-reconciliation.ts:329-331`** — Logs first 20 chars and last 10 chars of Anthropic admin key
+- [ ] **Add to `.gitignore` in parent repo**: `.mcp.json`, `.claude/`
+- [ ] **Add to `.gitignore` in submodule**: `credentials/`
 
-### 7. `lib/models/model-registry.json`
-- [x] Add registry entries for both models
+---
+
+## MEDIUM - Nice to do before going public
+
+- [ ] Add a LICENSE file (MIT, Apache 2.0, etc.)
+- [ ] Improve README.md (currently just "Run ./test_local.sh to start everything and test")
+- [ ] Add `.env.example` to parent repo
+- [ ] Review personal info references (`kbadinger@resolventtech.com`, etc.) — decide if intentional branding
+- [ ] Consider removing internal planning docs from parent repo: `DECISIONFORGE-DEBATEPANEL-PLAN.md`, `STATUS.md`, `debate-monetization.md`, `app-revenue-debate.md`, `read_receipt_calibration_spec.md`, `SENTRY_SETUP.md`, `DEPLOYMENT_GUIDE.md`, `DEPLOY_QUICK_REFERENCE.md`
+
+---
 
 ## Review
-
-### Changes Made
-- **3 files changed**: `config.ts`, `pricing.ts`, `model-registry.json`
-- Added `gpt-5.4` and `gpt-5.4-pro` across all model configuration surfaces
-- GPT-5.4 featured as primary OpenAI models, GPT-5.2 series demoted to expandable
-- GPT-5.4 Pro marked as slow thinking + reasoning effort model
-- Pricing: $2.50/$15 (standard), $30/$180 (Pro) per 1M tokens
-- Context: 272K default for both (1M opt-in available)
+(To be filled after work is complete)
