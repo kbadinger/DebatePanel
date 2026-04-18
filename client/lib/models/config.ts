@@ -12,6 +12,8 @@ export const MODEL_CONTEXT_LIMITS = {
   // GPT-5.4 Series (March 2026 Release)
   'gpt-5.4': 272000, // 272k default context (1M opt-in)
   'gpt-5.4-pro': 272000, // 272k default context (1M opt-in, extended reasoning)
+  'gpt-5.4-mini': 400000, // 400k context window (Mar 17, 2026)
+  'gpt-5.4-nano': 400000, // 400k context window (Mar 17, 2026)
   // GPT-5.2 Series (December 2025 Release)
   'gpt-5.2': 400000, // 400k context window
   'gpt-5.2-chat-latest': 400000, // 400k context window (Instant variant)
@@ -32,6 +34,7 @@ export const MODEL_CONTEXT_LIMITS = {
   'o4-mini-deep-research': 200000, // Deep research variant
 
   // Anthropic - Large context windows for Claude 4+ series
+  'claude-opus-4-7': 1000000, // Claude Opus 4.7 - 1M context (128k output) (Apr 16, 2026)
   'claude-sonnet-4-6': 200000, // Claude Sonnet 4.6 - 200k context
   'claude-opus-4-6': 200000, // Claude Opus 4.6 - 200k context
   'claude-opus-4-5-20251101': 200000, // Claude Opus 4.5 - 200k context
@@ -48,6 +51,7 @@ export const MODEL_CONTEXT_LIMITS = {
   'claude-3-opus-20240229': 200000,
 
   // Google - 2M context for Gemini 2.5 Pro
+  'gemini-3-1-ultra': 2097152, // 2M tokens (Mar 2026, max-performance flagship)
   'gemini-3.1-pro-preview': 1048576, // 1M tokens (Feb 2026, improved SWE + agentic)
   'gemini-3-pro-preview': 1048576, // 1M tokens (preview)
   'gemini-3-flash': 1048576, // 1M tokens (Jan 2026)
@@ -62,6 +66,7 @@ export const MODEL_CONTEXT_LIMITS = {
   'gemini-1.5-flash': 1000000,
 
   // xAI - Keep conservative for now
+  'grok-4.20': 2097152, // Grok 4.20 - 2M context (Mar 31, 2026 flagship)
   'grok-4-0709': 256000, // Slightly higher for newest
   'grok-4': 200000,
   'grok-4-1-fast-reasoning': 256000, // Grok 4.1 fast reasoning (Nov 2025)
@@ -103,6 +108,8 @@ const MODEL_ROLES: Record<string, { strengths: ModelStrength[], role: string }> 
   // GPT-5.4 Series (March 2026 Release)
   'gpt-5.4': { strengths: ['business', 'analytical', 'creative', 'technical'], role: 'Most capable frontier model with 1M context and native computer control' },
   'gpt-5.4-pro': { strengths: ['analytical', 'technical', 'business', 'research'], role: 'GPT-5.4 Pro - highest accuracy with extended reasoning for complex professional tasks' },
+  'gpt-5.4-mini': { strengths: ['business', 'analytical', 'general'], role: 'Fast and cost-efficient GPT-5.4 for everyday tasks' },
+  'gpt-5.4-nano': { strengths: ['business', 'general'], role: 'Ultra-cheap GPT-5.4 for high-volume well-defined tasks' },
   // GPT-5.2 Series (December 2025 Release)
   'gpt-5.2': { strengths: ['business', 'analytical', 'creative', 'technical'], role: 'Most capable GPT-5.2 with advanced reasoning for professional knowledge work' },
   'gpt-5.2-chat-latest': { strengths: ['business', 'creative', 'general'], role: 'GPT-5.2 Instant - fast and efficient for writing and information seeking' },
@@ -124,9 +131,10 @@ const MODEL_ROLES: Record<string, { strengths: ModelStrength[], role: string }> 
   'o3-mini': { strengths: ['analytical'], role: 'Efficient reasoning and problem-solving' },
   'o3-deep-research': { strengths: ['analytical', 'research', 'technical'], role: 'Deep research with advanced reasoning' },
 
-  // Anthropic - Claude 4.6, 4.5, 4.1 and 3.5 Series
-  'claude-sonnet-4-6': { strengths: ['technical', 'analytical', 'ethical', 'creative'], role: 'Latest Claude Sonnet - excellent coding, reasoning, and balanced analysis' },
-  'claude-opus-4-6': { strengths: ['technical', 'analytical', 'ethical', 'creative'], role: 'Latest Claude flagship - superior reasoning, coding, and nuanced analysis' },
+  // Anthropic - Claude 4.7, 4.6, 4.5, 4.1 and 3.5 Series
+  'claude-opus-4-7': { strengths: ['technical', 'analytical', 'ethical', 'creative'], role: 'Latest Claude flagship (Apr 2026) - step-change agentic coding and vision over 4.6' },
+  'claude-sonnet-4-6': { strengths: ['technical', 'analytical', 'ethical', 'creative'], role: 'Claude Sonnet 4.6 - excellent coding, reasoning, and balanced analysis' },
+  'claude-opus-4-6': { strengths: ['technical', 'analytical', 'ethical', 'creative'], role: 'Previous Claude flagship - superior reasoning, coding, and nuanced analysis' },
   'claude-opus-4-5-20251101': { strengths: ['technical', 'analytical', 'ethical', 'creative'], role: 'Previous Claude flagship - exceptional at complex reasoning, coding, and nuanced analysis' },
   'claude-sonnet-4-5-20250929': { strengths: ['technical', 'analytical', 'ethical'], role: 'Best coding model in the world - excels at complex agents and reasoning' },
   'claude-haiku-4-5-20251001': { strengths: ['general', 'ethical', 'business'], role: 'Fast and efficient Claude 4.5 - excellent value for cost' },
@@ -141,6 +149,7 @@ const MODEL_ROLES: Record<string, { strengths: ModelStrength[], role: string }> 
   'claude-3-opus-20240229': { strengths: ['ethical', 'analytical', 'general'], role: 'Deep ethical implications and comprehensive analysis' },
   
   // Google Gemini
+  'gemini-3-1-ultra': { strengths: ['research', 'analytical', 'technical', 'creative'], role: 'Gemini 3.1 Ultra - max-performance flagship with 2M context and video/audio reasoning (Mar 2026)' },
   'gemini-3.1-pro-preview': { strengths: ['research', 'analytical', 'technical', 'creative'], role: 'Gemini 3.1 Pro - enhanced software engineering, agentic reliability, and token efficiency' },
   'gemini-3-pro-preview': { strengths: ['research', 'analytical', 'technical', 'creative'], role: 'Most advanced Gemini model - state-of-the-art reasoning and multimodal analysis' },
   'gemini-3-flash': { strengths: ['research', 'general', 'technical'], role: 'Gemini 3 Flash - fast and efficient with agentic vision (Jan 2026)' },
@@ -156,7 +165,8 @@ const MODEL_ROLES: Record<string, { strengths: ModelStrength[], role: string }> 
   'gemini-1.5-flash-8b': { strengths: ['research'], role: 'Lightweight research assistance' },
 
   // X.AI Grok
-  'grok-4-0709': { strengths: ['creative', 'business', 'research'], role: 'Latest Grok with unconventional thinking and real-time insights' },
+  'grok-4.20': { strengths: ['creative', 'analytical', 'research', 'business'], role: 'Grok 4.20 - latest xAI flagship with 2M context, lowest hallucination rate, and real-time search (Mar 2026)' },
+  'grok-4-0709': { strengths: ['creative', 'business', 'research'], role: 'Previous Grok flagship with unconventional thinking and real-time insights' },
   'grok-4': { strengths: ['creative', 'business', 'research'], role: 'Unconventional thinking with real-time search' },
   'grok-4-1-fast-reasoning': { strengths: ['creative', 'analytical', 'research'], role: 'Grok 4.1 fast reasoning with real-time search (Nov 2025)' },
   'grok-4-1-fast-non-reasoning': { strengths: ['creative', 'business', 'research'], role: 'Grok 4.1 fast analysis with real-time insights (Nov 2025)' },
@@ -223,6 +233,7 @@ const LIVE_SEARCH_MODELS: Set<string> = new Set([
   'sonar-reasoning-pro',
   'sonar',
   // Grok 4 - Real-time search capability
+  'grok-4.20',
   'grok-4-0709',
   'grok-4',
   'grok-4-1-fast-reasoning',
@@ -337,16 +348,16 @@ const FEATURED_MODELS: Model[] = [
 
   // Anthropic - Flagship Models (Curated via Model Discovery System)
   withModelInfo({
+    id: 'claude-opus-4-7',
+    provider: 'anthropic',
+    name: 'claude-opus-4-7',
+    displayName: 'Claude Opus 4.7'
+  }),
+  withModelInfo({
     id: 'claude-sonnet-4-6',
     provider: 'anthropic',
     name: 'claude-sonnet-4-6',
     displayName: 'Claude Sonnet 4.6'
-  }),
-  withModelInfo({
-    id: 'claude-opus-4-6',
-    provider: 'anthropic',
-    name: 'claude-opus-4-6',
-    displayName: 'Claude Opus 4.6'
   }),
   withModelInfo({
     id: 'claude-sonnet-4-5-20250929',
@@ -374,6 +385,12 @@ const FEATURED_MODELS: Model[] = [
   }),
 
   // Google - Flagship Gemini 3 & 2.5 Series (Latest Generation)
+  withModelInfo({
+    id: 'gemini-3-1-ultra',
+    provider: 'google',
+    name: 'gemini-3-1-ultra',
+    displayName: 'Gemini 3.1 Ultra'
+  }),
   withModelInfo({
     id: 'gemini-3.1-pro-preview',
     provider: 'google',
@@ -413,10 +430,10 @@ const FEATURED_MODELS: Model[] = [
 
   // xAI - Flagship Grok Models (Discovered via API)
   withModelInfo({
-    id: 'grok-4-0709',
+    id: 'grok-4.20',
     provider: 'xai',
-    name: 'grok-4-0709',
-    displayName: 'Grok 4 (July 2025)'
+    name: 'grok-4.20',
+    displayName: 'Grok 4.20'
   }),
   withModelInfo({
     id: 'grok-3',
@@ -445,6 +462,19 @@ const FEATURED_MODELS: Model[] = [
 // EXPANDABLE MODELS (shown when provider is expanded)
 const EXPANDABLE_MODELS: Record<string, Model[]> = {
   openai: [
+    // GPT-5.4 Mini/Nano (Mar 17, 2026)
+    withModelInfo({
+      id: 'gpt-5.4-mini',
+      provider: 'openai',
+      name: 'gpt-5.4-mini',
+      displayName: 'GPT-5.4 Mini'
+    }),
+    withModelInfo({
+      id: 'gpt-5.4-nano',
+      provider: 'openai',
+      name: 'gpt-5.4-nano',
+      displayName: 'GPT-5.4 Nano'
+    }),
     // GPT-5.2 Series (demoted from featured)
     withModelInfo({
       id: 'gpt-5.2',
@@ -547,6 +577,12 @@ const EXPANDABLE_MODELS: Record<string, Model[]> = {
   ],
   anthropic: [
     withModelInfo({
+      id: 'claude-opus-4-6',
+      provider: 'anthropic',
+      name: 'claude-opus-4-6',
+      displayName: 'Claude Opus 4.6'
+    }),
+    withModelInfo({
       id: 'claude-opus-4-5-20251101',
       provider: 'anthropic',
       name: 'claude-opus-4-5-20251101',
@@ -616,6 +652,12 @@ const EXPANDABLE_MODELS: Record<string, Model[]> = {
     })
   ],
   xai: [
+    withModelInfo({
+      id: 'grok-4-0709',
+      provider: 'xai',
+      name: 'grok-4-0709',
+      displayName: 'Grok 4 (July 2025)'
+    }),
     withModelInfo({
       id: 'grok-4-1-fast-reasoning',
       provider: 'xai',

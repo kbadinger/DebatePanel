@@ -146,6 +146,26 @@ export const MODEL_PRICING: Record<string, ModelPricing> = {
     providerBaseCost: 0.0175,
     platformMarkup: 0.3
   },
+  'gpt-5.4-mini': {
+    modelId: 'gpt-5.4-mini',
+    costPer1kTokens: {
+      input: 0.0004,   // $0.40 per 1M input
+      output: 0.0016   // $1.60 per 1M output
+    },
+    costCategory: 'standard',
+    providerBaseCost: 0.002,
+    platformMarkup: 0.3
+  },
+  'gpt-5.4-nano': {
+    modelId: 'gpt-5.4-nano',
+    costPer1kTokens: {
+      input: 0.0002,   // $0.20 per 1M input
+      output: 0.00125  // $1.25 per 1M output
+    },
+    costCategory: 'budget',
+    providerBaseCost: 0.00145,
+    platformMarkup: 0.3
+  },
   'gpt-5.4-pro': {
     modelId: 'gpt-5.4-pro',
     costPer1kTokens: {
@@ -301,7 +321,17 @@ export const MODEL_PRICING: Record<string, ModelPricing> = {
     platformMarkup: 0.3
   },
   
-  // Anthropic Models - Claude 4.6, 4.5, 4.1 and 3.5 Series (Real Models)
+  // Anthropic Models - Claude 4.7, 4.6, 4.5, 4.1 and 3.5 Series (Real Models)
+  'claude-opus-4-7': {
+    modelId: 'claude-opus-4-7',
+    costPer1kTokens: {
+      input: 0.005,  // $5 per 1M input (Apr 16, 2026)
+      output: 0.025  // $25 per 1M output
+    },
+    costCategory: 'flagship',
+    providerBaseCost: 0.030,
+    platformMarkup: 0.3
+  },
   'claude-sonnet-4-6': {
     modelId: 'claude-sonnet-4-6',
     costPer1kTokens: {
@@ -444,6 +474,17 @@ export const MODEL_PRICING: Record<string, ModelPricing> = {
   },
 
   // Google Gemini Models
+  'gemini-3-1-ultra': {
+    modelId: 'gemini-3-1-ultra',
+    // PRICING UNVERIFIED — confirm on ai.google.dev before next discovery PR (Apr 2026)
+    costPer1kTokens: {
+      input: 0.004,   // ~$4 per 1M input (estimated, Ultra tier typical)
+      output: 0.018   // ~$18 per 1M output (estimated)
+    },
+    costCategory: 'flagship',
+    providerBaseCost: 0.022,
+    platformMarkup: 0.3
+  },
   'gemini-3-pro-preview': {
     modelId: 'gemini-3-pro-preview',
     costPer1kTokens: {
@@ -566,6 +607,16 @@ export const MODEL_PRICING: Record<string, ModelPricing> = {
   },
   
   // X.AI Grok Models
+  'grok-4.20': {
+    modelId: 'grok-4.20',
+    costPer1kTokens: {
+      input: 0.002,  // $2 per 1M input (Mar 31, 2026 flagship)
+      output: 0.006  // $6 per 1M output
+    },
+    costCategory: 'flagship',
+    providerBaseCost: 0.008,
+    platformMarkup: 0.3
+  },
   'grok-4': {
     modelId: 'grok-4',
     costPer1kTokens: {

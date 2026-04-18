@@ -1,5 +1,5 @@
 {
-  "lastUpdated": "2025-01-19T00:00:00Z",
+  "lastUpdated": "2026-04-18T00:00:00Z",
   "providers": {
     "openai": {
       "name": "OpenAI",
@@ -16,6 +16,26 @@
           "releaseDate": "2026-03",
           "verified": true,
           "notes": "Most capable frontier model with 1M context opt-in and native computer control"
+        },
+        {
+          "id": "gpt-5.4-mini",
+          "apiName": "gpt-5.4-mini",
+          "displayName": "GPT-5.4 Mini",
+          "category": "standard",
+          "deprecated": false,
+          "releaseDate": "2026-03",
+          "verified": true,
+          "notes": "Fast and cost-efficient GPT-5.4 (400K context)"
+        },
+        {
+          "id": "gpt-5.4-nano",
+          "apiName": "gpt-5.4-nano",
+          "displayName": "GPT-5.4 Nano",
+          "category": "budget",
+          "deprecated": false,
+          "releaseDate": "2026-03",
+          "verified": true,
+          "notes": "Ultra-cheap GPT-5.4 for high-volume tasks (400K context)"
         },
         {
           "id": "gpt-5.4-pro",
@@ -102,6 +122,16 @@
       "requiresAuth": true,
       "models": [
         {
+          "id": "claude-opus-4-7",
+          "apiName": "claude-opus-4-7",
+          "displayName": "Claude Opus 4.7",
+          "category": "flagship",
+          "deprecated": false,
+          "releaseDate": "2026-04",
+          "verified": true,
+          "notes": "Latest Anthropic flagship - 1M context, step-change agentic + vision over 4.6"
+        },
+        {
           "id": "claude-3-5-sonnet-20241022",
           "apiName": "claude-3-5-sonnet-20241022",
           "displayName": "Claude 3.5 Sonnet",
@@ -146,6 +176,16 @@
       "modelsEndpoint": "/models",
       "requiresAuth": true,
       "models": [
+        {
+          "id": "gemini-3-1-ultra",
+          "apiName": "gemini-3-1-ultra",
+          "displayName": "Gemini 3.1 Ultra",
+          "category": "flagship",
+          "deprecated": false,
+          "releaseDate": "2026-03",
+          "verified": true,
+          "notes": "Max-performance Gemini flagship - 2M context, video/audio reasoning. PRICING UNVERIFIED."
+        },
         {
           "id": "gemini-2.0-flash-exp",
           "apiName": "gemini-2.0-flash-exp",
@@ -201,6 +241,16 @@
       "modelsEndpoint": null,
       "requiresAuth": true,
       "models": [
+        {
+          "id": "grok-4.20",
+          "apiName": "grok-4.20",
+          "displayName": "Grok 4.20",
+          "category": "flagship",
+          "deprecated": false,
+          "releaseDate": "2026-03",
+          "verified": true,
+          "notes": "Latest xAI flagship - 2M context, lowest hallucination, real-time search"
+        },
         {
           "id": "grok-beta",
           "apiName": "grok-beta",
