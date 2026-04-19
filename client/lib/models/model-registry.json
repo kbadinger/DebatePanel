@@ -233,13 +233,13 @@
       "models": [
         {
           "id": "grok-4.20",
-          "apiName": "grok-4.20",
+          "apiName": "grok-4.20-0309-reasoning",
           "displayName": "Grok 4.20",
           "category": "flagship",
           "deprecated": false,
           "releaseDate": "2026-03",
           "verified": true,
-          "notes": "Latest xAI flagship - 2M context, lowest hallucination, real-time search"
+          "notes": "Latest xAI flagship - 2M context, lowest hallucination, real-time search. Non-reasoning variant: grok-4.20-0309-non-reasoning"
         },
         {
           "id": "grok-beta",

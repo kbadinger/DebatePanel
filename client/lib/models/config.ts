@@ -424,7 +424,7 @@ const FEATURED_MODELS: Model[] = [
   withModelInfo({
     id: 'grok-4.20',
     provider: 'xai',
-    name: 'grok-4.20',
+    name: 'grok-4.20-0309-reasoning',
     displayName: 'Grok 4.20'
   }),
   withModelInfo({
