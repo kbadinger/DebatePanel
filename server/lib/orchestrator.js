@@ -597,8 +597,8 @@ Challenge assumptions. Propose alternatives nobody else would consider.
         // gpt-5-chat-latest and gpt-5.2-chat-latest are the working chat variants
         const isGpt5ChatVariant = model.name === 'gpt-5-chat-latest' || model.name === 'gpt-5.2-chat-latest';
 
-        // gpt-5-pro and gpt-5.2-pro require Responses API instead of Chat Completions API
-        const usesResponsesAPI = model.name === 'gpt-5-pro' || model.name === 'gpt-5.2-pro';
+        // gpt-5-pro, gpt-5.2-pro, and gpt-5.4-pro require Responses API instead of Chat Completions API
+        const usesResponsesAPI = model.name === 'gpt-5-pro' || model.name === 'gpt-5.2-pro' || model.name === 'gpt-5.4-pro';
 
         let completion;
 
@@ -686,12 +686,16 @@ Challenge assumptions. Propose alternatives nobody else would consider.
         }
         
       } else if (model.provider === 'anthropic' && this.anthropic) {
-        const response = await this.anthropic.messages.create({
+        // Claude Opus 4.7 and newer models deprecated the temperature parameter
+        const anthropicPayload = {
           model: model.name,
           messages: [{ role: 'user', content: prompt }],
-          max_tokens: 1500,
-          temperature: 0.7
-        });
+          max_tokens: 1500
+        };
+        if (model.name !== 'claude-opus-4-7') {
+          anthropicPayload.temperature = 0.7;
+        }
+        const response = await this.anthropic.messages.create(anthropicPayload);
         content = response.content[0].text;
         
       } else if (model.provider === 'google' && this.google) {
