@@ -125,8 +125,8 @@ Format your response as a clear argument with supporting points.`;
         // GPT-5 models have special requirements
         const isGpt5 = model.name.startsWith('gpt-5');
 
-        // GPT-5 Pro requires Responses API, others use Chat Completions API
-        const usesResponsesAPI = model.name === 'gpt-5-pro';
+        // GPT-5 Pro variants require Responses API, others use Chat Completions API
+        const usesResponsesAPI = model.name === 'gpt-5-pro' || model.name === 'gpt-5.4-pro';
 
         // GPT-5 requires maxCompletionTokens instead of maxTokens
         const openaiModelSettings = REASONING_EFFORT_MODELS.has(model.id) && config?.reasoningEffort
@@ -161,13 +161,17 @@ Format your response as a clear argument with supporting points.`;
           if (modelToUse !== model.name) {
             this.logger.log(`Falling back from ${model.name} to ${modelToUse} (attempt ${attempt + 1})`);
           }
-          result = await generateText({
+          const anthropicParams: any = {
             model: anthropic(modelToUse),
             system: systemPrompt,
             prompt,
-            temperature: 0.7,
             maxTokens,
-          });
+          };
+          // Claude Opus 4.7 deprecated the temperature parameter
+          if (modelToUse !== 'claude-opus-4-7') {
+            anthropicParams.temperature = 0.7;
+          }
+          result = await generateText(anthropicParams);
           break;
         case 'google':
           result = await generateText({
@@ -2298,11 +2302,15 @@ ${debateStyle === 'ideation'
 
 BE DECISIVE but intellectually honest. A strong recommendation acknowledges its limitations.`;
 
-    const result = await generateText({
+    const judgeParams: any = {
       model: this.getModelProvider(judgeModel),
       prompt,
-      temperature: 0.3, // Lower temperature for more consistent analysis
-    });
+    };
+    // Claude Opus 4.7 deprecated the temperature parameter
+    if (judgeModel.name !== 'claude-opus-4-7') {
+      judgeParams.temperature = 0.3; // Lower temperature for more consistent analysis
+    }
+    const result = await generateText(judgeParams);
 
     // Parse the judge's analysis to extract winner and scores
     let analysisText = result.text;
