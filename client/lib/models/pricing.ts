@@ -474,17 +474,6 @@ export const MODEL_PRICING: Record<string, ModelPricing> = {
   },
 
   // Google Gemini Models
-  'gemini-3-1-ultra': {
-    modelId: 'gemini-3-1-ultra',
-    // PRICING UNVERIFIED — confirm on ai.google.dev before next discovery PR (Apr 2026)
-    costPer1kTokens: {
-      input: 0.004,   // ~$4 per 1M input (estimated, Ultra tier typical)
-      output: 0.018   // ~$18 per 1M output (estimated)
-    },
-    costCategory: 'flagship',
-    providerBaseCost: 0.022,
-    platformMarkup: 0.3
-  },
   'gemini-3-pro-preview': {
     modelId: 'gemini-3-pro-preview',
     costPer1kTokens: {

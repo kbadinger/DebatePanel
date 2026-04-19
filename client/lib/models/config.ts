@@ -51,7 +51,6 @@ export const MODEL_CONTEXT_LIMITS = {
   'claude-3-opus-20240229': 200000,
 
   // Google - 2M context for Gemini 2.5 Pro
-  'gemini-3-1-ultra': 2097152, // 2M tokens (Mar 2026, max-performance flagship)
   'gemini-3.1-pro-preview': 1048576, // 1M tokens (Feb 2026, improved SWE + agentic)
   'gemini-3-pro-preview': 1048576, // 1M tokens (preview)
   'gemini-3-flash': 1048576, // 1M tokens (Jan 2026)
@@ -149,7 +148,6 @@ const MODEL_ROLES: Record<string, { strengths: ModelStrength[], role: string }> 
   'claude-3-opus-20240229': { strengths: ['ethical', 'analytical', 'general'], role: 'Deep ethical implications and comprehensive analysis' },
   
   // Google Gemini
-  'gemini-3-1-ultra': { strengths: ['research', 'analytical', 'technical', 'creative'], role: 'Gemini 3.1 Ultra - max-performance flagship with 2M context and video/audio reasoning (Mar 2026)' },
   'gemini-3.1-pro-preview': { strengths: ['research', 'analytical', 'technical', 'creative'], role: 'Gemini 3.1 Pro - enhanced software engineering, agentic reliability, and token efficiency' },
   'gemini-3-pro-preview': { strengths: ['research', 'analytical', 'technical', 'creative'], role: 'Most advanced Gemini model - state-of-the-art reasoning and multimodal analysis' },
   'gemini-3-flash': { strengths: ['research', 'general', 'technical'], role: 'Gemini 3 Flash - fast and efficient with agentic vision (Jan 2026)' },
@@ -385,12 +383,6 @@ const FEATURED_MODELS: Model[] = [
   }),
 
   // Google - Flagship Gemini 3 & 2.5 Series (Latest Generation)
-  withModelInfo({
-    id: 'gemini-3-1-ultra',
-    provider: 'google',
-    name: 'gemini-3-1-ultra',
-    displayName: 'Gemini 3.1 Ultra'
-  }),
   withModelInfo({
     id: 'gemini-3.1-pro-preview',
     provider: 'google',

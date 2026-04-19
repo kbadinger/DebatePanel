@@ -177,16 +177,6 @@
       "requiresAuth": true,
       "models": [
         {
-          "id": "gemini-3-1-ultra",
-          "apiName": "gemini-3-1-ultra",
-          "displayName": "Gemini 3.1 Ultra",
-          "category": "flagship",
-          "deprecated": false,
-          "releaseDate": "2026-03",
-          "verified": true,
-          "notes": "Max-performance Gemini flagship - 2M context, video/audio reasoning. PRICING UNVERIFIED."
-        },
-        {
           "id": "gemini-2.0-flash-exp",
           "apiName": "gemini-2.0-flash-exp",
           "displayName": "Gemini 2.0 Flash",
