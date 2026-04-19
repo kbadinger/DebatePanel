@@ -120,7 +120,7 @@ Format your response as a clear argument with supporting points.`;
         
         switch (model.provider) {
               case 'openai':
-        this.logger.log(`Calling OpenAI model: ${model.name}`);
+        this.logger.log(`[ai-sdk-v3] Calling OpenAI model: ${model.name}`);
         const openaiStartTime = Date.now();
         // GPT-5 models have special requirements
         const isGpt5 = model.name.startsWith('gpt-5');
@@ -155,6 +155,7 @@ Format your response as a clear argument with supporting points.`;
         this.logger.log(`OpenAI (${model.name}) responded in ${Date.now() - openaiStartTime}ms`);
         break;
         case 'anthropic':
+          this.logger.log(`[ai-sdk-v3] Calling Anthropic model: ${model.name}`);
           // Smart fallback for Anthropic models on retries
           let modelToUse = this.getFallbackModel(model, attempt);
           if (modelToUse !== model.name) {
