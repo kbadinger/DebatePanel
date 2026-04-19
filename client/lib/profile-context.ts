@@ -90,7 +90,7 @@ Output your condensed context in 2-4 paragraphs, written in third person (e.g., 
     const result = await generateText({
       model: openai('gpt-4o-mini'),
       prompt,
-      maxTokens: 500,
+      maxOutputTokens: 500,
       temperature: 0.3, // Low temperature for consistent extraction
     });
 

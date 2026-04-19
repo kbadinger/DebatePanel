@@ -1,7 +1,3 @@
-import { openai } from 'ai';
-import { anthropic } from 'ai';
-import { google } from 'ai';
-
 export interface DiscoveredModel {
   id: string;
   provider: string;

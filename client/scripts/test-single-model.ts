@@ -104,7 +104,7 @@ async function testModel(modelId: string) {
     const result = await generateText({
       model: sdk(modelInfo.apiName),
       prompt: 'Say "Hello! I am working correctly." and nothing else.',
-      maxTokens: 50,
+      maxOutputTokens: 50,
     });
     
     const duration = Date.now() - startTime;

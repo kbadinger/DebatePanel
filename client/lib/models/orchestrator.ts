@@ -103,7 +103,7 @@ Format your response as a clear argument with supporting points.`;
       };
     }
     
-    let result: { text: string; usage?: { promptTokens?: number; completionTokens?: number } };
+    let result: { text: string; usage?: { inputTokens?: number; outputTokens?: number; totalTokens?: number } };
     
     // Retry logic with exponential backoff for overloaded errors
     const maxRetries = 5; // Increased from 3 to 5 for better recovery
@@ -128,28 +128,27 @@ Format your response as a clear argument with supporting points.`;
         // GPT-5 Pro variants require Responses API, others use Chat Completions API
         const usesResponsesAPI = model.name === 'gpt-5-pro' || model.name === 'gpt-5.4-pro';
 
-        // GPT-5 requires maxCompletionTokens instead of maxTokens
-        const openaiModelSettings = REASONING_EFFORT_MODELS.has(model.id) && config?.reasoningEffort
-          ? { reasoningEffort: config.reasoningEffort }
-          : {};
+        // GPT-5 reasoning models take reasoningEffort via providerOptions in AI SDK v3+
+        const openaiProviderOptions = REASONING_EFFORT_MODELS.has(model.id) && config?.reasoningEffort
+          ? { openai: { reasoningEffort: config.reasoningEffort } }
+          : undefined;
         const openaiParams: any = {
-          model: usesResponsesAPI ? openai.responses(model.name) : openai(model.name, openaiModelSettings),
+          model: usesResponsesAPI ? openai.responses(model.name) : openai(model.name),
           system: systemPrompt,
           prompt,
+          maxOutputTokens: maxTokens,
         };
+        if (openaiProviderOptions) {
+          openaiParams.providerOptions = openaiProviderOptions;
+        }
 
         // Responses API doesn't support temperature parameter
         if (!usesResponsesAPI) {
-          const temperature = isGpt5 ? 1.0 : 0.7;
-          openaiParams.temperature = temperature;
+          openaiParams.temperature = isGpt5 ? 1.0 : 0.7;
         }
 
         if (isGpt5) {
-          // Use maxCompletionTokens for GPT-5 models
-          openaiParams.maxCompletionTokens = maxTokens;
-          this.logger.log(`Using ${usesResponsesAPI ? 'Responses API' : 'Chat Completions API'} with maxCompletionTokens=${maxTokens} for ${model.name}`);
-        } else {
-          openaiParams.maxTokens = maxTokens;
+          this.logger.log(`Using ${usesResponsesAPI ? 'Responses API' : 'Chat Completions API'} with maxOutputTokens=${maxTokens} for ${model.name}`);
         }
 
         result = await generateText(openaiParams);
@@ -165,7 +164,7 @@ Format your response as a clear argument with supporting points.`;
             model: anthropic(modelToUse),
             system: systemPrompt,
             prompt,
-            maxTokens,
+            maxOutputTokens: maxTokens,
           };
           // Claude Opus 4.7 deprecated the temperature parameter
           if (modelToUse !== 'claude-opus-4-7') {
@@ -179,7 +178,7 @@ Format your response as a clear argument with supporting points.`;
             system: systemPrompt,
             prompt,
             temperature: 0.7,
-            maxTokens,
+            maxOutputTokens: maxTokens,
           });
           break;
         case 'mistral':
@@ -188,7 +187,7 @@ Format your response as a clear argument with supporting points.`;
             system: systemPrompt,
             prompt,
             temperature: 0.7,
-            maxTokens,
+            maxOutputTokens: maxTokens,
           });
           break;
         case 'meta':
@@ -198,7 +197,7 @@ Format your response as a clear argument with supporting points.`;
             system: systemPrompt,
             prompt,
             temperature: 0.7,
-            maxTokens,
+            maxOutputTokens: maxTokens,
           });
           break;
         case 'kimi':
@@ -208,22 +207,23 @@ Format your response as a clear argument with supporting points.`;
             system: systemPrompt,
             prompt,
             temperature: 0.7,
-            maxTokens,
+            maxOutputTokens: maxTokens,
           });
           break;
         case 'xai':
           this.logger.log(`Calling X.AI model: ${model.name}`);
           const xaiStartTime = Date.now();
-          const xaiModelSettings = REASONING_EFFORT_MODELS.has(model.id) && config?.reasoningEffort
-            ? { reasoningEffort: config.reasoningEffort }
-            : {};
-          result = await generateText({
-            model: xai(model.name, xaiModelSettings),
+          const xaiParams: any = {
+            model: xai(model.name),
             system: systemPrompt,
             prompt,
             temperature: 0.7,
-            maxTokens,
-          });
+            maxOutputTokens: maxTokens,
+          };
+          if (REASONING_EFFORT_MODELS.has(model.id) && config?.reasoningEffort) {
+            xaiParams.providerOptions = { openai: { reasoningEffort: config.reasoningEffort } };
+          }
+          result = await generateText(xaiParams);
           this.logger.log(`X.AI (${model.name}) responded in ${Date.now() - xaiStartTime}ms`);
           break;
         case 'perplexity':
@@ -232,20 +232,21 @@ Format your response as a clear argument with supporting points.`;
             system: systemPrompt,
             prompt,
             temperature: 0.7,
-            maxTokens,
+            maxOutputTokens: maxTokens,
           });
           break;
         case 'deepseek':
-          const deepseekModelSettings = REASONING_EFFORT_MODELS.has(model.id) && config?.reasoningEffort
-            ? { reasoningEffort: config.reasoningEffort }
-            : {};
-          result = await generateText({
-            model: deepseek(model.name, deepseekModelSettings),
+          const deepseekParams: any = {
+            model: deepseek(model.name),
             system: systemPrompt,
             prompt,
             temperature: 0.7,
-            maxTokens,
-          });
+            maxOutputTokens: maxTokens,
+          };
+          if (REASONING_EFFORT_MODELS.has(model.id) && config?.reasoningEffort) {
+            deepseekParams.providerOptions = { openai: { reasoningEffort: config.reasoningEffort } };
+          }
+          result = await generateText(deepseekParams);
           break;
         default:
           throw new Error(`Unsupported provider: ${model.provider}`);
@@ -339,8 +340,8 @@ Format your response as a clear argument with supporting points.`;
       }
       
       await this.usageTracker.trackModelUsage(model, roundNumber, {
-        inputTokens: result.usage.promptTokens || 0,
-        outputTokens: result.usage.completionTokens || 0,
+        inputTokens: result.usage.inputTokens || 0,
+        outputTokens: result.usage.outputTokens || 0,
       }, result.usage); // Pass the full usage object
     }
     
@@ -3011,7 +3012,7 @@ IMPORTANT: Stick to facts only. Do NOT provide opinions or recommendations. Othe
           system: systemPrompt,
           prompt: researchQuery,
           temperature: 0.3, // Lower temperature for factual research
-          maxTokens: 1500,
+          maxOutputTokens: 1500,
         });
 
         return {
@@ -3121,7 +3122,7 @@ IMPORTANT: Stick to facts only. Do NOT provide opinions or recommendations. Othe
         system: systemPrompt,
         prompt: `Please research and answer these questions:\n- ${combinedQuery}`,
         temperature: 0.3,
-        maxTokens: 1500,
+        maxOutputTokens: 1500,
       });
 
       const newFindings = `\n\n=== Additional Research (answering debater questions) ===\n${result.text}`;
